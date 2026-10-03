@@ -1,0 +1,300 @@
+//! Configuration loading for Station.
+//!
+//! Values are read verbatim - program arguments are never shell-split, and
+//! paths are expanded here so the rest of the app only sees absolute or
+//! workspace-relative forms.
+
+use std::collections::BTreeMap;
+use std::fs;
+use std::path::{Path, PathBuf};
+
+use anyhow::{Context, Result, bail};
+use serde::{Deserialize, Serialize};
+
+/// An external program plus its literal arguments (no shell involved).
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ToolCommand {
+    pub program: String,
+    #[serde(default)]
+    pub args: Vec<String>,
+}
+
+/// A repeatable command run inside a chosen workspace.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TaskRecipe {
+    pub id: String,
+    pub label: String,
+    pub command: ToolCommand,
+    /// `.` stays relative to the selected workspace; `~/` expands to home.
+    #[serde(default = "default_cwd")]
+    pub cwd: PathBuf,
+    #[serde(default)]
+    pub required_ports: Vec<u16>,
+}
+
+/// An SSH port-forward declaration.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TunnelRecipe {
+    pub id: String,
+    pub host: String,
+    #[serde(default = "default_bind")]
+    pub bind: String,
+    pub local_port: u16,
+    pub remote_host: String,
+    pub remote_port: u16,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ThemeConfig {
+    #[serde(default = "default_accent")]
+    pub accent: String,
+    #[serde(default)]
+    pub compact: bool,
+}
+
+impl Default for ThemeConfig {
+    fn default() -> Self {
+        ThemeConfig {
+            accent: default_accent(),
+            compact: false,
+        }
+    }
+}
+
+/// Parse-time mirror of [`Config`] that records whether `project_roots` was
+/// actually present in the file (absent means "use defaults", an explicit
+/// empty list means "no roots").
+#[derive(Default, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+struct RawConfig {
+    project_roots: Option<Vec<PathBuf>>,
+    pinned_projects: Vec<PathBuf>,
+    editor: Option<ToolCommand>,
+    tools: BTreeMap<String, ToolCommand>,
+    tasks: Vec<TaskRecipe>,
+    tunnels: Vec<TunnelRecipe>,
+    theme: ThemeConfig,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct Config {
+    pub project_roots: Vec<PathBuf>,
+    pub pinned_projects: Vec<PathBuf>,
+    pub editor: Option<ToolCommand>,
+    pub tools: BTreeMap<String, ToolCommand>,
+    pub tasks: Vec<TaskRecipe>,
+    pub tunnels: Vec<TunnelRecipe>,
+    pub theme: ThemeConfig,
+}
+
+fn default_cwd() -> PathBuf {
+    PathBuf::from(".")
+}
+fn default_bind() -> String {
+    "127.0.0.1".into()
+}
+fn default_accent() -> String {
+    "mauve".into()
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Config {
+            project_roots: Vec::new(),
+            pinned_projects: Vec::new(),
+            editor: None,
+            tools: BTreeMap::new(),
+            tasks: Vec::new(),
+            tunnels: Vec::new(),
+            theme: ThemeConfig {
+                accent: default_accent(),
+                compact: false,
+            },
+        }
+    }
+}
+
+fn is_present(path: &Path) -> bool {
+    fs::metadata(path).map(|m| m.is_file()).unwrap_or(false)
+}
+
+/// Expand a leading `~/` (or bare `~`) against `home`.
+fn expand_tilde(p: &Path, home: &Path) -> PathBuf {
+    match p.to_str() {
+        Some("~/") | Some("~") => home.to_path_buf(),
+        Some(s) if s.starts_with("~/") => home.join(&s[2..]),
+        _ => p.to_path_buf(),
+    }
+}
+
+fn expand_path_field(p: PathBuf, home: &Path, base: Option<&Path>) -> PathBuf {
+    let p = expand_tilde(&p, home);
+    match base {
+        Some(base) if p.is_relative() => base.join(p),
+        _ => p,
+    }
+}
+
+/// Reject empty strings and control characters in identifiers and hosts.
+fn check_id(kind: &str, id: &str) -> Result<()> {
+    if id.is_empty() {
+        bail!("{kind} id must not be empty");
+    }
+    if id.chars().any(char::is_control) {
+        bail!("{kind} id {id:?} contains control characters");
+    }
+    Ok(())
+}
+
+fn check_nonempty(kind: &str, value: &str) -> Result<()> {
+    if value.is_empty() {
+        bail!("{kind} must not be empty");
+    }
+    Ok(())
+}
+
+fn check_ids(items: &[String]) -> Result<()> {
+    let mut seen: Vec<&str> = Vec::new();
+    for id in items {
+        if seen.contains(&id.as_str()) {
+            bail!("duplicate id {id:?}");
+        }
+        seen.push(id);
+    }
+    Ok(())
+}
+
+fn valid_port(port: u16, kind: &str) -> Result<()> {
+    if port == 0 {
+        bail!("{kind} port must not be 0");
+    }
+    Ok(())
+}
+
+impl Config {
+    /// Built-in defaults for a fresh install; optional paths are included
+    /// only when they already exist.
+    pub fn defaults(home: &Path) -> Self {
+        let mut cfg = Config::default();
+        let roots = [home.join("code"), home.join("dotfiles")];
+        if roots[0].is_dir() {
+            cfg.project_roots.push(roots[0].clone());
+        }
+        if roots[1].is_dir() {
+            cfg.pinned_projects.push(roots[1].clone());
+        }
+        cfg
+    }
+
+    /// Load from `path`. A missing file yields [`Config::defaults`] without
+    /// creating anything on disk.
+    pub fn load(path: &Path, home: &Path) -> Result<Self> {
+        if !is_present(path) {
+            return Ok(Config::defaults(home));
+        }
+        let raw = fs::read_to_string(path)
+            .with_context(|| format!("reading config {}", path.display()))?;
+        let parsed: RawConfig =
+            toml::from_str(&raw).with_context(|| format!("parsing {}", path.display()))?;
+
+        let defaults = Config::defaults(home);
+        let mut cfg = Config {
+            project_roots: parsed.project_roots.unwrap_or(defaults.project_roots),
+            pinned_projects: parsed.pinned_projects,
+            editor: parsed.editor,
+            tools: parsed.tools,
+            tasks: parsed.tasks,
+            tunnels: parsed.tunnels,
+            theme: parsed.theme,
+        };
+
+        let base = path.parent();
+        cfg.project_roots = cfg
+            .project_roots
+            .into_iter()
+            .map(|p| expand_path_field(p, home, base))
+            .collect();
+        cfg.pinned_projects = cfg
+            .pinned_projects
+            .into_iter()
+            .map(|p| expand_path_field(p, home, base))
+            .collect();
+        // A task cwd of `.` must stay relative to the selected workspace, so
+        // only `~/` is expanded - never the config directory.
+        for task in &mut cfg.tasks {
+            task.cwd = expand_tilde(&task.cwd, home);
+        }
+        cfg.validate()?;
+        Ok(cfg)
+    }
+
+    fn validate(&self) -> Result<()> {
+        if let Some(editor) = &self.editor {
+            check_nonempty("editor program", &editor.program)?;
+        }
+        for (name, tool) in &self.tools {
+            check_id("tool", name)?;
+            check_nonempty("tool program", &tool.program)?;
+        }
+        check_ids(&self.tasks.iter().map(|t| t.id.clone()).collect::<Vec<_>>())?;
+        for task in &self.tasks {
+            check_id("task", &task.id)?;
+            check_nonempty("task program", &task.command.program)?;
+        }
+        check_ids(
+            &self
+                .tunnels
+                .iter()
+                .map(|t| t.id.clone())
+                .collect::<Vec<_>>(),
+        )?;
+        for tunnel in &self.tunnels {
+            check_id("tunnel", &tunnel.id)?;
+            check_nonempty("tunnel host", &tunnel.host)?;
+            check_nonempty("tunnel remote host", &tunnel.remote_host)?;
+            valid_port(tunnel.local_port, "tunnel local")?;
+            valid_port(tunnel.remote_port, "tunnel remote")?;
+        }
+        match self.theme.accent.as_str() {
+            "mauve" | "blue" => {}
+            other => bail!("invalid theme accent {other:?} (expected mauve or blue)"),
+        }
+        Ok(())
+    }
+}
+
+/// Where Station keeps its files.
+#[derive(Clone, Debug)]
+pub struct Paths {
+    pub home: PathBuf,
+    pub config: PathBuf,
+    pub state: PathBuf,
+}
+
+fn xdg_dir(env: &str, home: &Path, fallback: &str) -> PathBuf {
+    match std::env::var(env).ok().filter(|s| !s.is_empty()) {
+        Some(dir) if Path::new(&dir).is_absolute() => PathBuf::from(dir),
+        _ => home.join(fallback),
+    }
+}
+
+impl Paths {
+    /// Resolve from `HOME` plus the XDG variables (absolute, non-empty only).
+    pub fn discover() -> Result<Self> {
+        let home = std::env::var("HOME")
+            .context("HOME is not set; cannot locate the station directories")?;
+        let home = PathBuf::from(home);
+        Ok(Paths {
+            config: xdg_dir("XDG_CONFIG_HOME", &home, ".config")
+                .join("station")
+                .join("config.toml"),
+            state: xdg_dir("XDG_STATE_HOME", &home, ".local/state").join("station"),
+            home,
+        })
+    }
+}

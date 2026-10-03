@@ -1,9 +1,11 @@
+pub mod activity;
 pub mod agents;
 pub mod connections;
 pub mod files;
 pub mod layout;
 pub mod services;
 pub mod system;
+pub mod tasks;
 pub mod theme;
 pub mod workspaces;
 use crate::{
@@ -217,6 +219,10 @@ pub fn draw(frame: &mut Frame, app: &App) -> Vec<HitRegion> {
         || (app.section == Section::Overview && mode == layout::LayoutMode::Single)
     {
         hits.extend(workspaces::render(frame, rows[1], app));
+    } else if app.section == Section::Tasks {
+        hits.extend(tasks::render(frame, rows[1], app));
+    } else if app.section == Section::Activity {
+        hits.extend(activity::render(frame, rows[1], app));
     } else if app.section == Section::Services {
         hits.extend(services::render(frame, rows[1], app));
     } else if app.section == Section::System {
@@ -247,18 +253,7 @@ pub fn draw(frame: &mut Frame, app: &App) -> Vec<HitRegion> {
                     hits.extend(services::render(frame, *pane, app));
                     continue;
                 }
-                let title = [
-                    "Continue working",
-                    "Machine pulse",
-                    "Tasks & recent runs",
-                    "Services & ports",
-                ][idx];
-                frame.render_widget(
-                    Paragraph::new("\n  Loading local data…")
-                        .fg(MUTED)
-                        .block(panel(title, idx == app.pane)),
-                    *pane,
-                );
+                hits.extend(tasks::render(frame, *pane, app));
             }
         }
     } else {
@@ -272,9 +267,7 @@ pub fn draw(frame: &mut Frame, app: &App) -> Vec<HitRegion> {
     }
     if let Some(m) = &app.message {
         frame.render_widget(
-            Paragraph::new(m.as_str())
-                .fg(TEAL)
-                .wrap(Wrap { trim: true }),
+            Paragraph::new(safe(m)).fg(TEAL).wrap(Wrap { trim: true }),
             rows[2],
         );
     }
@@ -291,6 +284,41 @@ pub fn draw(frame: &mut Frame, app: &App) -> Vec<HitRegion> {
         .bg(CRUST),
         vertical[2],
     );
+    if let Some((title, text)) = &app.detail {
+        let rect = Rect::new(area.x + 2, area.y + 2, area.width - 4, area.height - 4);
+        frame.render_widget(Clear, rect);
+        frame.render_widget(
+            Paragraph::new(safe(text))
+                .scroll((app.detail_scroll, 0))
+                .block(panel(title, true))
+                .wrap(Wrap { trim: false }),
+            rect,
+        );
+        hits.clear();
+    }
+    if let Some(confirm) = &app.confirmation {
+        let rect = Rect::new(
+            area.x + 3,
+            area.y + area.height / 3,
+            area.width - 6,
+            (confirm.choices.len() as u16 * 2 + 4).min(area.height - 4),
+        );
+        frame.render_widget(Clear, rect);
+        let choices = confirm
+            .choices
+            .iter()
+            .enumerate()
+            .map(|(i, (label, _))| (label.clone(), String::new(), Action::ConfirmChoice(i)))
+            .collect::<Vec<_>>();
+        hits = self::rows(
+            frame,
+            rect,
+            &safe(&confirm.title),
+            &choices,
+            app.modal_selection,
+            true,
+        );
+    }
     if app.help {
         let rect = Rect::new(
             area.x + 3,

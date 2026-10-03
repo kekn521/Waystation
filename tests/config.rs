@@ -268,3 +268,31 @@ fn paths_discover_follows_env_without_mutation() {
         xdg_or("XDG_STATE_HOME", &home.join(".local/state"), "station")
     );
 }
+#[test]
+fn tunnel_arguments_are_discrete_and_loopback() {
+    use station::config::{TaskRecipe, TunnelRecipe};
+    let t = TunnelRecipe {
+        id: "db".into(),
+        host: "saved".into(),
+        bind: "127.0.0.1".into(),
+        local_port: 15432,
+        remote_host: "127.0.0.1".into(),
+        remote_port: 5432,
+    };
+    let r = TaskRecipe::from_tunnel(&t, "/tmp".into()).unwrap();
+    assert!(r.command.args.contains(&"-N".into()));
+    assert!(r.command.args.contains(&"ExitOnForwardFailure=yes".into()));
+    assert!(
+        r.command
+            .args
+            .contains(&"127.0.0.1:15432:127.0.0.1:5432".into())
+    );
+    let mut t = t;
+    t.host = "-bad".into();
+    assert!(TaskRecipe::from_tunnel(&t, "/tmp".into()).is_err());
+}
+#[test]
+fn config_directory_is_an_error() {
+    let d = tempfile::tempdir().unwrap();
+    assert!(station::config::Config::load(d.path(), d.path()).is_err());
+}

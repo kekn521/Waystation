@@ -119,10 +119,6 @@ impl Default for Config {
     }
 }
 
-fn is_present(path: &Path) -> bool {
-    fs::metadata(path).map(|m| m.is_file()).unwrap_or(false)
-}
-
 /// Expand a leading `~/` (or bare `~`) against `home`.
 fn expand_tilde(p: &Path, home: &Path) -> PathBuf {
     match p.to_str() {
@@ -194,11 +190,13 @@ impl Config {
     /// Load from `path`. A missing file yields [`Config::defaults`] without
     /// creating anything on disk.
     pub fn load(path: &Path, home: &Path) -> Result<Self> {
-        if !is_present(path) {
-            return Ok(Config::defaults(home));
-        }
-        let raw = fs::read_to_string(path)
-            .with_context(|| format!("reading config {}", path.display()))?;
+        let raw = match fs::read_to_string(path) {
+            Ok(s) => s,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+                return Ok(Config::defaults(home));
+            }
+            Err(e) => return Err(e).with_context(|| format!("reading config {}", path.display())),
+        };
         let parsed: RawConfig =
             toml::from_str(&raw).with_context(|| format!("parsing {}", path.display()))?;
 
@@ -295,6 +293,56 @@ impl Paths {
                 .join("config.toml"),
             state: xdg_dir("XDG_STATE_HOME", &home, ".local/state").join("station"),
             home,
+        })
+    }
+}
+
+impl TaskRecipe {
+    pub fn from_tunnel(t: &TunnelRecipe, cwd: PathBuf) -> Result<Self> {
+        let valid = |s: &str| {
+            !s.is_empty()
+                && !s.starts_with('-')
+                && !s.chars().any(|c| c.is_control() || c.is_whitespace())
+        };
+        anyhow::ensure!(
+            valid(&t.host)
+                && valid(&t.bind)
+                && valid(&t.remote_host)
+                && t.local_port > 0
+                && t.remote_port > 0,
+            "Invalid tunnel endpoints"
+        );
+        let endpoint = |s: &str| {
+            if s.contains(':') && !s.starts_with('[') {
+                format!("[{s}]")
+            } else {
+                s.into()
+            }
+        };
+        Ok(Self {
+            id: format!("tunnel:{}", t.id),
+            label: format!("Tunnel {}", t.id),
+            cwd,
+            required_ports: vec![t.local_port],
+            command: ToolCommand {
+                program: "ssh".into(),
+                args: vec![
+                    "-N".into(),
+                    "-o".into(),
+                    "BatchMode=yes".into(),
+                    "-o".into(),
+                    "ExitOnForwardFailure=yes".into(),
+                    "-L".into(),
+                    format!(
+                        "{}:{}:{}:{}",
+                        endpoint(&t.bind),
+                        t.local_port,
+                        endpoint(&t.remote_host),
+                        t.remote_port
+                    ),
+                    t.host.clone(),
+                ],
+            },
         })
     }
 }

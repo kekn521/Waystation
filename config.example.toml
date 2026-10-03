@@ -1,0 +1,46 @@
+# Station configuration example.
+# Copy to ~/.config/station/config.toml (or pass --config PATH) and edit.
+# Nothing listed here runs on startup: tasks and tunnels start only when you
+# explicitly launch them from the UI.
+
+# Directories scanned for projects. `~/` expands to your home directory;
+# relative paths resolve against this file's directory.
+project_roots = ["~/code"]
+
+# Projects always shown at the top of the list.
+pinned_projects = []
+
+[theme]
+accent = "mauve" # "mauve" or "blue"
+compact = false
+
+# Optional editor override. When omitted, Station picks the first installed
+# of: hx, nvim, vim, vi.
+[editor]
+program = "hx"
+args = []
+
+# Optional tool overrides, e.g. a custom Git UI. Without this section
+# Station uses the first installed program it knows about.
+# [tools.git-ui]
+# program = "lazygit"
+# args = []
+
+# Task recipes appear in the Recipes pane and run exactly as written: an
+# explicit program plus argument array, never a shell command line.
+[[tasks]]
+id = "check"
+label = "Cargo check"
+cwd = "." # "." = the selected workspace; `~/` expands to home
+required_ports = []
+command = { program = "cargo", args = ["check"] }
+
+# SSH port-forward example. `host` must be an alias from your ssh_config.
+# Uncomment and adjust; tunnels start only when you launch them.
+# [[tunnels]]
+# id = "dev-db"
+# host = "your-saved-alias"
+# bind = "127.0.0.1"
+# local_port = 15432
+# remote_host = "127.0.0.1"
+# remote_port = 5432

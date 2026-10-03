@@ -33,15 +33,46 @@ fn main() -> Result<()> {
     if let Some(p) = cli.state_dir {
         paths.state = p;
     }
+    paths.config = std::path::absolute(&paths.config)?;
     let config = Config::load(&paths.config, &paths.home)?;
-    let store = Store::open(paths.state)?;
+    if paths.state.is_relative() {
+        paths.state = std::env::current_dir()?.join(paths.state);
+    }
+    if paths.config.is_relative() {
+        paths.config = std::env::current_dir()?.join(paths.config);
+    }
+    let store = Store::open(paths.state.clone())?;
     let mut app = App::new(config, store.load()?);
-    let pool = station::runtime::workers::WorkerPool::new(app.config.clone(), paths.home.clone());
+    let pool = station::runtime::workers::WorkerPool::new(
+        app.config.clone(),
+        paths.home.clone(),
+        paths.state.clone(),
+    );
     refresh(&app, &pool);
     let mut last_fast = std::time::Instant::now();
     let mut last_slow = std::time::Instant::now();
+    let mut jobs =
+        station::runtime::jobs::Jobs::new(station::tasks::TaskManager::new(paths.state.clone()));
     let mut term = TerminalSession::enter()?;
     loop {
+        if let Some(result) = jobs.try_recv() {
+            match result {
+                Ok(r) => {
+                    if !r.message.is_empty() {
+                        app.message = Some(r.message)
+                    }
+                    if let Some(d) = r.detail {
+                        app.detail = Some(d);
+                        app.detail_scroll = 0;
+                    }
+                    refresh(&app, &pool);
+                    if r.quit {
+                        break;
+                    }
+                }
+                Err(e) => app.message = Some(e),
+            }
+        }
         while let Some(event) = pool.try_recv() {
             let first = app.workspace().is_none();
             app.apply_provider(event);
@@ -51,6 +82,7 @@ fn main() -> Result<()> {
         }
         if last_fast.elapsed() >= Duration::from_secs(1) {
             submit(&app, &pool, station::runtime::workers::ProviderId::System);
+            submit(&app, &pool, station::runtime::workers::ProviderId::Tasks);
             last_fast = std::time::Instant::now();
         }
         if last_slow.elapsed() >= Duration::from_secs(5) {
@@ -95,20 +127,12 @@ fn main() -> Result<()> {
                             app.message = Some(outcome);
                             refresh(&app, &pool);
                         }
-                        Effect::DockerLogs(id) => {
-                            app.message = Some(
-                                station::providers::services::logs(&id)
-                                    .unwrap_or_else(|e| e.to_string()),
-                            );
+                        effect => {
+                            if !jobs.submit(effect) {
+                                app.message =
+                                    Some("An action is still finishing; try again shortly".into())
+                            }
                         }
-                        Effect::Copy(p) => {
-                            app.message = Some(
-                                station::runtime::actions::copy_path(&p)
-                                    .map(|_| "Path copied".into())
-                                    .unwrap_or_else(|e| e.to_string()),
-                            )
-                        }
-                        Effect::Quit => {}
                     }
                 }
             }
@@ -142,6 +166,7 @@ fn refresh(app: &App, pool: &station::runtime::workers::WorkerPool) {
         Connections,
         Sessions,
         Services,
+        Tasks,
     ] {
         submit(app, pool, id)
     }

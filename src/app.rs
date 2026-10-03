@@ -1,3 +1,5 @@
+#[path = "app_tasks.rs"]
+mod task_actions;
 use crate::{
     config::Config,
     model::{AppState, Section},
@@ -40,12 +42,24 @@ pub enum Action {
     Attach(String),
     DockerLogs(String),
     ShowText(String),
+    StartRecipe(String),
+    StartTunnel(String),
+    StartTask(crate::config::TaskRecipe),
+    RunLog(uuid::Uuid),
+    ConfirmStop(uuid::Uuid),
+    QuitKeep,
+    QuitStop,
+    ConfirmChoice(usize),
 }
 #[derive(Clone, Debug)]
 pub enum Effect {
     Foreground(Action),
     Copy(PathBuf),
     DockerLogs(String),
+    StartTask(crate::config::TaskRecipe),
+    StopTask(uuid::Uuid),
+    ReadLog(uuid::Uuid),
+    StopAllAndQuit(Vec<uuid::Uuid>),
     Quit,
     Refresh,
 }
@@ -54,7 +68,18 @@ pub struct HitRegion {
     pub area: Rect,
     pub action: Action,
 }
+#[derive(Clone, Debug)]
+pub struct Confirmation {
+    pub title: String,
+    pub choices: Vec<(String, Action)>,
+}
 pub struct App {
+    pub runs: Vec<crate::tasks::RunRecord>,
+    pub recipes: bool,
+    pub confirmation: Option<Confirmation>,
+    pub modal_selection: usize,
+    pub detail: Option<(String, String)>,
+    pub detail_scroll: u16,
     pub config: Config,
     pub state: AppState,
     pub section: Section,
@@ -81,6 +106,12 @@ pub struct App {
 impl App {
     pub fn new(config: Config, state: AppState) -> Self {
         Self {
+            runs: vec![],
+            recipes: false,
+            confirmation: None,
+            modal_selection: 0,
+            detail: None,
+            detail_scroll: 0,
             config,
             state,
             section: Section::Overview,
@@ -115,6 +146,26 @@ impl App {
             Ok(payload) => {
                 self.provider_errors.remove(&key);
                 match payload {
+                    ProviderPayload::Tasks(r) => {
+                        for run in &r {
+                            if run.ended.is_some()
+                                && !self
+                                    .state
+                                    .activity
+                                    .iter()
+                                    .any(|a| a.id == run.id.to_string())
+                            {
+                                self.state.activity.push(crate::model::ActivityEntry {
+                                    id: run.id.to_string(),
+                                    at: run.ended.unwrap_or(run.started),
+                                    workspace: Some(run.cwd.clone()),
+                                    kind: crate::model::ActivityKind::TaskRun(run.id.to_string()),
+                                    outcome: format!("{} · {:?}", run.recipe.label, run.status),
+                                });
+                            }
+                        }
+                        self.runs = r;
+                    }
                     ProviderPayload::Services(s) => self.services = s,
                     ProviderPayload::Projects(w) => self.set_workspaces(w),
                     ProviderPayload::Git(g) => self.git = Snapshot::ready(g, self.generation),
@@ -206,6 +257,16 @@ impl App {
                 Action::Attach(id.clone()),
             )
         }));
+        items.extend(self.config.tunnels.iter().map(|t| {
+            (
+                format!("Tunnel {}", t.id),
+                format!(
+                    "{}:{} → {}:{}",
+                    t.bind, t.local_port, t.remote_host, t.remote_port
+                ),
+                Action::StartTunnel(t.id.clone()),
+            )
+        }));
         items
     }
     pub fn search_items(&self) -> Vec<SearchItem> {
@@ -238,6 +299,7 @@ impl App {
             .agent_items()
             .into_iter()
             .chain(self.connection_items())
+            .chain(self.recipe_items())
         {
             items.push(SearchItem {
                 id: label.clone(),
@@ -272,12 +334,48 @@ impl App {
             .collect()
     }
     pub fn update(&mut self, action: Action) -> Vec<Effect> {
+        if let Some(e) = self.task_action(&action) {
+            return e;
+        }
+        if self.confirmation.is_some() {
+            match action {
+                Action::Move(n) => {
+                    let count = self.confirmation.as_ref().unwrap().choices.len();
+                    self.modal_selection = self
+                        .modal_selection
+                        .saturating_add_signed(n)
+                        .min(count.saturating_sub(1));
+                }
+                Action::Activate => {
+                    return self.update(Action::ConfirmChoice(self.modal_selection));
+                }
+                Action::Escape | Action::Quit => self.confirmation = None,
+                _ => {}
+            }
+            return vec![];
+        }
+        if self.detail.is_some() {
+            match action {
+                Action::Move(n) => {
+                    self.detail_scroll = self.detail_scroll.saturating_add_signed(n as i16)
+                }
+                Action::Escape => self.detail = None,
+                Action::Quit => {}
+                _ => return vec![],
+            }
+            if !matches!(action, Action::Quit) {
+                return vec![];
+            }
+        }
+
         match action {
             Action::Nav(s) => {
                 self.section = s;
                 self.selection = 0;
                 self.searching = false;
-                self.message = None
+                self.message = None;
+                self.detail = None;
+                self.confirmation = None;
             }
             Action::Search => {
                 self.searching = true;
@@ -292,11 +390,26 @@ impl App {
                 self.searching = false;
                 self.query.clear();
                 self.help = false;
-                self.message = None
+                self.message = None;
+                self.detail = None;
+                self.confirmation = None;
             }
             Action::Help => self.help = !self.help,
-            Action::FocusNext => self.pane = (self.pane + 1) % 4,
-            Action::Move(n) => self.selection = self.selection.saturating_add_signed(n),
+            Action::FocusNext => {
+                self.pane = (self.pane + 1) % 4;
+                self.selection = 0;
+            }
+            Action::Move(n) => {
+                let count = if self.searching {
+                    self.matches().len()
+                } else {
+                    self.section_items().len()
+                };
+                self.selection = self
+                    .selection
+                    .saturating_add_signed(n)
+                    .min(count.saturating_sub(1));
+            }
             Action::Quit => return vec![Effect::Quit],
             Action::SelectWorkspace(p) => {
                 self.state.selected_workspace = Some(p.clone());
@@ -335,28 +448,9 @@ impl App {
                     return self.update(item.action);
                 }
             }
-            Action::Activate if matches!(self.section, Section::Overview | Section::Workspaces) => {
-                return self.update(Action::Project(
-                    self.selection.min(self.workspaces.len().saturating_sub(1)),
-                ));
-            }
-            Action::Activate
-                if self.section == Section::Agents || self.section == Section::Connections =>
-            {
-                let items = if self.section == Section::Agents {
-                    self.agent_items()
-                } else {
-                    self.connection_items()
-                };
-                if let Some((_, _, action)) =
-                    items.get(self.selection.min(items.len().saturating_sub(1)))
-                {
-                    return self.update(action.clone());
-                }
-            }
-            Action::Activate if self.section == Section::Files => {
-                if let Some(f) = self.files.get(self.selection).cloned() {
-                    return self.update(Action::OpenPath(f.path));
+            Action::Activate => {
+                if let Some((_, _, a)) = self.section_items().get(self.selection).cloned() {
+                    return self.update(a);
                 }
             }
             Action::OpenPath(p) if p.is_dir() => {
@@ -365,7 +459,7 @@ impl App {
                 return vec![Effect::Refresh];
             }
             Action::DockerLogs(id) => return vec![Effect::DockerLogs(id)],
-            Action::ShowText(text) => self.message = Some(text),
+            Action::ShowText(text) => self.detail = Some(("Details".into(), text)),
             Action::Editor
             | Action::Shell
             | Action::Git
@@ -384,7 +478,7 @@ impl App {
                     return vec![Effect::Copy(p)];
                 }
             }
-            _ => self.message = Some("This integration is being connected.".into()),
+            _ => {}
         };
         vec![]
     }

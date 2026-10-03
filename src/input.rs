@@ -14,6 +14,16 @@ pub fn translate(event: Event, app: &App) -> Option<Action> {
             if k.modifiers.contains(KeyModifiers::CONTROL) && k.code == KeyCode::Char('c') {
                 return Some(Action::Quit);
             }
+            if app.confirmation.is_some() || app.detail.is_some() {
+                return match k.code {
+                    KeyCode::Esc => Some(Action::Escape),
+                    KeyCode::Enter => Some(Action::Activate),
+                    KeyCode::Up | KeyCode::Char('k') => Some(Action::Move(-1)),
+                    KeyCode::Down | KeyCode::Char('j') => Some(Action::Move(1)),
+                    KeyCode::Char('q') => Some(Action::Escape),
+                    _ => None,
+                };
+            }
             if app.searching {
                 return match k.code {
                     KeyCode::Esc => Some(Action::Escape),

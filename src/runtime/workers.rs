@@ -38,6 +38,7 @@ pub struct ProviderRequest {
 }
 #[derive(Debug)]
 pub enum ProviderPayload {
+    Tasks(Vec<crate::tasks::RunRecord>),
     Services(crate::providers::services::ServicesState),
     Projects(Vec<Workspace>),
     Git(GitState),
@@ -87,7 +88,7 @@ impl WorkerPool {
             pending: Mutex::new(HashSet::new()),
         }
     }
-    pub fn new(config: Config, home: PathBuf) -> Self {
+    pub fn new(config: Config, home: PathBuf, state: PathBuf) -> Self {
         let sampler = Mutex::new(SystemSampler::default());
         Self::with_provider(move |r| {
             let work = r
@@ -96,6 +97,9 @@ impl WorkerPool {
                 .ok_or_else(|| "Select a workspace".to_string());
             let result: anyhow::Result<ProviderPayload> = (|| {
                 Ok(match r.id {
+                    ProviderId::Tasks => ProviderPayload::Tasks(
+                        crate::tasks::TaskManager::new(state.clone()).list()?,
+                    ),
                     ProviderId::Projects => ProviderPayload::Projects(projects::discover(&config)?),
                     ProviderId::Git => ProviderPayload::Git(git::inspect(
                         work.map_err(anyhow::Error::msg)?,
@@ -127,7 +131,6 @@ impl WorkerPool {
                             .unwrap()
                             .sample(std::path::Path::new("/proc"), &home)?,
                     ),
-                    _ => anyhow::bail!("Provider unavailable"),
                 })
             })();
             result.map_err(|e| format!("{e:#}"))

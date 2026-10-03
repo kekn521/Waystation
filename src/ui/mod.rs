@@ -1,5 +1,9 @@
+pub mod agents;
+pub mod connections;
 pub mod files;
 pub mod layout;
+pub mod services;
+pub mod system;
 pub mod theme;
 pub mod workspaces;
 use crate::{
@@ -213,6 +217,14 @@ pub fn draw(frame: &mut Frame, app: &App) -> Vec<HitRegion> {
         || (app.section == Section::Overview && mode == layout::LayoutMode::Single)
     {
         hits.extend(workspaces::render(frame, rows[1], app));
+    } else if app.section == Section::Services {
+        hits.extend(services::render(frame, rows[1], app));
+    } else if app.section == Section::System {
+        hits.extend(system::render(frame, rows[1], app));
+    } else if app.section == Section::Agents {
+        hits.extend(agents::render(frame, rows[1], app));
+    } else if app.section == Section::Connections {
+        hits.extend(connections::render(frame, rows[1], app));
     } else if app.section == Section::Files {
         hits.extend(files::render(frame, rows[1], app));
     } else if app.section == Section::Overview && mode != layout::LayoutMode::Single {
@@ -225,6 +237,14 @@ pub fn draw(frame: &mut Frame, app: &App) -> Vec<HitRegion> {
                 let idx = c + r * 2;
                 if idx == 0 {
                     hits.extend(workspaces::render(frame, *pane, app));
+                    continue;
+                }
+                if idx == 1 {
+                    hits.extend(system::render(frame, *pane, app));
+                    continue;
+                }
+                if idx == 3 {
+                    hits.extend(services::render(frame, *pane, app));
                     continue;
                 }
                 let title = [

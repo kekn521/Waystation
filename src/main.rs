@@ -28,9 +28,27 @@ fn main() -> Result<()> {
     let config = Config::load(&paths.config, &paths.home)?;
     let store = Store::open(paths.state)?;
     let mut app = App::new(config, store.load()?);
-    refresh(&mut app);
+    let pool = station::runtime::workers::WorkerPool::new(app.config.clone(), paths.home.clone());
+    refresh(&app, &pool);
+    let mut last_fast = std::time::Instant::now();
+    let mut last_slow = std::time::Instant::now();
     let mut term = TerminalSession::enter()?;
     loop {
+        while let Some(event) = pool.try_recv() {
+            let first = app.workspace().is_none();
+            app.apply_provider(event);
+            if first && app.workspace().is_some() {
+                refresh(&app, &pool);
+            }
+        }
+        if last_fast.elapsed() >= Duration::from_secs(1) {
+            submit(&app, &pool, station::runtime::workers::ProviderId::System);
+            last_fast = std::time::Instant::now();
+        }
+        if last_slow.elapsed() >= Duration::from_secs(5) {
+            refresh(&app, &pool);
+            last_slow = std::time::Instant::now();
+        }
         let mut hits = vec![];
         term.terminal.draw(|f| hits = station::ui::draw(f, &app))?;
         app.hits = hits;
@@ -40,8 +58,50 @@ fn main() -> Result<()> {
                 if effects.iter().any(|e| matches!(e, Effect::Quit)) {
                     break;
                 }
-                if effects.iter().any(|e| matches!(e, Effect::Refresh)) {
-                    refresh(&mut app)
+                for effect in effects {
+                    match effect {
+                        Effect::Refresh => refresh(&app, &pool),
+                        Effect::Foreground(action) => {
+                            let cwd = if matches!(action, station::app::Action::Shell)
+                                && app.section == station::model::Section::Files
+                            {
+                                app.file_dir.clone()
+                            } else {
+                                app.state.selected_workspace.clone()
+                            }
+                            .unwrap_or(paths.home.clone());
+                            let result =
+                                station::runtime::actions::resolve(&action, &app.config, &cwd)
+                                    .and_then(|s| term.run_foreground(&s));
+                            let outcome = match result {
+                                Ok(status) => format!("Returned · {status}"),
+                                Err(e) => format!("{e:#}"),
+                            };
+                            app.state.activity.push(station::model::ActivityEntry {
+                                id: uuid::Uuid::new_v4().to_string(),
+                                at: std::time::SystemTime::now(),
+                                workspace: app.state.selected_workspace.clone(),
+                                kind: station::model::ActivityKind::Launch(format!("{action:?}")),
+                                outcome: outcome.clone(),
+                            });
+                            app.message = Some(outcome);
+                            refresh(&app, &pool);
+                        }
+                        Effect::DockerLogs(id) => {
+                            app.message = Some(
+                                station::providers::services::logs(&id)
+                                    .unwrap_or_else(|e| e.to_string()),
+                            );
+                        }
+                        Effect::Copy(p) => {
+                            app.message = Some(
+                                station::runtime::actions::copy_path(&p)
+                                    .map(|_| "Path copied".into())
+                                    .unwrap_or_else(|e| e.to_string()),
+                            )
+                        }
+                        Effect::Quit => {}
+                    }
                 }
             }
         }
@@ -51,24 +111,30 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn refresh(app: &mut App) {
-    use station::{
-        model::{Availability, Snapshot},
-        providers::{files, git, projects},
-        runtime::command::CommandRunner,
-    };
-    match projects::discover(&app.config) {
-        Ok(w) => app.set_workspaces(w),
-        Err(e) => app.message = Some(e.to_string()),
-    };
-    if let Some(p) = app.workspace().map(|p| p.to_path_buf()) {
-        match git::inspect(&p, &CommandRunner) {
-            Ok(g) => app.git = Snapshot::ready(g, app.generation),
-            Err(e) => app.git.availability = Availability::Failed(e.to_string()),
-        };
-        match files::list(&p, app.file_dir.as_deref().unwrap_or(&p), app.hidden) {
-            Ok(f) => app.files = f,
-            Err(e) => app.message = Some(e.to_string()),
-        };
+fn submit(
+    app: &App,
+    pool: &station::runtime::workers::WorkerPool,
+    id: station::runtime::workers::ProviderId,
+) {
+    pool.submit(station::runtime::workers::ProviderRequest {
+        id,
+        generation: app.generation,
+        workspace: app.state.selected_workspace.clone(),
+        directory: app.file_dir.clone(),
+        hidden: app.hidden,
+    });
+}
+fn refresh(app: &App, pool: &station::runtime::workers::WorkerPool) {
+    use station::runtime::workers::ProviderId::*;
+    for id in [
+        Projects,
+        Git,
+        Files,
+        System,
+        Connections,
+        Sessions,
+        Services,
+    ] {
+        submit(app, pool, id)
     }
 }

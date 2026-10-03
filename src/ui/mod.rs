@@ -1,5 +1,7 @@
+pub mod files;
 pub mod layout;
 pub mod theme;
+pub mod workspaces;
 use crate::{
     app::{Action, App, HitRegion},
     model::Section,
@@ -12,6 +14,67 @@ use ratatui::{
     widgets::{Block, BorderType, Borders, Clear, Paragraph, Wrap},
 };
 use theme::*;
+pub fn safe(text: &str) -> String {
+    text.chars()
+        .map(|c| {
+            if c.is_control() && c != '\n' && c != '\t' {
+                '�'
+            } else {
+                c
+            }
+        })
+        .collect()
+}
+pub fn rows(
+    frame: &mut Frame,
+    area: Rect,
+    title: &str,
+    items: &[(String, String, Action)],
+    selected: usize,
+    focused: bool,
+) -> Vec<HitRegion> {
+    let mut hits = vec![];
+    let block = panel(title, focused);
+    let inner = block.inner(area);
+    frame.render_widget(block, area);
+    if items.is_empty() {
+        frame.render_widget(Paragraph::new("\n Nothing here yet.").fg(MUTED), inner);
+        return hits;
+    }
+    let capacity = (inner.height / 2).max(1) as usize;
+    let selected = selected.min(items.len() - 1);
+    let offset = selected.saturating_sub(capacity - 1);
+    for (i, (label, detail, action)) in items.iter().enumerate().skip(offset).take(capacity) {
+        let row = Rect::new(
+            inner.x,
+            inner.y + ((i - offset) * 2) as u16,
+            inner.width,
+            2.min(inner.height),
+        );
+        let style = if i == selected {
+            Style::default().bg(SELECT).fg(MAUVE)
+        } else {
+            Style::default().fg(TEXT)
+        };
+        frame.render_widget(
+            Paragraph::new(vec![
+                Line::from(format!(
+                    " {} {}",
+                    if i == selected { "❯" } else { "·" },
+                    safe(label)
+                )),
+                Line::from(format!("   {}", safe(detail))).fg(MUTED),
+            ])
+            .style(style),
+            row,
+        );
+        hits.push(HitRegion {
+            area: row,
+            action: action.clone(),
+        });
+    }
+    hits
+}
 pub fn panel(title: &str, focused: bool) -> Block<'_> {
     Block::default()
         .borders(Borders::ALL)
@@ -132,7 +195,27 @@ pub fn draw(frame: &mut Frame, app: &App) -> Vec<HitRegion> {
         area: rows[0],
         action: Action::Search,
     });
-    if app.section == Section::Overview && mode != layout::LayoutMode::Single {
+    if app.searching {
+        let items = app
+            .matches()
+            .into_iter()
+            .map(|i| (i.label, i.detail, i.action))
+            .collect::<Vec<_>>();
+        hits.extend(self::rows(
+            frame,
+            rows[1],
+            "Jump to anything",
+            &items,
+            app.selection,
+            true,
+        ));
+    } else if app.section == Section::Workspaces
+        || (app.section == Section::Overview && mode == layout::LayoutMode::Single)
+    {
+        hits.extend(workspaces::render(frame, rows[1], app));
+    } else if app.section == Section::Files {
+        hits.extend(files::render(frame, rows[1], app));
+    } else if app.section == Section::Overview && mode != layout::LayoutMode::Single {
         let cols = Layout::horizontal([Constraint::Percentage(62), Constraint::Percentage(38)])
             .split(rows[1]);
         for (c, col) in cols.iter().enumerate() {
@@ -140,6 +223,10 @@ pub fn draw(frame: &mut Frame, app: &App) -> Vec<HitRegion> {
                 .split(*col);
             for (r, pane) in panes.iter().enumerate() {
                 let idx = c + r * 2;
+                if idx == 0 {
+                    hits.extend(workspaces::render(frame, *pane, app));
+                    continue;
+                }
                 let title = [
                     "Continue working",
                     "Machine pulse",

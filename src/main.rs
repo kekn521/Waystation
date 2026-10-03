@@ -17,6 +17,14 @@ struct Cli {
     state_dir: Option<PathBuf>,
 }
 fn main() -> Result<()> {
+    let args = std::env::args_os().collect::<Vec<_>>();
+    if args.get(1).is_some_and(|s| s == "__supervise") {
+        anyhow::ensure!(
+            args.len() == 4 && args[2] == "--run-dir",
+            "Invalid private supervisor invocation"
+        );
+        return station::tasks::supervisor::run(std::path::Path::new(&args[3]));
+    }
     let cli = Cli::parse();
     let mut paths = Paths::discover()?;
     if let Some(p) = cli.config {

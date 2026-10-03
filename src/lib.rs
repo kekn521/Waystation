@@ -7,3 +7,5 @@ pub mod runtime;
 pub mod search;
 pub mod store;
 pub mod ui;
+
+pub mod tasks;

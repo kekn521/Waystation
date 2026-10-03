@@ -1,5 +1,6 @@
 use crate::{
     app::{Action, App, HitRegion},
+    model::{Availability, Section},
     ui::{self, theme::*},
 };
 use ratatui::{
@@ -9,39 +10,73 @@ use ratatui::{
     widgets::Paragraph,
 };
 pub fn render(frame: &mut Frame, area: Rect, app: &App) -> Vec<HitRegion> {
-    let parts = Layout::vertical([Constraint::Min(4), Constraint::Length(4)]).split(area);
+    let focus = app.section == Section::Workspaces || app.pane == 0;
+    let block = ui::panel("Continue working", focus);
+    let inner = block.inner(area);
+    frame.render_widget(block, area);
+    let parts = Layout::vertical([
+        Constraint::Min(2),
+        Constraint::Length(if inner.height > 7 { 4 } else { 2 }),
+    ])
+    .split(inner);
     let items = app
         .workspaces
         .iter()
         .map(|w| {
+            let selected = app.workspace() == Some(w.id.as_path());
+            let git = if selected {
+                app.git
+                    .value
+                    .as_ref()
+                    .map(|g| {
+                        format!(
+                            " · {} · {} changed",
+                            g.branch.as_deref().unwrap_or("detached"),
+                            g.changed
+                        )
+                    })
+                    .unwrap_or_default()
+            } else {
+                String::new()
+            };
             (
-                w.name.clone(),
-                w.id.display().to_string(),
+                format!(
+                    "{}{}",
+                    w.name,
+                    if w.id.is_dir() { "" } else { " · unavailable" }
+                ),
+                format!("{}{git}", w.id.display()),
                 Action::SelectWorkspace(w.id.clone()),
             )
         })
         .collect::<Vec<_>>();
-    let mut hits = ui::rows(
-        frame,
-        parts[0],
-        "Continue working",
-        &items,
-        app.selection,
-        true,
-    );
-    let context = if let Some(g) = &app.git.value {
+    let mut hits = ui::row_items(frame, parts[0], &items, app.selection, focus);
+    if items.is_empty() {
+        frame.render_widget(
+            Paragraph::new("Add project_roots or pinned_projects in config.toml").fg(MUTED),
+            parts[0],
+        );
+    }
+    let context = if let Availability::Failed(e) = &app.git.availability {
         format!(
-            "{} · {} changed · ↑{} ↓{}",
+            "Git {}",
+            if app.git.value.is_some() {
+                format!("stale · {e}")
+            } else {
+                e.clone()
+            }
+        )
+    } else if let Some(g) = &app.git.value {
+        format!(
+            "{} · {} changed · ↑{} ↓{} · {} worktrees",
             g.branch.as_deref().unwrap_or("no branch"),
             g.changed,
             g.ahead,
-            g.behind
+            g.behind,
+            g.worktrees.len()
         )
     } else {
-        match &app.git.availability {
-            crate::model::Availability::Failed(e) => e.clone(),
-            _ => "Select a workspace to inspect Git".into(),
-        }
+        "Git context loads for the selected workspace".into()
     };
     frame.render_widget(
         Paragraph::new(format!(
@@ -51,25 +86,22 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) -> Vec<HitRegion> {
         .fg(MUTED),
         parts[1],
     );
-    for (i, a) in [
-        Action::Editor,
-        Action::Shell,
-        Action::Git,
-        Action::Herdr,
-        Action::Files,
-    ]
-    .into_iter()
-    .enumerate()
-    {
-        hits.push(HitRegion {
-            area: Rect::new(
-                parts[1].x + i as u16 * 11,
-                parts[1].y,
-                11.min(parts[1].width.saturating_sub(i as u16 * 11)),
-                1,
-            ),
-            action: a,
-        })
+    let mut x = parts[1].x;
+    for (label, action) in [
+        (" e editor", Action::Editor),
+        (" · t shell", Action::Shell),
+        (" · g Git", Action::Git),
+        (" · h Herdr", Action::Herdr),
+        (" · f files", Action::Files),
+    ] {
+        let width = (label.len() as u16).min(parts[1].right().saturating_sub(x));
+        if width > 0 {
+            hits.push(HitRegion {
+                area: Rect::new(x, parts[1].y, width, 1),
+                action,
+            });
+        }
+        x = x.saturating_add(width);
     }
     hits
 }

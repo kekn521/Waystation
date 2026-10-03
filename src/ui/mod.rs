@@ -43,6 +43,17 @@ pub fn rows(
     let block = panel(title, focused);
     let inner = block.inner(area);
     frame.render_widget(block, area);
+    hits.extend(row_items(frame, inner, items, selected, focused));
+    hits
+}
+pub fn row_items(
+    frame: &mut Frame,
+    inner: Rect,
+    items: &[(String, String, Action)],
+    selected: usize,
+    focused: bool,
+) -> Vec<HitRegion> {
+    let mut hits = vec![];
     if items.is_empty() {
         frame.render_widget(Paragraph::new("\n Nothing here yet.").fg(MUTED), inner);
         return hits;
@@ -57,7 +68,7 @@ pub fn rows(
             inner.width,
             2.min(inner.height),
         );
-        let style = if i == selected {
+        let style = if i == selected && focused {
             Style::default().bg(SELECT).fg(MAUVE)
         } else {
             Style::default().fg(TEXT)
@@ -67,7 +78,7 @@ pub fn rows(
                 Line::from(format!(
                     " {} {}",
                     if i == selected { "❯" } else { "·" },
-                    safe(label)
+                    safe(label).replace(['\n', '\t'], " ")
                 )),
                 Line::from(format!("   {}", safe(detail))).fg(MUTED),
             ])
@@ -86,17 +97,17 @@ pub fn panel(title: &str, focused: bool) -> Block<'_> {
         .borders(Borders::ALL)
         .border_type(BorderType::Rounded)
         .border_style(Style::default().fg(if focused { MAUVE } else { LINE }))
-        .title(Line::from(format!(" {title} ")).fg(if focused { MAUVE } else { MUTED }))
+        .title(Line::from(format!(" {} ", safe(title))).fg(if focused { MAUVE } else { MUTED }))
         .style(Style::default().bg(BASE).fg(TEXT))
 }
 pub fn draw(frame: &mut Frame, app: &App) -> Vec<HitRegion> {
     let area = frame.area();
     let mut hits = vec![];
-    frame.render_widget(
-        Block::default().style(Style::default().bg(BASE).fg(TEXT)),
-        area,
-    );
-    let mode = layout::mode(area.width, area.height);
+    frame.render_widget(Block::default().bg(BASE).fg(TEXT), area);
+    let mut mode = layout::mode(area.width, area.height);
+    if app.config.theme.compact && mode == layout::LayoutMode::Wide {
+        mode = layout::LayoutMode::Compact;
+    }
     if mode == layout::LayoutMode::TooSmall {
         frame.render_widget(
             Paragraph::new("Resize to at least 60 × 18\nq quit").fg(MAUVE),
@@ -104,184 +115,271 @@ pub fn draw(frame: &mut Frame, app: &App) -> Vec<HitRegion> {
         );
         return hits;
     }
+    let narrow = mode == layout::LayoutMode::Single;
     let vertical = Layout::vertical([
-        Constraint::Length(4),
-        Constraint::Min(8),
+        Constraint::Length(if narrow { 3 } else { 4 }),
+        Constraint::Min(5),
         Constraint::Length(2),
     ])
     .split(area);
+    let context = app
+        .workspace()
+        .map(|p| {
+            p.file_name()
+                .unwrap_or(p.as_os_str())
+                .to_string_lossy()
+                .into_owned()
+        })
+        .unwrap_or("select a workspace".into());
+    let header = vec![
+        Line::from(vec![
+            Span::styled(" ╭─┬─╮  S T A T I O N", Style::default().fg(MAUVE).bold()),
+            Span::styled(
+                if narrow {
+                    ""
+                } else {
+                    "     dispatch / your terminal, connected"
+                },
+                Style::default().fg(MUTED),
+            ),
+        ]),
+        Line::from(vec![
+            Span::styled(" ╰─┼─╯  ", Style::default().fg(MAUVE)),
+            Span::styled(safe(&context), Style::default().fg(TEAL)),
+            Span::styled(
+                format!("  · {}", app.section.name()),
+                Style::default().fg(MUTED),
+            ),
+        ]),
+    ];
     frame.render_widget(
-        Paragraph::new(vec![
-            Line::from(vec![
-                Span::styled(" ╭─┬─╮  STATION", Style::default().fg(MAUVE).bold()),
-                Span::styled(
-                    "   dispatch / your terminal, connected",
-                    Style::default().fg(MUTED),
-                ),
-            ]),
-            Line::from(" ╰─┼─╯  local workspace").fg(MUTED),
-        ])
-        .block(
+        Paragraph::new(header).bg(MANTLE).block(
             Block::default()
                 .borders(Borders::BOTTOM)
                 .border_style(Style::default().fg(LINE)),
-        )
-        .bg(MANTLE),
+        ),
         vertical[0],
     );
-    let (content, navarea) = if mode == layout::LayoutMode::Wide {
-        let cols =
-            Layout::horizontal([Constraint::Length(17), Constraint::Min(40)]).split(vertical[1]);
-        (cols[1], cols[0])
+    if !narrow && area.width > 100 {
+        frame.render_widget(
+            Paragraph::new("● LOCAL  /  MACCHIATO").fg(TEAL).bg(MANTLE),
+            Rect::new(area.right() - 24, area.y + 2, 23, 1),
+        );
+    }
+    let (content, nav) = if mode == layout::LayoutMode::Wide {
+        let c =
+            Layout::horizontal([Constraint::Length(18), Constraint::Min(40)]).split(vertical[1]);
+        (c[1], c[0])
     } else {
-        let rows = Layout::vertical([Constraint::Length(3), Constraint::Min(5)]).split(vertical[1]);
-        (rows[1], rows[0])
+        let r = Layout::vertical([Constraint::Length(2), Constraint::Min(3)]).split(vertical[1]);
+        (r[1], r[0])
     };
+    frame.render_widget(Block::default().bg(MANTLE), nav);
     if mode == layout::LayoutMode::Wide {
-        frame.render_widget(Block::default().bg(MANTLE), navarea);
-        for (i, s) in Section::ALL.iter().enumerate() {
-            let row = Rect::new(
-                navarea.x + 1,
-                navarea.y + 1 + i as u16 * 2,
-                navarea.width - 2,
-                1,
-            );
-            let style = if *s == app.section {
-                Style::default().bg(MAUVE).fg(CRUST)
+        for (i, section) in Section::ALL.iter().enumerate() {
+            let group = i / 3;
+            let y = nav.y + 2 + i as u16 * 2 + group as u16 * 2;
+            if i % 3 == 0 {
+                frame.render_widget(
+                    Paragraph::new([" WORK", " OPERATE", " EXPLORE"][group]).fg(BLUE),
+                    Rect::new(nav.x + 1, y - 1, nav.width - 2, 1),
+                );
+            }
+            let row = Rect::new(nav.x + 1, y, nav.width - 2, 1);
+            let style = if *section == app.section {
+                Style::default().bg(MAUVE).fg(CRUST).bold()
             } else {
                 Style::default().fg(MUTED)
             };
             frame.render_widget(
-                Paragraph::new(format!(" {} {}", i + 1, s.name())).style(style),
+                Paragraph::new(format!(" {} {}", i + 1, section.name())).style(style),
                 row,
             );
             hits.push(HitRegion {
                 area: row,
-                action: Action::Nav(*s),
+                action: Action::Nav(*section),
             });
         }
+        if nav.height > 28 {
+            frame.render_widget(
+                Paragraph::new(vec![
+                    Line::from(vec![
+                        Span::styled(" ▰ ", Style::default().fg(MAUVE)),
+                        Span::styled("▰ ", Style::default().fg(BLUE)),
+                        Span::styled("▰ ", Style::default().fg(TEAL)),
+                        Span::styled("▰", Style::default().fg(PEACH)),
+                    ]),
+                    Line::from(" Catppuccin"),
+                    Line::from(" Macchiato"),
+                ])
+                .fg(MUTED),
+                Rect::new(nav.x + 1, nav.bottom() - 4, nav.width - 2, 3),
+            );
+        }
     } else {
-        let text = Section::ALL
-            .iter()
-            .enumerate()
-            .map(|(i, s)| {
-                Span::styled(
-                    format!(" {} {} ", i + 1, s.name()),
-                    if *s == app.section {
-                        Style::default().bg(MAUVE).fg(CRUST)
-                    } else {
-                        Style::default().fg(MUTED)
-                    },
-                )
-            })
-            .collect::<Vec<_>>();
-        frame.render_widget(
-            Paragraph::new(Line::from(text)).wrap(Wrap { trim: false }),
-            navarea,
-        );
-    }
-    let rows = Layout::vertical([
-        Constraint::Length(3),
-        Constraint::Min(5),
-        Constraint::Length(if app.message.is_some() { 2 } else { 0 }),
-    ])
-    .margin(1)
-    .split(content);
-    frame.render_widget(
-        Paragraph::new(if app.searching {
-            format!(" / {}▏", app.query)
+        let labels = if narrow {
+            [
+                "Hub", "Work", "AI", "Task", "Svc", "SSH", "File", "Sys", "Log",
+            ]
         } else {
-            " / Jump to anything…".into()
-        })
-        .block(panel("commands", app.searching))
-        .fg(if app.searching { MAUVE } else { MUTED }),
-        rows[0],
+            [
+                "Overview",
+                "Workspaces",
+                "Agents",
+                "Tasks",
+                "Services",
+                "Connections",
+                "Files",
+                "System",
+                "Activity",
+            ]
+        };
+        let mut x = nav.x;
+        let mut y = nav.y;
+        for (i, label) in labels.iter().enumerate() {
+            let text = format!("{} {} ", i + 1, label);
+            let width = unicode_width::UnicodeWidthStr::width(text.as_str()) as u16;
+            if x + width > nav.right() {
+                x = nav.x;
+                y += 1;
+            }
+            if y >= nav.bottom() {
+                break;
+            }
+            let row = Rect::new(x, y, width, 1);
+            let style = if Section::ALL[i] == app.section {
+                Style::default().bg(MAUVE).fg(CRUST)
+            } else {
+                Style::default().fg(MUTED)
+            };
+            frame.render_widget(Paragraph::new(text).style(style), row);
+            hits.push(HitRegion {
+                area: row,
+                action: Action::Nav(Section::ALL[i]),
+            });
+            x += width;
+        }
+    }
+    let parts = Layout::vertical([
+        Constraint::Length(3),
+        Constraint::Length(if narrow { 0 } else { 1 }),
+        Constraint::Min(3),
+        Constraint::Length(if app.message.is_some() { 1 } else { 0 }),
+    ])
+    .horizontal_margin(if narrow { 0 } else { 1 })
+    .split(content);
+    let prompt = if app.searching {
+        format!(" / {}▏", safe(&app.query))
+    } else {
+        " / Jump to anything…".into()
+    };
+    frame.render_widget(
+        Paragraph::new(prompt)
+            .fg(if app.searching { MAUVE } else { MUTED })
+            .block(panel("commands", app.searching)),
+        parts[0],
     );
     hits.push(HitRegion {
-        area: rows[0],
+        area: parts[0],
         action: Action::Search,
     });
+    let failures = app
+        .runs
+        .iter()
+        .take(20)
+        .filter(|r| r.status == crate::tasks::RunStatus::Failed)
+        .count();
+    let attention = if failures > 0 {
+        format!(" ! {failures} failed runs · open Tasks for logs")
+    } else {
+        format!(
+            " {} workspaces  ·  {} task runs  ·  local observations",
+            app.workspaces.len(),
+            app.runs.len()
+        )
+    };
+    frame.render_widget(
+        Paragraph::new(attention).fg(if failures > 0 { PEACH } else { MUTED }),
+        parts[1],
+    );
+    if failures > 0 {
+        hits.push(HitRegion {
+            area: parts[1],
+            action: Action::Nav(Section::Tasks),
+        });
+    }
     if app.searching {
         let items = app
             .matches()
             .into_iter()
             .map(|i| (i.label, i.detail, i.action))
             .collect::<Vec<_>>();
-        hits.extend(self::rows(
+        hits.extend(rows(
             frame,
-            rows[1],
+            parts[2],
             "Jump to anything",
             &items,
             app.selection,
             true,
         ));
-    } else if app.section == Section::Workspaces
-        || (app.section == Section::Overview && mode == layout::LayoutMode::Single)
-    {
-        hits.extend(workspaces::render(frame, rows[1], app));
-    } else if app.section == Section::Tasks {
-        hits.extend(tasks::render(frame, rows[1], app));
-    } else if app.section == Section::Activity {
-        hits.extend(activity::render(frame, rows[1], app));
-    } else if app.section == Section::Services {
-        hits.extend(services::render(frame, rows[1], app));
-    } else if app.section == Section::System {
-        hits.extend(system::render(frame, rows[1], app));
-    } else if app.section == Section::Agents {
-        hits.extend(agents::render(frame, rows[1], app));
-    } else if app.section == Section::Connections {
-        hits.extend(connections::render(frame, rows[1], app));
-    } else if app.section == Section::Files {
-        hits.extend(files::render(frame, rows[1], app));
-    } else if app.section == Section::Overview && mode != layout::LayoutMode::Single {
-        let cols = Layout::horizontal([Constraint::Percentage(62), Constraint::Percentage(38)])
-            .split(rows[1]);
-        for (c, col) in cols.iter().enumerate() {
-            let panes = Layout::vertical([Constraint::Percentage(58), Constraint::Percentage(42)])
-                .split(*col);
-            for (r, pane) in panes.iter().enumerate() {
-                let idx = c + r * 2;
-                if idx == 0 {
-                    hits.extend(workspaces::render(frame, *pane, app));
-                    continue;
+    } else if app.section == Section::Overview {
+        if narrow {
+            hits.extend(render_pane(frame, parts[2], app, app.pane));
+        } else {
+            let cols = Layout::horizontal([Constraint::Percentage(61), Constraint::Percentage(39)])
+                .spacing(1)
+                .split(parts[2]);
+            for (c, col) in cols.iter().enumerate() {
+                let panes =
+                    Layout::vertical([Constraint::Percentage(58), Constraint::Percentage(42)])
+                        .spacing(1)
+                        .split(*col);
+                for (r, pane) in panes.iter().enumerate() {
+                    hits.extend(render_pane(frame, *pane, app, c + r * 2));
                 }
-                if idx == 1 {
-                    hits.extend(system::render(frame, *pane, app));
-                    continue;
-                }
-                if idx == 3 {
-                    hits.extend(services::render(frame, *pane, app));
-                    continue;
-                }
-                hits.extend(tasks::render(frame, *pane, app));
             }
         }
     } else {
-        frame.render_widget(
-            Paragraph::new("\n  No data yet. Add a project or task in your configuration.")
-                .fg(MUTED)
-                .wrap(Wrap { trim: true })
-                .block(panel(app.section.name(), true)),
-            rows[1],
-        );
+        hits.extend(match app.section {
+            Section::Workspaces => workspaces::render(frame, parts[2], app),
+            Section::Agents => agents::render(frame, parts[2], app),
+            Section::Tasks => tasks::render(frame, parts[2], app),
+            Section::Services => services::render(frame, parts[2], app),
+            Section::Connections => connections::render(frame, parts[2], app),
+            Section::Files => files::render(frame, parts[2], app),
+            Section::System => system::render(frame, parts[2], app),
+            Section::Activity => activity::render(frame, parts[2], app),
+            Section::Overview => vec![],
+        });
     }
-    if let Some(m) = &app.message {
-        frame.render_widget(
-            Paragraph::new(safe(m)).fg(TEAL).wrap(Wrap { trim: true }),
-            rows[2],
-        );
+    if let Some(message) = &app.message {
+        frame.render_widget(Paragraph::new(safe(message)).fg(TEAL), parts[3]);
     }
+    let footer = if narrow {
+        " j/k move · Tab pane · / search · ? help · q quit"
+    } else if app.section == Section::Tasks {
+        " j/k move · Enter logs · n recipes · r rerun · x stop · q quit"
+    } else {
+        " j/k move · e editor · t shell · g Git · h Herdr · f files · / commands · ? help · q quit"
+    };
     frame.render_widget(
         Paragraph::new(Line::from(vec![
-            Span::styled(" NORMAL ", Style::default().bg(MAUVE).fg(CRUST)),
-            Span::raw("  j/k move · Tab pane · Enter open · / commands · ? help · q quit"),
+            Span::styled(
+                if app.searching {
+                    " SEARCH "
+                } else {
+                    " NORMAL "
+                },
+                Style::default().bg(MAUVE).fg(CRUST),
+            ),
+            Span::raw(footer),
         ]))
+        .bg(CRUST)
         .block(
             Block::default()
                 .borders(Borders::TOP)
                 .border_style(Style::default().fg(LINE)),
-        )
-        .bg(CRUST),
+        ),
         vertical[2],
     );
     if let Some((title, text)) = &app.detail {
@@ -310,7 +408,7 @@ pub fn draw(frame: &mut Frame, app: &App) -> Vec<HitRegion> {
             .enumerate()
             .map(|(i, (label, _))| (label.clone(), String::new(), Action::ConfirmChoice(i)))
             .collect::<Vec<_>>();
-        hits = self::rows(
+        hits = rows(
             frame,
             rect,
             &safe(&confirm.title),
@@ -321,13 +419,32 @@ pub fn draw(frame: &mut Frame, app: &App) -> Vec<HitRegion> {
     }
     if app.help {
         let rect = Rect::new(
-            area.x + 3,
-            area.y + 5,
-            area.width - 6,
-            12.min(area.height - 6),
+            area.x + 2,
+            area.y + 3,
+            area.width - 4,
+            12.min(area.height - 4),
         );
         frame.render_widget(Clear, rect);
-        frame.render_widget(Paragraph::new("1–9 sections · j/k or arrows move · Tab focus pane\n/ search commands · Enter activate · Esc close\ne editor · t shell · g Git · h Herdr · f files\nn task recipes · r rerun · x stop owned task\n. hidden files · y copy path · F5 refresh\nq quit (asks what to do with running tasks)").block(panel("Keyboard shortcuts",true)).wrap(Wrap{trim:true}),rect);
+        frame.render_widget(Paragraph::new("1–9 sections · j/k or arrows move · Tab focus pane\n/ search commands · Enter activate · Esc close\ne editor · t shell · g Git · h Herdr · f files\nn task recipes · r rerun · x stop owned task\n. hidden files · y copy path · F5 refresh\nq quit · keep running / stop owned tasks / cancel").block(panel("Keyboard shortcuts · Esc close",true)).wrap(Wrap{trim:true}),rect);
+        hits.clear();
+    }
+    if app.config.theme.accent == "blue" {
+        for cell in &mut frame.buffer_mut().content {
+            if cell.fg == MAUVE {
+                cell.fg = BLUE
+            }
+            if cell.bg == MAUVE {
+                cell.bg = BLUE
+            }
+        }
     }
     hits
+}
+fn render_pane(frame: &mut Frame, area: Rect, app: &App, index: usize) -> Vec<HitRegion> {
+    match index {
+        0 => workspaces::render(frame, area, app),
+        1 => system::render(frame, area, app),
+        2 => tasks::render(frame, area, app),
+        _ => services::render(frame, area, app),
+    }
 }

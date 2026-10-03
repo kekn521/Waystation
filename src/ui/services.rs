@@ -6,6 +6,29 @@ use crate::{
 use ratatui::{Frame, layout::Rect};
 pub fn items(app: &App) -> Vec<(String, String, Action)> {
     let mut rows = vec![];
+    for (name, availability, stale) in [
+        (
+            "Docker",
+            &app.services.containers.availability,
+            app.services.containers.value.is_some(),
+        ),
+        (
+            "Listeners",
+            &app.services.listeners.availability,
+            app.services.listeners.value.is_some(),
+        ),
+    ] {
+        if let Availability::Failed(e) = availability
+            && stale
+        {
+            rows.push((
+                format!("{name} stale · F5 retries"),
+                e.clone(),
+                Action::Reload,
+            ));
+        }
+    }
+
     if let Some(cs) = &app.services.containers.value {
         for c in cs {
             rows.push((

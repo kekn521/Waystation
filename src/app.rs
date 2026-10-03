@@ -141,6 +141,10 @@ impl App {
         if event.request.generation != self.generation {
             return false;
         }
+        let selected = self
+            .section_items()
+            .get(self.selection)
+            .map(|(_, _, a)| format!("{a:?}"));
         let key = format!("{:?}", event.request.id);
         match event.payload {
             Ok(payload) => {
@@ -166,7 +170,15 @@ impl App {
                         }
                         self.runs = r;
                     }
-                    ProviderPayload::Services(s) => self.services = s,
+                    ProviderPayload::Services(mut s) => {
+                        if s.containers.value.is_none() {
+                            s.containers.value = self.services.containers.value.take()
+                        }
+                        if s.listeners.value.is_none() {
+                            s.listeners.value = self.services.listeners.value.take()
+                        }
+                        self.services = s;
+                    }
                     ProviderPayload::Projects(w) => self.set_workspaces(w),
                     ProviderPayload::Git(g) => self.git = Snapshot::ready(g, self.generation),
                     ProviderPayload::Files(f) => {
@@ -198,6 +210,19 @@ impl App {
                     self.system.availability = crate::model::Availability::Failed(e.clone())
                 }
                 self.provider_errors.insert(key, e);
+            }
+        }
+        if let Some(key) = selected {
+            if let Some(index) = self
+                .section_items()
+                .iter()
+                .position(|(_, _, a)| format!("{a:?}") == key)
+            {
+                self.selection = index
+            } else {
+                self.selection = self
+                    .selection
+                    .min(self.section_items().len().saturating_sub(1));
             }
         }
         true
@@ -267,6 +292,15 @@ impl App {
                 Action::StartTunnel(t.id.clone()),
             )
         }));
+        for key in ["Connections", "Sessions"] {
+            if let Some(e) = self.provider_errors.get(key) {
+                items.push((
+                    format!("{key} unavailable"),
+                    e.clone(),
+                    Action::ShowText(e.clone()),
+                ));
+            }
+        }
         items
     }
     pub fn search_items(&self) -> Vec<SearchItem> {
@@ -308,6 +342,14 @@ impl App {
                 action,
             })
         }
+        for name in self.config.tools.keys().map(String::as_str).chain(["htop"]) {
+            items.push(SearchItem {
+                id: format!("tool:{name}"),
+                label: format!("Open {name}"),
+                detail: "tool · selected workspace".into(),
+                action: Action::Tool(name.into()),
+            });
+        }
         for s in Section::ALL {
             items.push(SearchItem {
                 id: s.name().into(),
@@ -334,6 +376,9 @@ impl App {
             .collect()
     }
     pub fn update(&mut self, action: Action) -> Vec<Effect> {
+        if self.help && !matches!(action, Action::Escape | Action::Help | Action::Quit) {
+            return vec![];
+        }
         if let Some(e) = self.task_action(&action) {
             return e;
         }
@@ -419,7 +464,11 @@ impl App {
                 self.git = Snapshot::default();
                 self.files.clear();
                 self.generation += 1;
-                self.selection = 0;
+                self.selection = self
+                    .workspaces
+                    .iter()
+                    .position(|w| Some(&w.id) == self.state.selected_workspace.as_ref())
+                    .unwrap_or(0);
                 self.searching = false;
                 return vec![Effect::Refresh];
             }
@@ -435,6 +484,7 @@ impl App {
             }
             Action::Hidden => {
                 self.hidden = !self.hidden;
+                self.generation += 1;
                 return vec![Effect::Refresh];
             }
             Action::Reload => return vec![Effect::Refresh],
@@ -455,11 +505,37 @@ impl App {
             }
             Action::OpenPath(p) if p.is_dir() => {
                 self.file_dir = Some(p);
+                self.generation += 1;
                 self.selection = 0;
                 return vec![Effect::Refresh];
             }
             Action::DockerLogs(id) => return vec![Effect::DockerLogs(id)],
             Action::ShowText(text) => self.detail = Some(("Details".into(), text)),
+            Action::Git
+                if !self.config.tools.contains_key("git-ui")
+                    && crate::runtime::command::executable("lazygit".as_ref()).is_none() =>
+            {
+                let text = if let Some(g) = &self.git.value {
+                    format!(
+                        "Branch {}\n{} changed entries · ↑{} ↓{}\n\nWorktrees\n{}\n\nSet [tools.git-ui] in config.toml to open an interactive Git tool.",
+                        g.branch.as_deref().unwrap_or("unknown"),
+                        g.changed,
+                        g.ahead,
+                        g.behind,
+                        g.worktrees
+                            .iter()
+                            .map(|p| p.display().to_string())
+                            .collect::<Vec<_>>()
+                            .join("\n")
+                    )
+                } else {
+                    self.provider_errors
+                        .get("Git")
+                        .cloned()
+                        .unwrap_or("Git data is loading".into())
+                };
+                self.detail = Some(("Git · read only".into(), text));
+            }
             Action::Editor
             | Action::Shell
             | Action::Git

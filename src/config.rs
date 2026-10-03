@@ -28,7 +28,7 @@ pub struct TaskRecipe {
     pub label: String,
     pub command: ToolCommand,
     /// `.` stays relative to the selected workspace; `~/` expands to home.
-    #[serde(default = "default_cwd")]
+    #[serde(default = "default_cwd", with = "crate::path_serde")]
     pub cwd: PathBuf,
     #[serde(default)]
     pub required_ports: Vec<u16>,

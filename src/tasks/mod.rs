@@ -32,6 +32,7 @@ pub enum RunStatus {
 pub struct RunRecord {
     pub id: RunId,
     pub recipe: TaskRecipe,
+    #[serde(with = "crate::path_serde")]
     pub cwd: PathBuf,
     pub started: SystemTime,
     pub ended: Option<SystemTime>,
@@ -39,6 +40,7 @@ pub struct RunRecord {
     pub exit_code: Option<i32>,
     pub supervisor: Option<ProcessIdentity>,
     pub child: Option<ProcessIdentity>,
+    #[serde(with = "crate::path_serde")]
     pub log_dir: PathBuf,
     pub error: Option<String>,
 }

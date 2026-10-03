@@ -6,11 +6,13 @@ use station::{
 #[test]
 fn validates_program_and_cwd() {
     let d = tempfile::tempdir().unwrap();
-    let mut c = Config::default();
-    c.editor = Some(ToolCommand {
-        program: "no-such-station-editor-9284".into(),
-        args: vec![],
-    });
+    let mut c = Config {
+        editor: Some(ToolCommand {
+            program: "no-such-station-editor-9284".into(),
+            args: vec![],
+        }),
+        ..Config::default()
+    };
     assert!(resolve(&Action::Editor, &c, d.path()).is_err());
     c.editor.as_mut().unwrap().program = "printf".into();
     assert!(resolve(&Action::Editor, &c, &d.path().join("missing")).is_err());

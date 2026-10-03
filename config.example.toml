@@ -35,7 +35,7 @@ cwd = "." # "." = the selected workspace; `~/` expands to home
 required_ports = []
 command = { program = "cargo", args = ["check"] }
 
-# SSH port-forward example. `host` must be an alias from your ssh_config.
+# SSH port-forward example. `host` can be a hostname or an alias from your ssh_config.
 # Uncomment and adjust; tunnels start only when you launch them.
 # [[tunnels]]
 # id = "dev-db"

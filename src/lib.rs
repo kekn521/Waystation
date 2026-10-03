@@ -9,3 +9,5 @@ pub mod store;
 pub mod ui;
 
 pub mod tasks;
+
+pub mod path_serde;

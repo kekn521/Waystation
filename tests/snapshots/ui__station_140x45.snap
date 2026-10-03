@@ -1,0 +1,610 @@
+---
+source: tests/ui.rs
+expression: "snapshots.join(\"\\n\\n\")"
+---
+--- Overview ---
+ ╭─┬─╮  S T A T I O N     dispatch / your terminal, connected
+ ╰─┼─╯  機 器 -learning-with-a-long-name  · Overview
+                                                                                                                    ● LOCAL  /  MACCHIATO
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+                   ╭ commands ────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+  WORK             │ / Jump to anything…                                                                                                  │
+  1 Overview       ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+                    1 workspaces  ·  0 task runs  ·  local observations
+  2 Workspaces     ╭ Continue working ────────────────────────────────────────────────────╮ ╭ Machine pulse · live ───────────────────────╮
+                   │ ❯ 機 器 -learning-with-a-long-name · unavailable                       │ │permission denied                            │
+  3 Agents         │   /projects/機 器 -learning-with-a-long-name                           │ │                                             │
+                   │                                                                      │ │                                             │
+                   │                                                                      │ │                                             │
+  OPERATE          │                                                                      │ │                                             │
+  4 Tasks          │                                                                      │ │                                             │
+                   │                                                                      │ │                                             │
+  5 Services       │                                                                      │ │                                             │
+                   │                                                                      │ │                                             │
+  6 Connections    │                                                                      │ │                                             │
+                   │                                                                      │ │                                             │
+                   │                                                                      │ │                                             │
+  EXPLORE          │                                                                      │ │                                             │
+  7 Files          │ e editor · t shell · g Git · h Herdr · f files                       │ │                                             │
+                   │ Git context loads for the selected workspace                         │ │                                             │
+  8 System         │                                                                      │ │                                             │
+                   │                                                                      │ │                                             │
+  9 Activity       ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+
+                   ╭ Tasks & recent runs · n recipes ─────────────────────────────────────╮ ╭ Services & ports · read only ───────────────╮
+                   │No task runs yet.                                                     │ │                                             │
+                   │                                                                      │ │ Nothing here yet.                           │
+                   │Press n to choose a recipe.                                           │ │                                             │
+                   │Tasks keep their logs and completion status after Station closes.     │ │                                             │
+                   │                                                                      │ │                                             │
+                   │                                                                      │ │                                             │
+                   │                                                                      │ │                                             │
+                   │                                                                      │ │                                             │
+                   │                                                                      │ │                                             │
+                   │                                                                      │ │                                             │
+  ▰ ▰ ▰ ▰          │                                                                      │ │                                             │
+  Catppuccin       │                                                                      │ │                                             │
+  Macchiato        │                                                                      │ │                                             │
+                   ╰──────────────────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────╯
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ NORMAL  j/k move · e editor · t shell · g Git · h Herdr · f files · / commands · ? help · q quit
+
+--- Workspaces ---
+ ╭─┬─╮  S T A T I O N     dispatch / your terminal, connected
+ ╰─┼─╯  機 器 -learning-with-a-long-name  · Workspaces
+                                                                                                                    ● LOCAL  /  MACCHIATO
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+                   ╭ commands ────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+  WORK             │ / Jump to anything…                                                                                                  │
+  1 Overview       ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+                    1 workspaces  ·  0 task runs  ·  local observations
+  2 Workspaces     ╭ Continue working ────────────────────────────────────────────────────────────────────────────────────────────────────╮
+                   │ ❯ 機 器 -learning-with-a-long-name · unavailable                                                                       │
+  3 Agents         │   /projects/機 器 -learning-with-a-long-name                                                                           │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+  OPERATE          │                                                                                                                      │
+  4 Tasks          │                                                                                                                      │
+                   │                                                                                                                      │
+  5 Services       │                                                                                                                      │
+                   │                                                                                                                      │
+  6 Connections    │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+  EXPLORE          │                                                                                                                      │
+  7 Files          │                                                                                                                      │
+                   │                                                                                                                      │
+  8 System         │                                                                                                                      │
+                   │                                                                                                                      │
+  9 Activity       │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │ e editor · t shell · g Git · h Herdr · f files                                                                       │
+  ▰ ▰ ▰ ▰          │ Git context loads for the selected workspace                                                                         │
+  Catppuccin       │                                                                                                                      │
+  Macchiato        │                                                                                                                      │
+                   ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ NORMAL  j/k move · e editor · t shell · g Git · h Herdr · f files · / commands · ? help · q quit
+
+--- Agents ---
+ ╭─┬─╮  S T A T I O N     dispatch / your terminal, connected
+ ╰─┼─╯  機 器 -learning-with-a-long-name  · Agents
+                                                                                                                    ● LOCAL  /  MACCHIATO
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+                   ╭ commands ────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+  WORK             │ / Jump to anything…                                                                                                  │
+  1 Overview       ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+                    1 workspaces  ·  0 task runs  ·  local observations
+  2 Workspaces     ╭ Agents · open in selected workspace ─────────────────────────────────────────────────────────────────────────────────╮
+                   │ ❯ herdr                                                                                                              │
+  3 Agents         │   Ready · Enter to launch                                                                                            │
+                   │ · codex                                                                                                              │
+                   │   Ready · Enter to launch                                                                                            │
+  OPERATE          │ · claude                                                                                                             │
+  4 Tasks          │   Ready · Enter to launch                                                                                            │
+                   │                                                                                                                      │
+  5 Services       │                                                                                                                      │
+                   │                                                                                                                      │
+  6 Connections    │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+  EXPLORE          │                                                                                                                      │
+  7 Files          │                                                                                                                      │
+                   │                                                                                                                      │
+  8 System         │                                                                                                                      │
+                   │                                                                                                                      │
+  9 Activity       │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+  ▰ ▰ ▰ ▰          │                                                                                                                      │
+  Catppuccin       │                                                                                                                      │
+  Macchiato        │                                                                                                                      │
+                   ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ NORMAL  j/k move · e editor · t shell · g Git · h Herdr · f files · / commands · ? help · q quit
+
+--- Tasks ---
+ ╭─┬─╮  S T A T I O N     dispatch / your terminal, connected
+ ╰─┼─╯  機 器 -learning-with-a-long-name  · Tasks
+                                                                                                                    ● LOCAL  /  MACCHIATO
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+                   ╭ commands ────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+  WORK             │ / Jump to anything…                                                                                                  │
+  1 Overview       ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+                    1 workspaces  ·  0 task runs  ·  local observations
+  2 Workspaces     ╭ Tasks & recent runs · n recipes ─────────────────────────────────────────────────────────────────────────────────────╮
+                   │No task runs yet.                                                                                                     │
+  3 Agents         │                                                                                                                      │
+                   │Press n to choose a recipe.                                                                                           │
+                   │Tasks keep their logs and completion status after Station closes.                                                     │
+  OPERATE          │                                                                                                                      │
+  4 Tasks          │                                                                                                                      │
+                   │                                                                                                                      │
+  5 Services       │                                                                                                                      │
+                   │                                                                                                                      │
+  6 Connections    │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+  EXPLORE          │                                                                                                                      │
+  7 Files          │                                                                                                                      │
+                   │                                                                                                                      │
+  8 System         │                                                                                                                      │
+                   │                                                                                                                      │
+  9 Activity       │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+  ▰ ▰ ▰ ▰          │                                                                                                                      │
+  Catppuccin       │                                                                                                                      │
+  Macchiato        │                                                                                                                      │
+                   ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ NORMAL  j/k move · Enter logs · n recipes · r rerun · x stop · q quit
+
+--- Services ---
+ ╭─┬─╮  S T A T I O N     dispatch / your terminal, connected
+ ╰─┼─╯  機 器 -learning-with-a-long-name  · Services
+                                                                                                                    ● LOCAL  /  MACCHIATO
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+                   ╭ commands ────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+  WORK             │ / Jump to anything…                                                                                                  │
+  1 Overview       ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+                    1 workspaces  ·  0 task runs  ·  local observations
+  2 Workspaces     ╭ Services & ports · read only ────────────────────────────────────────────────────────────────────────────────────────╮
+                   │                                                                                                                      │
+  3 Agents         │ Nothing here yet.                                                                                                    │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+  OPERATE          │                                                                                                                      │
+  4 Tasks          │                                                                                                                      │
+                   │                                                                                                                      │
+  5 Services       │                                                                                                                      │
+                   │                                                                                                                      │
+  6 Connections    │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+  EXPLORE          │                                                                                                                      │
+  7 Files          │                                                                                                                      │
+                   │                                                                                                                      │
+  8 System         │                                                                                                                      │
+                   │                                                                                                                      │
+  9 Activity       │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+  ▰ ▰ ▰ ▰          │                                                                                                                      │
+  Catppuccin       │                                                                                                                      │
+  Macchiato        │                                                                                                                      │
+                   ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ NORMAL  j/k move · e editor · t shell · g Git · h Herdr · f files · / commands · ? help · q quit
+
+--- Connections ---
+ ╭─┬─╮  S T A T I O N     dispatch / your terminal, connected
+ ╰─┼─╯  機 器 -learning-with-a-long-name  · Connections
+                                                                                                                    ● LOCAL  /  MACCHIATO
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+                   ╭ commands ────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+  WORK             │ / Jump to anything…                                                                                                  │
+  1 Overview       ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+                    1 workspaces  ·  0 task runs  ·  local observations
+  2 Workspaces     ╭ Connections · saved destinations ────────────────────────────────────────────────────────────────────────────────────╮
+                   │                                                                                                                      │
+  3 Agents         │ Nothing here yet.                                                                                                    │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+  OPERATE          │                                                                                                                      │
+  4 Tasks          │                                                                                                                      │
+                   │                                                                                                                      │
+  5 Services       │                                                                                                                      │
+                   │                                                                                                                      │
+  6 Connections    │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+  EXPLORE          │                                                                                                                      │
+  7 Files          │                                                                                                                      │
+                   │                                                                                                                      │
+  8 System         │                                                                                                                      │
+                   │                                                                                                                      │
+  9 Activity       │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+  ▰ ▰ ▰ ▰          ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+  Catppuccin        SSH handles authentication. Destinations are not probed.
+  Macchiato         Conditional Match configuration is evaluated by SSH at connect time.
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ NORMAL  j/k move · e editor · t shell · g Git · h Herdr · f files · / commands · ? help · q quit
+
+--- Files ---
+ ╭─┬─╮  S T A T I O N     dispatch / your terminal, connected
+ ╰─┼─╯  機 器 -learning-with-a-long-name  · Files
+                                                                                                                    ● LOCAL  /  MACCHIATO
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+                   ╭ commands ────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+  WORK             │ / Jump to anything…                                                                                                  │
+  1 Overview       ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+                    1 workspaces  ·  0 task runs  ·  local observations
+  2 Workspaces     ╭ Files /  ────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+                   │                                                                                                                      │
+  3 Agents         │ Nothing here yet.                                                                                                    │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+  OPERATE          │                                                                                                                      │
+  4 Tasks          │                                                                                                                      │
+                   │                                                                                                                      │
+  5 Services       │                                                                                                                      │
+                   │                                                                                                                      │
+  6 Connections    │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+  EXPLORE          │                                                                                                                      │
+  7 Files          │                                                                                                                      │
+                   │                                                                                                                      │
+  8 System         │                                                                                                                      │
+                   │                                                                                                                      │
+  9 Activity       │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+  ▰ ▰ ▰ ▰          │                                                                                                                      │
+  Catppuccin       │                                                                                                                      │
+  Macchiato        │                                                                                                                      │
+                   ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ NORMAL  j/k move · e editor · t shell · g Git · h Herdr · f files · / commands · ? help · q quit
+
+--- System ---
+ ╭─┬─╮  S T A T I O N     dispatch / your terminal, connected
+ ╰─┼─╯  機 器 -learning-with-a-long-name  · System
+                                                                                                                    ● LOCAL  /  MACCHIATO
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+                   ╭ commands ────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+  WORK             │ / Jump to anything…                                                                                                  │
+  1 Overview       ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+                    1 workspaces  ·  0 task runs  ·  local observations
+  2 Workspaces     ╭ Machine pulse · live ────────────────────────────────────────────────────────────────────────────────────────────────╮
+                   │permission denied                                                                                                     │
+  3 Agents         │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+  OPERATE          │                                                                                                                      │
+  4 Tasks          │                                                                                                                      │
+                   │                                                                                                                      │
+  5 Services       │                                                                                                                      │
+                   │                                                                                                                      │
+  6 Connections    │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+  EXPLORE          │                                                                                                                      │
+  7 Files          │                                                                                                                      │
+                   │                                                                                                                      │
+  8 System         │                                                                                                                      │
+                   │                                                                                                                      │
+  9 Activity       │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+  ▰ ▰ ▰ ▰          │                                                                                                                      │
+  Catppuccin       │                                                                                                                      │
+  Macchiato        │                                                                                                                      │
+                   ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ NORMAL  j/k move · e editor · t shell · g Git · h Herdr · f files · / commands · ? help · q quit
+
+--- Activity ---
+ ╭─┬─╮  S T A T I O N     dispatch / your terminal, connected
+ ╰─┼─╯  機 器 -learning-with-a-long-name  · Activity
+                                                                                                                    ● LOCAL  /  MACCHIATO
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+                   ╭ commands ────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+  WORK             │ / Jump to anything…                                                                                                  │
+  1 Overview       ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+                    1 workspaces  ·  0 task runs  ·  local observations
+  2 Workspaces     ╭ Activity · Station launches & task outcomes ─────────────────────────────────────────────────────────────────────────╮
+                   │                                                                                                                      │
+  3 Agents         │ Nothing here yet.                                                                                                    │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+  OPERATE          │                                                                                                                      │
+  4 Tasks          │                                                                                                                      │
+                   │                                                                                                                      │
+  5 Services       │                                                                                                                      │
+                   │                                                                                                                      │
+  6 Connections    │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+  EXPLORE          │                                                                                                                      │
+  7 Files          │                                                                                                                      │
+                   │                                                                                                                      │
+  8 System         │                                                                                                                      │
+                   │                                                                                                                      │
+  9 Activity       │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+  ▰ ▰ ▰ ▰          │                                                                                                                      │
+  Catppuccin       │                                                                                                                      │
+  Macchiato        │                                                                                                                      │
+                   ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ NORMAL  j/k move · e editor · t shell · g Git · h Herdr · f files · / commands · ? help · q quit
+
+ ╭─┬─╮  S T A T I O N     dispatch / your terminal, connected
+ ╰─┼─╯  機 器 -learning-with-a-long-name  · Activity
+                                                                                                                    ● LOCAL  /  MACCHIATO
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+                   ╭ commands ────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+  WORK             │ / herdr▏                                                                                                             │
+  1 Overview       ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+                    1 workspaces  ·  0 task runs  ·  local observations
+  2 Workspaces     ╭ Jump to anything ────────────────────────────────────────────────────────────────────────────────────────────────────╮
+                   │ ❯ herdr                                                                                                              │
+  3 Agents         │   Ready · Enter to launch                                                                                            │
+                   │ · Open Herdr                                                                                                         │
+                   │   selected workspace                                                                                                 │
+  OPERATE          │ · Refresh providers                                                                                                  │
+  4 Tasks          │   selected workspace                                                                                                 │
+                   │                                                                                                                      │
+  5 Services       │                                                                                                                      │
+                   │                                                                                                                      │
+  6 Connections    │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+  EXPLORE          │                                                                                                                      │
+  7 Files          │                                                                                                                      │
+                   │                                                                                                                      │
+  8 System         │                                                                                                                      │
+                   │                                                                                                                      │
+  9 Activity       │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+  ▰ ▰ ▰ ▰          │                                                                                                                      │
+  Catppuccin       │                                                                                                                      │
+  Macchiato        │                                                                                                                      │
+                   ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ SEARCH  j/k move · e editor · t shell · g Git · h Herdr · f files · / commands · ? help · q quit
+
+ ╭─┬─╮  S T A T I O N     dispatch / your terminal, connected
+ ╰─┼─╯  機 器 -learning-with-a-long-name  · Activity
+                                                                                                                    ● LOCAL  /  MACCHIATO
+──╭ Keyboard shortcuts · Esc close ──────────────────────────────────────────────────────────────────────────────────────────────────────╮──
+  │1–9 sections · j/k or arrows move · Tab focus pane                                                                                    │╮
+  │/ search commands · Enter activate · Esc close                                                                                        ││
+  │e editor · t shell · g Git · h Herdr · f files                                                                                        │╯
+  │n task recipes · r rerun · x stop owned task                                                                                          │
+  │. hidden files · y copy path · F5 refresh                                                                                             │╮
+  │q quit · keep running / stop owned tasks / cancel                                                                                     ││
+  │                                                                                                                                      ││
+  │                                                                                                                                      ││
+  │                                                                                                                                      ││
+  │                                                                                                                                      ││
+  ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯│
+                   │                                                                                                                      │
+  5 Services       │                                                                                                                      │
+                   │                                                                                                                      │
+  6 Connections    │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+  EXPLORE          │                                                                                                                      │
+  7 Files          │                                                                                                                      │
+                   │                                                                                                                      │
+  8 System         │                                                                                                                      │
+                   │                                                                                                                      │
+  9 Activity       │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+  ▰ ▰ ▰ ▰          │                                                                                                                      │
+  Catppuccin       │                                                                                                                      │
+  Macchiato        │                                                                                                                      │
+                   ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ NORMAL  j/k move · e editor · t shell · g Git · h Herdr · f files · / commands · ? help · q quit
+
+ ╭─┬─╮  S T A T I O N     dispatch / your terminal, connected
+ ╰─┼─╯  機 器 -learning-with-a-long-name  · Activity
+                                                                                                                    ● LOCAL  /  MACCHIATO
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+                   ╭ commands ────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+  WORK             │ / Jump to anything…                                                                                                  │
+  1 Overview       ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+                    1 workspaces  ·  0 task runs  ·  local observations
+  2 Workspaces     ╭ Activity · Station launches & task outcomes ─────────────────────────────────────────────────────────────────────────╮
+                   │                                                                                                                      │
+  3 Agents         │ Nothing here yet.                                                                                                    │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+  OPERATE          │                                                                                                                      │
+  4 Tasks          │                                                                                                                      │
+   ╭ Stop task? ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮ │
+  5│ ❯ Cancel                                                                                                                           │ │
+   │                                                                                                                                    │ │
+  6│ · Stop                                                                                                                             │ │
+   │                                                                                                                                    │ │
+   │                                                                                                                                    │ │
+  E│                                                                                                                                    │ │
+  7╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯ │
+                   │                                                                                                                      │
+  8 System         │                                                                                                                      │
+                   │                                                                                                                      │
+  9 Activity       │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+                   │                                                                                                                      │
+  ▰ ▰ ▰ ▰          │                                                                                                                      │
+  Catppuccin       │                                                                                                                      │
+  Macchiato        │                                                                                                                      │
+                   ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ NORMAL  j/k move · e editor · t shell · g Git · h Herdr · f files · / commands · ? help · q quit
+
+ ╭─┬─╮  S T A T I O N     dispatch / your terminal, connected
+ ╰─┼─╯  機 器 -learning-with-a-long-name  · Activity
+  ╭ Failed task logs ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+──│Permission denied                                                                                                                     │──
+  │ESC is sanitized: �]52;c;hidden                                                                                                       │╮
+  │                                                                                                                                      ││
+  │                                                                                                                                      │╯
+  │                                                                                                                                      │
+  │                                                                                                                                      │╮
+  │                                                                                                                                      ││
+  │                                                                                                                                      ││
+  │                                                                                                                                      ││
+  │                                                                                                                                      ││
+  │                                                                                                                                      ││
+  │                                                                                                                                      ││
+  │                                                                                                                                      ││
+  │                                                                                                                                      ││
+  │                                                                                                                                      ││
+  │                                                                                                                                      ││
+  │                                                                                                                                      ││
+  │                                                                                                                                      ││
+  │                                                                                                                                      ││
+  │                                                                                                                                      ││
+  │                                                                                                                                      ││
+  │                                                                                                                                      ││
+  │                                                                                                                                      ││
+  │                                                                                                                                      ││
+  │                                                                                                                                      ││
+  │                                                                                                                                      ││
+  │                                                                                                                                      ││
+  │                                                                                                                                      ││
+  │                                                                                                                                      ││
+  │                                                                                                                                      ││
+  │                                                                                                                                      ││
+  │                                                                                                                                      ││
+  │                                                                                                                                      ││
+  │                                                                                                                                      ││
+  │                                                                                                                                      ││
+  │                                                                                                                                      ││
+  │                                                                                                                                      ││
+  │                                                                                                                                      ││
+  │                                                                                                                                      ││
+  ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯╯
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ NORMAL  j/k move · e editor · t shell · g Git · h Herdr · f files · / commands · ? help · q quit

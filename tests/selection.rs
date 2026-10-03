@@ -30,3 +30,28 @@ fn unicode_names_survive_selection() {
         assert_eq!(app.workspace(), Some(p.as_path()));
     }
 }
+#[test]
+fn file_refresh_keeps_selected_path() {
+    use station::{model::Section, providers::files::FileEntry, runtime::workers::*};
+    let mut a = App::new(Config::default(), AppState::default());
+    a.section = Section::Files;
+    a.file_dir = Some("/tmp".into());
+    let f = |n: &str| FileEntry {
+        path: format!("/tmp/{n}").into(),
+        label: n.into(),
+        is_dir: false,
+    };
+    a.files = vec![f("b"), f("c")];
+    a.selection = 1;
+    a.apply_provider(ProviderEvent {
+        request: ProviderRequest {
+            id: ProviderId::Files,
+            generation: 0,
+            workspace: None,
+            directory: Some("/tmp".into()),
+            hidden: false,
+        },
+        payload: Ok(ProviderPayload::Files(vec![f("a"), f("b"), f("c")])),
+    });
+    assert_eq!(a.selection, 2);
+}

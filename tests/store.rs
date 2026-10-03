@@ -40,3 +40,17 @@ fn future_schema_is_not_overwritten() {
     assert!(store.merge(&AppState::default()).is_err());
     assert_eq!(fs::read(dir.path().join("state.json")).unwrap(), bytes);
 }
+#[test]
+fn non_utf8_paths_round_trip() {
+    use std::{ffi::OsString, os::unix::ffi::OsStringExt};
+    let d = tempfile::tempdir().unwrap();
+    let store = station::store::Store::open(d.path().into()).unwrap();
+    let p = std::path::PathBuf::from(OsString::from_vec(b"/tmp/bad\xff".to_vec()));
+    let s = station::model::AppState {
+        selected_workspace: Some(p.clone()),
+        recent_workspaces: vec![p.clone()],
+        ..Default::default()
+    };
+    store.merge(&s).unwrap();
+    assert_eq!(store.load().unwrap().selected_workspace, Some(p));
+}

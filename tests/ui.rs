@@ -59,8 +59,82 @@ fn shell_is_usable_at_each_terminal_size() {
             .map(|c| c.symbol())
             .collect::<String>();
         assert!(
-            text.contains(if w < 60 { "Resize" } else { "STATION" }),
+            text.contains(if w < 60 { "Resize" } else { "S T A T I O N" }),
             "missing usable shell at {w}x{h}"
         );
+    }
+}
+fn screen(app: &App, w: u16, h: u16) -> String {
+    let mut t = ratatui::Terminal::new(ratatui::backend::TestBackend::new(w, h)).unwrap();
+    t.draw(|f| {
+        station::ui::draw(f, app);
+    })
+    .unwrap();
+    t.backend()
+        .buffer()
+        .content
+        .chunks(w as usize)
+        .map(|row| {
+            row.iter()
+                .map(|c| c.symbol())
+                .collect::<String>()
+                .trim_end()
+                .to_string()
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+#[test]
+fn narrow_overview_uses_focused_pane() {
+    let mut a = App::new(Config::default(), AppState::default());
+    a.pane = 2;
+    assert!(screen(&a, 60, 18).contains("Tasks & recent"));
+}
+#[test]
+fn complete_snapshots() {
+    for (w, h) in [
+        (140, 45),
+        (120, 38),
+        (100, 32),
+        (89, 30),
+        (80, 24),
+        (60, 18),
+        (59, 17),
+    ] {
+        let mut a = App::new(Config::default(), AppState::default());
+        a.workspaces = vec![station::providers::projects::Workspace {
+            id: "/projects/機器-learning-with-a-long-name".into(),
+            name: "機器-learning-with-a-long-name".into(),
+        }];
+        a.state.selected_workspace = Some(a.workspaces[0].id.clone());
+        a.provider_errors
+            .insert("System".into(), "permission denied".into());
+        let mut snapshots = vec![];
+        for section in Section::ALL {
+            a.section = section;
+            snapshots.push(format!("--- {} ---\n{}", section.name(), screen(&a, w, h)));
+        }
+        a.searching = true;
+        a.query = "herdr".into();
+        snapshots.push(screen(&a, w, h));
+        a.searching = false;
+        a.help = true;
+        snapshots.push(screen(&a, w, h));
+        a.help = false;
+        a.confirmation = Some(station::app::Confirmation {
+            title: "Stop task?".into(),
+            choices: vec![
+                ("Cancel".into(), Action::Escape),
+                ("Stop".into(), Action::ConfirmStop(uuid::Uuid::nil())),
+            ],
+        });
+        snapshots.push(screen(&a, w, h));
+        a.confirmation = None;
+        a.detail = Some((
+            "Failed task logs".into(),
+            "Permission denied\nESC is sanitized: \x1b]52;c;hidden".into(),
+        ));
+        snapshots.push(screen(&a, w, h));
+        insta::assert_snapshot!(format!("station_{w}x{h}"), snapshots.join("\n\n"));
     }
 }

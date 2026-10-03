@@ -4,7 +4,7 @@ use crate::{
 };
 use ratatui::{Frame, layout::Rect};
 pub fn render(frame: &mut Frame, area: Rect, app: &App) -> Vec<HitRegion> {
-    let items = app
+    let mut items = app
         .files
         .iter()
         .map(|f| {
@@ -19,6 +19,16 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) -> Vec<HitRegion> {
             )
         })
         .collect::<Vec<_>>();
+    if let Some(e) = app.provider_errors.get("Files") {
+        items.insert(
+            0,
+            (
+                "Files unavailable · F5 retries".into(),
+                e.clone(),
+                Action::Reload,
+            ),
+        );
+    }
     ui::rows(
         frame,
         area,

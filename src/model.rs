@@ -43,6 +43,7 @@ impl Section {
 pub struct ActivityEntry {
     pub id: String,
     pub at: SystemTime,
+    #[serde(with = "crate::path_serde::option")]
     pub workspace: Option<PathBuf>,
     pub kind: ActivityKind,
     pub outcome: String,
@@ -55,7 +56,9 @@ pub enum ActivityKind {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AppState {
     pub schema_version: u32,
+    #[serde(with = "crate::path_serde::option")]
     pub selected_workspace: Option<PathBuf>,
+    #[serde(with = "crate::path_serde::vec")]
     pub recent_workspaces: Vec<PathBuf>,
     pub activity: Vec<ActivityEntry>,
 }

@@ -92,46 +92,45 @@ fn main() -> Result<()> {
         let mut hits = vec![];
         term.terminal.draw(|f| hits = station::ui::draw(f, &app))?;
         app.hits = hits;
-        if crossterm::event::poll(Duration::from_millis(100))? {
-            if let Some(action) = input::translate(crossterm::event::read()?, &app) {
-                let effects = app.update(action);
-                if effects.iter().any(|e| matches!(e, Effect::Quit)) {
-                    break;
-                }
-                for effect in effects {
-                    match effect {
-                        Effect::Refresh => refresh(&app, &pool),
-                        Effect::Foreground(action) => {
-                            let cwd = if matches!(action, station::app::Action::Shell)
-                                && app.section == station::model::Section::Files
-                            {
-                                app.file_dir.clone()
-                            } else {
-                                app.state.selected_workspace.clone()
-                            }
-                            .unwrap_or(paths.home.clone());
-                            let result =
-                                station::runtime::actions::resolve(&action, &app.config, &cwd)
-                                    .and_then(|s| term.run_foreground(&s));
-                            let outcome = match result {
-                                Ok(status) => format!("Returned · {status}"),
-                                Err(e) => format!("{e:#}"),
-                            };
-                            app.state.activity.push(station::model::ActivityEntry {
-                                id: uuid::Uuid::new_v4().to_string(),
-                                at: std::time::SystemTime::now(),
-                                workspace: app.state.selected_workspace.clone(),
-                                kind: station::model::ActivityKind::Launch(format!("{action:?}")),
-                                outcome: outcome.clone(),
-                            });
-                            app.message = Some(outcome);
-                            refresh(&app, &pool);
+        if crossterm::event::poll(Duration::from_millis(100))?
+            && let Some(action) = input::translate(crossterm::event::read()?, &app)
+        {
+            let effects = app.update(action);
+            if effects.iter().any(|e| matches!(e, Effect::Quit)) {
+                break;
+            }
+            for effect in effects {
+                match effect {
+                    Effect::Refresh => refresh(&app, &pool),
+                    Effect::Foreground(action) => {
+                        let cwd = if matches!(action, station::app::Action::Shell)
+                            && app.section == station::model::Section::Files
+                        {
+                            app.file_dir.clone()
+                        } else {
+                            app.state.selected_workspace.clone()
                         }
-                        effect => {
-                            if !jobs.submit(effect) {
-                                app.message =
-                                    Some("An action is still finishing; try again shortly".into())
-                            }
+                        .unwrap_or(paths.home.clone());
+                        let result = station::runtime::actions::resolve(&action, &app.config, &cwd)
+                            .and_then(|s| term.run_foreground(&s));
+                        let outcome = match result {
+                            Ok(status) => format!("Returned · {status}"),
+                            Err(e) => format!("{e:#}"),
+                        };
+                        app.state.activity.push(station::model::ActivityEntry {
+                            id: uuid::Uuid::new_v4().to_string(),
+                            at: std::time::SystemTime::now(),
+                            workspace: app.state.selected_workspace.clone(),
+                            kind: station::model::ActivityKind::Launch(format!("{action:?}")),
+                            outcome: outcome.clone(),
+                        });
+                        app.message = Some(outcome);
+                        refresh(&app, &pool);
+                    }
+                    effect => {
+                        if !jobs.submit(effect) {
+                            app.message =
+                                Some("An action is still finishing; try again shortly".into())
                         }
                     }
                 }

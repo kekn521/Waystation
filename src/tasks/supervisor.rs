@@ -104,10 +104,11 @@ fn supervise(dir: &Path, record: &mut RunRecord) -> Result<()> {
         let err_done = drain(&mut stderr, &mut err, 128 * 1024, &mut truncated)?;
         log.append("stdout", &out)?;
         log.append("stderr", &err)?;
-        if let Some(time) = stopped {
-            if time.elapsed() > Duration::from_secs(5) && exited.is_none() {
-                let _ = killpg(pid, Signal::SIGKILL);
-            }
+        if let Some(time) = stopped
+            && time.elapsed() > Duration::from_secs(5)
+            && exited.is_none()
+        {
+            let _ = killpg(pid, Signal::SIGKILL);
         }
         if exited.is_none()
             && !matches!(

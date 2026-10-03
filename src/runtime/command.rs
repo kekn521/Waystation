@@ -116,16 +116,17 @@ impl CommandRunner {
             if !err_done {
                 err_done = drain(&mut err, &mut stderr, limit, &mut truncated)?
             }
-            if out_done && err_done {
-                if let Some(status) = guard.0.try_wait()? {
-                    guard.1 = true;
-                    return Ok(CapturedOutput {
-                        status,
-                        stdout,
-                        stderr,
-                        truncated,
-                    });
-                }
+            if out_done
+                && err_done
+                && let Some(status) = guard.0.try_wait()?
+            {
+                guard.1 = true;
+                return Ok(CapturedOutput {
+                    status,
+                    stdout,
+                    stderr,
+                    truncated,
+                });
             }
             if Instant::now() >= deadline {
                 bail!(

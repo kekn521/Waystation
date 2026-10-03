@@ -1,6 +1,6 @@
 # Station: terminal workflow hub
 
-Status: visual direction approved; build specification ready for review.
+Status: visual direction and build specification approved by the user on 2026-10-03.
 
 ## Purpose and approved direction
 
@@ -84,7 +84,7 @@ restores normal terminal state before spawning them, then restores its UI and
 refreshes the relevant data when they return. Long-lived interactive sessions
 use tmux when configured; Station does not implement a terminal emulator.
 
-Task recipes specify a executable/argument array and working directory.
+Task recipes specify an executable/argument array and working directory.
 Station passes arguments directly, without interpreting a shell command string.
 A shell script is an explicit recipe executable. Search selects registered
 actions; it is not an implicit shell interpreter.
@@ -125,7 +125,7 @@ identities before exposing lifecycle actions.
 
 Blocking subprocesses and filesystem work stay off the UI thread. Providers
 have bounded concurrency and timeouts, send results through messages, and
-  discard stale results after a workspace switch. Refresh system metrics about
+discard stale results after a workspace switch. Refresh system metrics about
 once per second, task state once per second, and Git/services about every five
 seconds while visible. Slow or failed providers do not freeze keyboard input.
 Keep bounded sparkline history and cap subprocess output and log tail sizes.

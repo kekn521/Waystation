@@ -49,6 +49,7 @@ fn main() -> Result<()> {
         paths.state.clone(),
     );
     refresh(&app, &pool);
+    let mut tasks_ready = false;
     let mut last_fast = std::time::Instant::now();
     let mut last_slow = std::time::Instant::now();
     let mut jobs =
@@ -74,6 +75,9 @@ fn main() -> Result<()> {
             }
         }
         while let Some(event) = pool.try_recv() {
+            if event.request.id == station::runtime::workers::ProviderId::Tasks {
+                tasks_ready = true;
+            }
             let first = app.workspace().is_none();
             app.apply_provider(event);
             if first && app.workspace().is_some() {
@@ -95,6 +99,10 @@ fn main() -> Result<()> {
         if crossterm::event::poll(Duration::from_millis(100))?
             && let Some(action) = input::translate(crossterm::event::read()?, &app)
         {
+            if matches!(action, station::app::Action::Quit) && (!tasks_ready || jobs.busy) {
+                app.message = Some("Finishing task synchronization; try quit again shortly".into());
+                continue;
+            }
             let effects = app.update(action);
             if effects.iter().any(|e| matches!(e, Effect::Quit)) {
                 break;

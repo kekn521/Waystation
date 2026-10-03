@@ -2,7 +2,7 @@ use crate::model::{ActivityEntry, AppState};
 use anyhow::{Context, Result, ensure};
 use std::{
     fs::{self, File, OpenOptions},
-    io::Write,
+    io::{Read, Write},
     os::unix::fs::OpenOptionsExt,
     path::{Path, PathBuf},
 };
@@ -16,7 +16,11 @@ impl Store {
     }
     pub fn load(&self) -> Result<AppState> {
         let path = self.dir.join("state.json");
-        match fs::read(&path) {
+        match File::open(&path).and_then(|f| {
+            let mut bytes = vec![];
+            f.take(8 * 1024 * 1024 + 1).read_to_end(&mut bytes)?;
+            Ok(bytes)
+        }) {
             Ok(bytes) => {
                 ensure!(bytes.len() < 8 * 1024 * 1024, "State file too large");
                 let state: AppState =

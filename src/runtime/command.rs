@@ -39,16 +39,30 @@ impl Drop for OwnedChild {
     }
 }
 pub fn executable(program: &std::ffi::OsStr) -> Option<PathBuf> {
+    executable_in(program, &std::env::current_dir().ok()?)
+}
+pub fn executable_in(program: &std::ffi::OsStr, cwd: &Path) -> Option<PathBuf> {
     let p = Path::new(program);
     let valid = |p: &Path| {
         p.metadata()
             .is_ok_and(|m| m.is_file() && m.permissions().mode() & 0o111 != 0)
     };
     if p.components().count() > 1 {
-        return valid(p).then(|| p.to_owned());
+        let path = if p.is_absolute() {
+            p.to_owned()
+        } else {
+            cwd.join(p)
+        };
+        return valid(&path).then_some(path);
     }
     std::env::split_paths(&std::env::var_os("PATH").unwrap_or_default())
-        .map(|d| d.join(p))
+        .map(|d| {
+            if d.is_absolute() {
+                d.join(p)
+            } else {
+                cwd.join(d).join(p)
+            }
+        })
         .find(|p| valid(p))
 }
 pub fn nonblocking(fd: &impl AsFd) -> Result<()> {
@@ -90,7 +104,7 @@ impl CommandRunner {
             "Working directory unavailable: {}",
             spec.cwd.display()
         );
-        let program = executable(&spec.program)
+        let program = executable_in(&spec.program, &spec.cwd)
             .with_context(|| format!("Program not found: {}", spec.program.to_string_lossy()))?;
         let child = Command::new(program)
             .args(&spec.args)

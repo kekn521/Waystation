@@ -133,5 +133,27 @@ pub fn logs(id: &str) -> Result<String> {
         !id.is_empty() && id.bytes().all(|b| b.is_ascii_hexdigit()),
         "Invalid container ID"
     );
-    query(&CommandRunner, "docker", &["logs", "--tail", "200", id]).map(|s| crate::ui::safe(&s))
+    let o = CommandRunner.capture(
+        &CommandSpec {
+            program: "docker".into(),
+            args: ["logs", "--tail", "200", id]
+                .into_iter()
+                .map(Into::into)
+                .collect(),
+            cwd: std::env::temp_dir(),
+        },
+        Duration::from_secs(2),
+        32768,
+    )?;
+    ensure!(
+        o.status.success(),
+        "Docker logs: {}",
+        String::from_utf8_lossy(&o.stderr)
+    );
+    let mut text = String::from_utf8_lossy(&o.stdout).into_owned();
+    text.push_str(&String::from_utf8_lossy(&o.stderr));
+    if o.truncated {
+        text.push_str("\n[output truncated]");
+    }
+    Ok(crate::ui::safe(&text))
 }

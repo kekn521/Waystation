@@ -152,6 +152,10 @@ pub fn inspect(path: &Path, runner: &CommandRunner) -> Result<GitState> {
             brief_error(&status.stderr),
         );
     }
+    anyhow::ensure!(
+        !status.truncated,
+        "Git status exceeded the 1 MiB capture limit; details unavailable"
+    );
     let mut state = parse_status(&status.stdout);
 
     // Supplementary only: any failure yields no worktrees, not an error.
@@ -161,7 +165,13 @@ pub fn inspect(path: &Path, runner: &CommandRunner) -> Result<GitState> {
             GIT_TIMEOUT,
             GIT_OUTPUT_LIMIT,
         )
-        .map(|wt| parse_worktrees(&wt.stdout))
+        .map(|wt| {
+            if wt.status.success() && !wt.truncated {
+                parse_worktrees(&wt.stdout)
+            } else {
+                vec![]
+            }
+        })
         .unwrap_or_default();
     Ok(state)
 }

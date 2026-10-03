@@ -74,11 +74,12 @@ struct Scanner {
     /// Canonical paths (or original paths for missing pins) already recorded.
     seen: HashSet<PathBuf>,
     out: Vec<Workspace>,
+    visited: usize,
 }
 
 impl Scanner {
     fn add(&mut self, id: PathBuf) {
-        if self.out.len() >= MAX_WORKSPACES {
+        if self.out.len() >= MAX_WORKSPACES || self.visited > 50000 {
             return;
         }
         if self.seen.insert(id.clone()) {
@@ -100,7 +101,7 @@ impl Scanner {
     /// Scan a root: itself when eligible, otherwise plain descendants down to
     /// `MAX_DEPTH`. Symlinked children are never followed.
     fn scan(&mut self, dir: &Path, depth: u32) {
-        if self.out.len() >= MAX_WORKSPACES {
+        if self.out.len() >= MAX_WORKSPACES || self.visited > 50000 {
             return;
         }
         if has_marker(dir) {
@@ -114,6 +115,10 @@ impl Scanner {
             return;
         };
         for entry in entries.flatten() {
+            self.visited += 1;
+            if self.visited > 50000 {
+                return;
+            }
             if is_skipped(&entry.file_name().to_string_lossy()) {
                 continue;
             }
@@ -121,7 +126,7 @@ impl Scanner {
             // directories fail the is_dir test and are never scanned.
             if entry.file_type().is_ok_and(|t| t.is_dir()) {
                 self.scan(&entry.path(), depth + 1);
-                if self.out.len() >= MAX_WORKSPACES {
+                if self.out.len() >= MAX_WORKSPACES || self.visited > 50000 {
                     return;
                 }
             }

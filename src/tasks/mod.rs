@@ -76,7 +76,8 @@ impl TaskManager {
             "Task working directory must exist and be absolute"
         );
         ensure!(
-            crate::runtime::command::executable(recipe.command.program.as_ref()).is_some(),
+            crate::runtime::command::executable_in(recipe.command.program.as_ref(), &recipe.cwd)
+                .is_some(),
             "Task program unavailable: {}",
             recipe.command.program
         );

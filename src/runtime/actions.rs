@@ -89,12 +89,13 @@ pub fn resolve(action: &Action, c: &Config, workspace: &Path) -> Result<CommandS
         }
         _ => bail!("This action does not launch a program"),
     };
-    let program = executable(command.program.as_ref()).with_context(|| {
-        format!(
-            "{} is not installed; configure it in config.toml",
-            command.program
-        )
-    })?;
+    let program =
+        super::command::executable_in(command.program.as_ref(), workspace).with_context(|| {
+            format!(
+                "{} is not installed; configure it in config.toml",
+                command.program
+            )
+        })?;
     let mut args = command
         .args
         .into_iter()

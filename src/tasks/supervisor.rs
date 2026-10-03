@@ -49,8 +49,9 @@ fn supervise(dir: &Path, record: &mut RunRecord) -> Result<()> {
     fs::set_permissions(dir.join("control.sock"), fs::Permissions::from_mode(0o600))?;
     listener.set_nonblocking(true)?;
     let cap = fs::read_to_string(dir.join("capability"))?;
-    let program = crate::runtime::command::executable(record.recipe.command.program.as_ref())
-        .context("Task executable unavailable")?;
+    let program =
+        crate::runtime::command::executable_in(record.recipe.command.program.as_ref(), &record.cwd)
+            .context("Task executable unavailable")?;
     let child = Command::new(program)
         .args(&record.recipe.command.args)
         .current_dir(&record.cwd)

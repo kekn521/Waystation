@@ -138,3 +138,15 @@ fn complete_snapshots() {
         insta::assert_snapshot!(format!("station_{w}x{h}"), snapshots.join("\n\n"));
     }
 }
+#[test]
+fn quit_confirmation_is_visible_below_minimum_size() {
+    let mut a = App::new(Config::default(), AppState::default());
+    a.confirmation = Some(station::app::Confirmation {
+        title: "Tasks running".into(),
+        choices: vec![
+            ("Keep tasks running and quit".into(), Action::QuitKeep),
+            ("Cancel".into(), Action::Escape),
+        ],
+    });
+    assert!(screen(&a, 59, 17).contains("Keep tasks running"));
+}

@@ -55,3 +55,36 @@ fn file_refresh_keeps_selected_path() {
     });
     assert_eq!(a.selection, 2);
 }
+#[test]
+fn recent_projects_follow_pins_and_resume_selected_path() {
+    let d = tempfile::tempdir().unwrap();
+    let paths = ["pin", "alpha", "zebra"].map(|n| d.path().join(n));
+    for p in &paths {
+        std::fs::create_dir(p).unwrap();
+    }
+    let mut app = App::new(
+        Config {
+            pinned_projects: vec![paths[0].clone()],
+            ..Default::default()
+        },
+        AppState {
+            recent_workspaces: vec![paths[2].clone()],
+            selected_workspace: Some(paths[2].clone()),
+            ..Default::default()
+        },
+    );
+    app.set_workspaces(
+        paths
+            .iter()
+            .map(|p| Workspace {
+                id: p.clone(),
+                name: p.file_name().unwrap().to_string_lossy().into(),
+            })
+            .collect(),
+    );
+    assert_eq!(
+        app.workspaces.iter().map(|w| &w.id).collect::<Vec<_>>(),
+        vec![&paths[0], &paths[2], &paths[1]]
+    );
+    assert_eq!(app.selection, 1);
+}

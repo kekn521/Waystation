@@ -74,6 +74,8 @@ pub struct Confirmation {
     pub choices: Vec<(String, Action)>,
 }
 pub struct App {
+    pinned_paths: std::collections::HashSet<PathBuf>,
+    pub pending_starts: std::collections::HashSet<uuid::Uuid>,
     pub runs: Vec<crate::tasks::RunRecord>,
     pub recipes: bool,
     pub confirmation: Option<Confirmation>,
@@ -105,7 +107,14 @@ pub struct App {
 }
 impl App {
     pub fn new(config: Config, state: AppState) -> Self {
+        let pinned_paths = config
+            .pinned_projects
+            .iter()
+            .map(|p| p.canonicalize().unwrap_or_else(|_| p.clone()))
+            .collect();
         Self {
+            pinned_paths,
+            pending_starts: Default::default(),
             runs: vec![],
             recipes: false,
             confirmation: None,
@@ -151,6 +160,8 @@ impl App {
                 self.provider_errors.remove(&key);
                 match payload {
                     ProviderPayload::Tasks(r) => {
+                        self.pending_starts
+                            .retain(|id| !r.iter().any(|run| run.id == *id));
                         for run in &r {
                             if run.ended.is_some()
                                 && !self
@@ -230,10 +241,28 @@ impl App {
     pub fn workspace(&self) -> Option<&Path> {
         self.state.selected_workspace.as_deref()
     }
-    pub fn set_workspaces(&mut self, items: Vec<Workspace>) {
+    pub fn set_workspaces(&mut self, mut items: Vec<Workspace>) {
+        let first = self.workspaces.is_empty();
+        items.sort_by_key(|w| {
+            (
+                !self.pinned_paths.contains(&w.id),
+                self.state
+                    .recent_workspaces
+                    .iter()
+                    .position(|p| p == &w.id)
+                    .unwrap_or(usize::MAX),
+            )
+        });
         self.workspaces = items;
         if self.state.selected_workspace.is_none() {
             self.state.selected_workspace = self.workspaces.first().map(|w| w.id.clone());
+        }
+        if first {
+            self.selection = self
+                .workspaces
+                .iter()
+                .position(|w| Some(&w.id) == self.state.selected_workspace.as_ref())
+                .unwrap_or(0);
         }
         if self.file_dir.is_none() {
             self.file_dir = self.state.selected_workspace.clone();

@@ -1,6 +1,34 @@
 use super::*;
 use crate::{config::TaskRecipe, tasks::RunStatus};
 impl App {
+    pub fn file_items(&self) -> Vec<(String, String, Action)> {
+        let mut items = self
+            .files
+            .iter()
+            .map(|f| {
+                (
+                    format!("{} {}", if f.is_dir { "▸" } else { " " }, f.label),
+                    if f.is_dir {
+                        "directory".into()
+                    } else {
+                        "Enter opens in editor".into()
+                    },
+                    Action::OpenPath(f.path.clone()),
+                )
+            })
+            .collect::<Vec<_>>();
+        if let Some(e) = self.provider_errors.get("Files") {
+            items.insert(
+                0,
+                (
+                    "Files unavailable · F5 retries".into(),
+                    e.clone(),
+                    Action::Reload,
+                ),
+            );
+        }
+        items
+    }
     pub fn recipe_items(&self) -> Vec<(String, String, Action)> {
         self.config
             .tasks
@@ -56,17 +84,7 @@ impl App {
             Section::Tasks => self.task_items(),
             Section::Services => crate::ui::services::items(self),
             Section::Connections => self.connection_items(),
-            Section::Files => self
-                .files
-                .iter()
-                .map(|f| {
-                    (
-                        f.label.clone(),
-                        f.path.display().to_string(),
-                        Action::OpenPath(f.path.clone()),
-                    )
-                })
-                .collect(),
+            Section::Files => self.file_items(),
             Section::System => vec![(
                 "htop".into(),
                 "Interactive process viewer".into(),
@@ -104,7 +122,17 @@ impl App {
             .collect()
     }
     fn selected_run(&self) -> Option<&crate::tasks::RunRecord> {
-        self.runs.get(self.selection)
+        if self.recipes
+            || !(self.section == Section::Tasks
+                || self.section == Section::Overview && self.pane == 2)
+        {
+            return None;
+        }
+        let items = self.task_items();
+        let (_, _, Action::RunLog(id)) = items.get(self.selection)? else {
+            return None;
+        };
+        self.runs.iter().find(|r| r.id == *id)
     }
     pub fn task_action(&mut self, a: &Action) -> Option<Vec<Effect>> {
         let effects = match a {
@@ -174,6 +202,11 @@ impl App {
                 }
             }
             Action::ConfirmStop(id) => vec![Effect::StopTask(*id)],
+            Action::Quit if !self.pending_starts.is_empty() => {
+                self.message =
+                    Some("Waiting for newly started tasks to appear; quit again shortly".into());
+                vec![]
+            }
             Action::Quit => {
                 let running = self
                     .runs
@@ -195,6 +228,13 @@ impl App {
                 vec![]
             }
             Action::QuitKeep => vec![Effect::Quit],
+            Action::QuitStop
+                if !self.pending_starts.is_empty()
+                    || self.runs.iter().any(|r| r.status == RunStatus::Starting) =>
+            {
+                self.message=Some("Tasks are still starting; wait for ownership to be verified before stopping and quitting".into());
+                vec![]
+            }
             Action::QuitStop => vec![Effect::StopAllAndQuit(
                 self.runs
                     .iter()

@@ -130,3 +130,17 @@ fn logs_rotate_and_tail_is_bounded_and_sanitized() {
         assert!(f.unwrap().metadata().unwrap().len() <= 5 * 1024 * 1024);
     }
 }
+#[test]
+fn bounded_tail_keeps_the_final_message() {
+    let d = tempfile::tempdir().unwrap();
+    let mut bytes = vec![0xff; 100_000];
+    bytes.extend_from_slice(b"UNIQUE_FINAL_ERROR");
+    std::fs::write(d.path().join("output.log"), bytes).unwrap();
+    let tail = station::tasks::logs::tail(d.path(), 1024).unwrap();
+    assert!(tail.len() <= 1024);
+    assert!(
+        tail.ends_with("UNIQUE_FINAL_ERROR"),
+        "missing final error: {}",
+        tail.len()
+    );
+}

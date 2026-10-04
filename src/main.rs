@@ -59,6 +59,9 @@ fn main() -> Result<()> {
         if let Some(result) = jobs.try_recv() {
             match result {
                 Ok(r) => {
+                    if let Some(id) = r.started {
+                        app.pending_starts.insert(id);
+                    }
                     if !r.message.is_empty() {
                         app.message = Some(r.message)
                     }

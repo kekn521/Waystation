@@ -109,6 +109,26 @@ pub fn draw(frame: &mut Frame, app: &App) -> Vec<HitRegion> {
         mode = layout::LayoutMode::Compact;
     }
     if mode == layout::LayoutMode::TooSmall {
+        if let Some(confirm) = &app.confirmation {
+            let mut lines = vec![
+                safe(&confirm.title),
+                "↑/↓ choose · Enter confirm · Esc cancel".into(),
+            ];
+            lines.extend(confirm.choices.iter().enumerate().map(|(i, (label, _))| {
+                format!(
+                    "{} {}",
+                    if i == app.modal_selection { "❯" } else { " " },
+                    safe(label)
+                )
+            }));
+            frame.render_widget(
+                Paragraph::new(lines.join("\n"))
+                    .fg(MAUVE)
+                    .wrap(Wrap { trim: false }),
+                area,
+            );
+            return hits;
+        }
         frame.render_widget(
             Paragraph::new("Resize to at least 60 × 18\nq quit").fg(MAUVE),
             area,

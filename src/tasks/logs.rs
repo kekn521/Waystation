@@ -72,12 +72,11 @@ pub fn tail(dir: &Path, limit: usize) -> Result<String> {
     } else {
         ""
     };
-    let mut result = marker.to_string();
-    for ch in text.chars() {
-        if result.len() + ch.len_utf8() > limit {
-            break;
-        }
-        result.push(ch)
+    let marker = if marker.len() < limit { marker } else { "" };
+    let budget = limit.saturating_sub(marker.len());
+    let mut start = text.len().saturating_sub(budget);
+    while !text.is_char_boundary(start) {
+        start += 1;
     }
-    Ok(result)
+    Ok(format!("{marker}{}", &text[start..]))
 }

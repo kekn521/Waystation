@@ -4,6 +4,7 @@ pub struct JobResult {
     pub message: String,
     pub detail: Option<(String, String)>,
     pub quit: bool,
+    pub started: Option<uuid::Uuid>,
 }
 pub struct Jobs {
     tx: SyncSender<Effect>,
@@ -21,10 +22,12 @@ impl Jobs {
                         message: String::new(),
                         detail: None,
                         quit: false,
+                        started: None,
                     };
                     match effect {
                         Effect::StartTask(recipe) => {
                             let id = manager.start(&recipe)?;
+                            result.started = Some(id);
                             result.message =
                                 format!("Started {} · {}", recipe.label, &id.to_string()[..8]);
                         }

@@ -135,6 +135,12 @@ fn complete_snapshots() {
             "Permission denied\nESC is sanitized: \x1b]52;c;hidden".into(),
         ));
         snapshots.push(screen(&a, w, h));
+        a.detail = None;
+        for action in [Action::NewAgent, Action::NewRecipe] {
+            a.update(action);
+            snapshots.push(screen(&a, w, h));
+            a.update(Action::Escape);
+        }
         insta::assert_snapshot!(format!("station_{w}x{h}"), snapshots.join("\n\n"));
     }
 }

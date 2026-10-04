@@ -19,6 +19,7 @@ use std::{
 };
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum ProviderId {
+    Agents,
     Projects,
     Git,
     Files,
@@ -38,6 +39,7 @@ pub struct ProviderRequest {
 }
 #[derive(Debug)]
 pub enum ProviderPayload {
+    Agents(Vec<crate::agents::AgentSession>),
     Tasks(Vec<crate::tasks::RunRecord>),
     Services(crate::providers::services::ServicesState),
     Projects(Vec<Workspace>),
@@ -97,6 +99,9 @@ impl WorkerPool {
                 .ok_or_else(|| "Select a workspace".to_string());
             let result: anyhow::Result<ProviderPayload> = (|| {
                 Ok(match r.id {
+                    ProviderId::Agents => ProviderPayload::Agents(
+                        crate::agents::AgentManager::new(state.clone()).list()?,
+                    ),
                     ProviderId::Tasks => ProviderPayload::Tasks(
                         crate::tasks::TaskManager::new(state.clone()).list()?,
                     ),

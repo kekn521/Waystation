@@ -176,12 +176,13 @@ def fresh_two_instances():
             b.close()
 
 
-for code, interrupt, missing in [(0, False, False), (7, False, False),
-                                 (0, True, False), (0, False, True)]:
-    foreground(code, interrupt, missing)
-foreground(ssh=True)
-foreground(shell=True)
-durable_task()
-fresh_two_instances()
-print('PTY passed: editor/shell/SSH handoff, exit 7, Ctrl-C, missing tools, all resize thresholds,')
-print('terminal restoration, task completion after UI exit, fresh HOME, and two UI instances.')
+if __name__ == "__main__":
+    for code, interrupt, missing in [(0, False, False), (7, False, False),
+                                     (0, True, False), (0, False, True)]:
+        foreground(code, interrupt, missing)
+    foreground(ssh=True)
+    foreground(shell=True)
+    durable_task()
+    fresh_two_instances()
+    print('PTY passed: editor/shell/SSH handoff, exit 7, Ctrl-C, missing tools, all resize thresholds,')
+    print('terminal restoration, task completion after UI exit, fresh HOME, and two UI instances.')

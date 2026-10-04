@@ -28,6 +28,22 @@ fn main() -> anyhow::Result<()> {
     a.services = providers::services::collect(&CommandRunner);
     a.runs = station::tasks::TaskManager::new(p.state).list()?;
     let args = std::env::args().collect::<Vec<_>>();
+    if let Some(view) = args.get(4) {
+        match view.as_str() {
+            "agent-form" => {
+                a.section = station::model::Section::Agents;
+                a.update(station::app::Action::NewAgent);
+            }
+            "task-form" => {
+                a.section = station::model::Section::Tasks;
+                a.update(station::app::Action::NewRecipe);
+            }
+            "agents" => {
+                a.section = station::model::Section::Agents;
+            }
+            _ => {}
+        }
+    }
     let w = args.get(2).and_then(|s| s.parse().ok()).unwrap_or(140);
     let h = args.get(3).and_then(|s| s.parse().ok()).unwrap_or(45);
     let mut t = ratatui::Terminal::new(ratatui::backend::TestBackend::new(w, h))?;

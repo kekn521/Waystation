@@ -25,10 +25,10 @@ expression: "snapshots.join(\"\\n\\n\")"
  │                                                         │ │                                    │
  ╰─────────────────────────────────────────────────────────╯ ╰────────────────────────────────────╯
 
- ╭ Tasks & recent runs · n recipes ────────────────────────╮ ╭ Services & ports · read only ──────╮
+ ╭ Tasks & recent runs · n saved tasks · a ad ＋  Add task ─╮ ╭ Services & ports · read only ──────╮
  │No task runs yet.                                        │ │                                    │
  │                                                         │ │ Nothing here yet.                  │
- │Press n to choose a recipe.                              │ │                                    │
+ │Press a to add a task, or n to choose a saved task.      │ │                                    │
  │Tasks keep their logs and completion status after Station│ │                                    │
  │closes.                                                  │ │                                    │
  │                                                         │ │                                    │
@@ -81,13 +81,13 @@ expression: "snapshots.join(\"\\n\\n\")"
  │ / Jump to anything…                                                                            │
  ╰────────────────────────────────────────────────────────────────────────────────────────────────╯
   1 workspaces  ·  0 task runs  ·  local observations
- ╭ Agents · open in selected workspace ───────────────────────────────────────────────────────────╮
- │ ❯ herdr                                                                                        │
- │   Ready · Enter to launch                                                                      │
- │ · codex                                                                                        │
- │   Ready · Enter to launch                                                                      │
- │ · claude                                                                                       │
- │   Ready · Enter to launch                                                                      │
+ ╭ Agents · n new · Enter open · x close ─────────────────────────────────────────────────────────╮
+ │ ❯ ＋  New agent session                                                                         │
+ │   Codex or Claude · choose a project · F12 returns here                                        │
+ │                                                                                                │
+ │                                                                                                │
+ │                                                                                                │
+ │                                                                                                │
  │                                                                                                │
  │                                                                                                │
  │                                                                                                │
@@ -102,7 +102,7 @@ expression: "snapshots.join(\"\\n\\n\")"
  │                                                                                                │
  ╰────────────────────────────────────────────────────────────────────────────────────────────────╯
 ────────────────────────────────────────────────────────────────────────────────────────────────────
- NORMAL  j/k move · e editor · t shell · g Git · h Herdr · f files · / commands · ? help · q quit
+ NORMAL  n new agent · Enter open · F12 return from agent · x close · / switch · q quit
 
 --- Tasks ---
  ╭─┬─╮  S T A T I O N     dispatch / your terminal, connected
@@ -115,10 +115,10 @@ expression: "snapshots.join(\"\\n\\n\")"
  │ / Jump to anything…                                                                            │
  ╰────────────────────────────────────────────────────────────────────────────────────────────────╯
   1 workspaces  ·  0 task runs  ·  local observations
- ╭ Tasks & recent runs · n recipes ───────────────────────────────────────────────────────────────╮
+ ╭ Tasks & recent runs · n saved tasks · a add ───────────────────────────────────── ＋  Add task ─╮
  │No task runs yet.                                                                               │
  │                                                                                                │
- │Press n to choose a recipe.                                                                     │
+ │Press a to add a task, or n to choose a saved task.                                             │
  │Tasks keep their logs and completion status after Station closes.                               │
  │                                                                                                │
  │                                                                                                │
@@ -136,7 +136,7 @@ expression: "snapshots.join(\"\\n\\n\")"
  │                                                                                                │
  ╰────────────────────────────────────────────────────────────────────────────────────────────────╯
 ────────────────────────────────────────────────────────────────────────────────────────────────────
- NORMAL  j/k move · Enter logs · n recipes · r rerun · x stop · q quit
+ NORMAL  a add task · n recipes/history · Enter run/logs · r rerun · x stop · q quit
 
 --- Services ---
  ╭─┬─╮  S T A T I O N     dispatch / your terminal, connected
@@ -319,12 +319,12 @@ expression: "snapshots.join(\"\\n\\n\")"
  ╰────────────────────────────────────────────────────────────────────────────────────────────────╯
   1 workspaces  ·  0 task runs  ·  local observations
  ╭ Jump to anything ──────────────────────────────────────────────────────────────────────────────╮
- │ ❯ herdr                                                                                        │
- │   Ready · Enter to launch                                                                      │
- │ · Open Herdr                                                                                   │
+ │ ❯ Open Herdr                                                                                   │
  │   selected workspace                                                                           │
  │ · Refresh providers                                                                            │
  │   selected workspace                                                                           │
+ │                                                                                                │
+ │                                                                                                │
  │                                                                                                │
  │                                                                                                │
  │                                                                                                │
@@ -348,10 +348,10 @@ expression: "snapshots.join(\"\\n\\n\")"
 1 │1–9 sections · j/k or arrows move · Tab focus pane                                            │
   │/ search commands · Enter activate · Esc close                                                │
  ╭│e editor · t shell · g Git · h Herdr · f files                                                │╮
- ││n task recipes · r rerun · x stop owned task                                                  ││
- ╰│. hidden files · y copy path · F5 refresh                                                     │╯
-  │q quit · keep running / stop owned tasks / cancel                                             │
- ╭│                                                                                              │╮
+ ││Agents: n new · Enter open · F12 return · x close                                             ││
+ ╰│Tasks: a add · n saved/history · r rerun · x stop                                             │╯
+  │. hidden files · y copy path · F5 refresh                                                     │
+ ╭│q quit · keep running / stop owned tasks / cancel                                             │╮
  ││                                                                                              ││
  ││                                                                                              ││
  ││                                                                                              ││
@@ -437,5 +437,71 @@ expression: "snapshots.join(\"\\n\\n\")"
  ││                                                                                              ││
  ││                                                                                              ││
  ╰╰──────────────────────────────────────────────────────────────────────────────────────────────╯╯
+────────────────────────────────────────────────────────────────────────────────────────────────────
+ NORMAL  j/k move · e editor · t shell · g Git · h Herdr · f files · / commands · ? help · q quit
+
+ ╭─┬─╮  S T A T I O N     dispatch / your terminal, connected
+ ╰─┼─╯  機 器 -learning-with-a-long-name  · Activity
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+1 Overview 2 Workspaces 3 Agents 4 Tasks 5 Services 6 Connections 7 Files 8 System 9 Activity
+
+ ╭ commands ──────────────────────────────────────────────────────────────────────────────────────╮
+ │ / Jump t╭ New agent session ─────────────────────────────────────────────────────────╮         │
+ ╰─────────│ NAME                                                                       │─────────╯
+  1 workspa│ ▏                                                                          │
+ ╭ Activity│                                                                            │─────────╮
+ │         │ AGENT · ←/→ choose                                                         │         │
+ │ Nothing │ ‹ codex ›                                                                  │         │
+ │         │                                                                            │         │
+ │         │ PROJECT · ←/→ choose                                                       │         │
+ │         │ ‹ /projects/機 器 -learning-with-a-long-name ›                               │         │
+ │         │                                                                            │         │
+ │         │ [ Create and open ]                                                        │         │
+ │         │ Tab next · Ctrl+S save · Ctrl+U clear · Esc cancel                         │         │
+ │         │                                                                            │         │
+ │         │ F12 returns here. Your session keeps running when Station closes.          │         │
+ │         │                                                                            │         │
+ │         │                                                                            │         │
+ │         ╰────────────────────────────────────────────────────────────────────────────╯         │
+ │                                                                                                │
+ │                                                                                                │
+ │                                                                                                │
+ │                                                                                                │
+ │                                                                                                │
+ ╰────────────────────────────────────────────────────────────────────────────────────────────────╯
+────────────────────────────────────────────────────────────────────────────────────────────────────
+ NORMAL  j/k move · e editor · t shell · g Git · h Herdr · f files · / commands · ? help · q quit
+
+ ╭─┬─╮  S T A T I O N     dispatch / your terminal, connected
+ ╰─┼─╯  機 器 -learning-with-a-long-name  · Activity
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+1 Overview 2 Workspaces 3 Agents 4 Tasks 5 Services 6 Connections 7 Files 8 System 9 Activity
+
+ ╭ commands ──────────────────────────────────────────────────────────────────────────────────────╮
+ │ / Jump t╭ Add task · save a reusable command ────────────────────────────────────────╮         │
+ ╰─────────│ NAME                                                                       │─────────╯
+  1 workspa│ ▏                                                                          │
+ ╭ Activity│                                                                            │─────────╮
+ │         │ COMMAND · quotes keep arguments together                                   │         │
+ │ Nothing │ e.g. cargo test / npm run dev                                              │         │
+ │         │                                                                            │         │
+ │         │ PROJECT · ←/→ choose                                                       │         │
+ │         │ ‹ /projects/機 器 -learning-with-a-long-name ›                               │         │
+ │         │                                                                            │         │
+ │         │ [ Save task ]                                                              │         │
+ │         │ Tab next · Ctrl+S save · Ctrl+U clear · Esc cancel                         │         │
+ │         │                                                                            │         │
+ │         │ Saved tasks run in this project. Use an explicit shell script for pipes or │         │
+ │         │ environment expansion.                                                     │         │
+ │         │                                                                            │         │
+ │         ╰────────────────────────────────────────────────────────────────────────────╯         │
+ │                                                                                                │
+ │                                                                                                │
+ │                                                                                                │
+ │                                                                                                │
+ │                                                                                                │
+ ╰────────────────────────────────────────────────────────────────────────────────────────────────╯
 ────────────────────────────────────────────────────────────────────────────────────────────────────
  NORMAL  j/k move · e editor · t shell · g Git · h Herdr · f files · / commands · ? help · q quit

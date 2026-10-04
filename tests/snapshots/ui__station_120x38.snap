@@ -27,10 +27,10 @@ expression: "snapshots.join(\"\\n\\n\")"
   EXPLORE          │                                                          │ │                                     │
   7 Files          ╰──────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────╯
 
-  8 System         ╭ Tasks & recent runs · n recipes ─────────────────────────╮ ╭ Services & ports · read only ───────╮
+  8 System         ╭ Tasks & recent runs · n saved tasks · a add ＋  Add task ─╮ ╭ Services & ports · read only ───────╮
                    │No task runs yet.                                         │ │                                     │
   9 Activity       │                                                          │ │ Nothing here yet.                   │
-                   │Press n to choose a recipe.                               │ │                                     │
+                   │Press a to add a task, or n to choose a saved task.       │ │                                     │
                    │Tasks keep their logs and completion status after Station │ │                                     │
                    │closes.                                                   │ │                                     │
                    │                                                          │ │                                     │
@@ -91,13 +91,13 @@ expression: "snapshots.join(\"\\n\\n\")"
   WORK             │ / Jump to anything…                                                                              │
   1 Overview       ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                     1 workspaces  ·  0 task runs  ·  local observations
-  2 Workspaces     ╭ Agents · open in selected workspace ─────────────────────────────────────────────────────────────╮
-                   │ ❯ herdr                                                                                          │
-  3 Agents         │   Ready · Enter to launch                                                                        │
-                   │ · codex                                                                                          │
-                   │   Ready · Enter to launch                                                                        │
-  OPERATE          │ · claude                                                                                         │
-  4 Tasks          │   Ready · Enter to launch                                                                        │
+  2 Workspaces     ╭ Agents · n new · Enter open · x close ───────────────────────────────────────────────────────────╮
+                   │ ❯ ＋  New agent session                                                                           │
+  3 Agents         │   Codex or Claude · choose a project · F12 returns here                                          │
+                   │                                                                                                  │
+                   │                                                                                                  │
+  OPERATE          │                                                                                                  │
+  4 Tasks          │                                                                                                  │
                    │                                                                                                  │
   5 Services       │                                                                                                  │
                    │                                                                                                  │
@@ -120,7 +120,7 @@ expression: "snapshots.join(\"\\n\\n\")"
   Macchiato        │                                                                                                  │
                    ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
- NORMAL  j/k move · e editor · t shell · g Git · h Herdr · f files · / commands · ? help · q quit
+ NORMAL  n new agent · Enter open · F12 return from agent · x close · / switch · q quit
 
 --- Tasks ---
  ╭─┬─╮  S T A T I O N     dispatch / your terminal, connected
@@ -131,10 +131,10 @@ expression: "snapshots.join(\"\\n\\n\")"
   WORK             │ / Jump to anything…                                                                              │
   1 Overview       ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                     1 workspaces  ·  0 task runs  ·  local observations
-  2 Workspaces     ╭ Tasks & recent runs · n recipes ─────────────────────────────────────────────────────────────────╮
+  2 Workspaces     ╭ Tasks & recent runs · n saved tasks · a add ─────────────────────────────────────── ＋  Add task ─╮
                    │No task runs yet.                                                                                 │
   3 Agents         │                                                                                                  │
-                   │Press n to choose a recipe.                                                                       │
+                   │Press a to add a task, or n to choose a saved task.                                               │
                    │Tasks keep their logs and completion status after Station closes.                                 │
   OPERATE          │                                                                                                  │
   4 Tasks          │                                                                                                  │
@@ -160,7 +160,7 @@ expression: "snapshots.join(\"\\n\\n\")"
   Macchiato        │                                                                                                  │
                    ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
- NORMAL  j/k move · Enter logs · n recipes · r rerun · x stop · q quit
+ NORMAL  a add task · n recipes/history · Enter run/logs · r rerun · x stop · q quit
 
 --- Services ---
  ╭─┬─╮  S T A T I O N     dispatch / your terminal, connected
@@ -371,12 +371,12 @@ expression: "snapshots.join(\"\\n\\n\")"
   1 Overview       ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                     1 workspaces  ·  0 task runs  ·  local observations
   2 Workspaces     ╭ Jump to anything ────────────────────────────────────────────────────────────────────────────────╮
-                   │ ❯ herdr                                                                                          │
-  3 Agents         │   Ready · Enter to launch                                                                        │
-                   │ · Open Herdr                                                                                     │
+                   │ ❯ Open Herdr                                                                                     │
+  3 Agents         │   selected workspace                                                                             │
+                   │ · Refresh providers                                                                              │
                    │   selected workspace                                                                             │
-  OPERATE          │ · Refresh providers                                                                              │
-  4 Tasks          │   selected workspace                                                                             │
+  OPERATE          │                                                                                                  │
+  4 Tasks          │                                                                                                  │
                    │                                                                                                  │
   5 Services       │                                                                                                  │
                    │                                                                                                  │
@@ -408,10 +408,10 @@ expression: "snapshots.join(\"\\n\\n\")"
   │1–9 sections · j/k or arrows move · Tab focus pane                                                                │╮
   │/ search commands · Enter activate · Esc close                                                                    ││
   │e editor · t shell · g Git · h Herdr · f files                                                                    │╯
-  │n task recipes · r rerun · x stop owned task                                                                      │
-  │. hidden files · y copy path · F5 refresh                                                                         │╮
+  │Agents: n new · Enter open · F12 return · x close                                                                 │
+  │Tasks: a add · n saved/history · r rerun · x stop                                                                 │╮
+  │. hidden files · y copy path · F5 refresh                                                                         ││
   │q quit · keep running / stop owned tasks / cancel                                                                 ││
-  │                                                                                                                  ││
   │                                                                                                                  ││
   │                                                                                                                  ││
   │                                                                                                                  ││
@@ -515,5 +515,83 @@ expression: "snapshots.join(\"\\n\\n\")"
   │                                                                                                                  ││
   │                                                                                                                  ││
   ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯╯
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ NORMAL  j/k move · e editor · t shell · g Git · h Herdr · f files · / commands · ? help · q quit
+
+ ╭─┬─╮  S T A T I O N     dispatch / your terminal, connected
+ ╰─┼─╯  機 器 -learning-with-a-long-name  · Activity
+                                                                                                ● LOCAL  /  MACCHIATO
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+                   ╭ commands ────────────────────────────────────────────────────────────────────────────────────────╮
+  WORK             │ / Jump to anything…                                                                              │
+  1 Overview       ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+                    1 workspaces  ·  0 task runs  ·  local observations
+  2 Workspaces     ╭ Activity · Station launches & task outcomes ─────────────────────────────────────────────────────╮
+                   │                                                                                                  │
+  3 Agents         │ ╭ New agent session ─────────────────────────────────────────────────────────╮                   │
+                   │ │ NAME                                                                       │                   │
+                   │ │ ▏                                                                          │                   │
+  OPERATE          │ │                                                                            │                   │
+  4 Tasks          │ │ AGENT · ←/→ choose                                                         │                   │
+                   │ │ ‹ codex ›                                                                  │                   │
+  5 Services       │ │                                                                            │                   │
+                   │ │ PROJECT · ←/→ choose                                                       │                   │
+  6 Connections    │ │ ‹ /projects/機 器 -learning-with-a-long-name ›                               │                   │
+                   │ │                                                                            │                   │
+                   │ │ [ Create and open ]                                                        │                   │
+  EXPLORE          │ │ Tab next · Ctrl+S save · Ctrl+U clear · Esc cancel                         │                   │
+  7 Files          │ │                                                                            │                   │
+                   │ │ F12 returns here. Your session keeps running when Station closes.          │                   │
+  8 System         │ │                                                                            │                   │
+                   │ │                                                                            │                   │
+  9 Activity       │ ╰────────────────────────────────────────────────────────────────────────────╯                   │
+                   │                                                                                                  │
+                   │                                                                                                  │
+                   │                                                                                                  │
+                   │                                                                                                  │
+                   │                                                                                                  │
+  ▰ ▰ ▰ ▰          │                                                                                                  │
+  Catppuccin       │                                                                                                  │
+  Macchiato        │                                                                                                  │
+                   ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ NORMAL  j/k move · e editor · t shell · g Git · h Herdr · f files · / commands · ? help · q quit
+
+ ╭─┬─╮  S T A T I O N     dispatch / your terminal, connected
+ ╰─┼─╯  機 器 -learning-with-a-long-name  · Activity
+                                                                                                ● LOCAL  /  MACCHIATO
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+                   ╭ commands ────────────────────────────────────────────────────────────────────────────────────────╮
+  WORK             │ / Jump to anything…                                                                              │
+  1 Overview       ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+                    1 workspaces  ·  0 task runs  ·  local observations
+  2 Workspaces     ╭ Activity · Station launches & task outcomes ─────────────────────────────────────────────────────╮
+                   │                                                                                                  │
+  3 Agents         │ ╭ Add task · save a reusable command ────────────────────────────────────────╮                   │
+                   │ │ NAME                                                                       │                   │
+                   │ │ ▏                                                                          │                   │
+  OPERATE          │ │                                                                            │                   │
+  4 Tasks          │ │ COMMAND · quotes keep arguments together                                   │                   │
+                   │ │ e.g. cargo test / npm run dev                                              │                   │
+  5 Services       │ │                                                                            │                   │
+                   │ │ PROJECT · ←/→ choose                                                       │                   │
+  6 Connections    │ │ ‹ /projects/機 器 -learning-with-a-long-name ›                               │                   │
+                   │ │                                                                            │                   │
+                   │ │ [ Save task ]                                                              │                   │
+  EXPLORE          │ │ Tab next · Ctrl+S save · Ctrl+U clear · Esc cancel                         │                   │
+  7 Files          │ │                                                                            │                   │
+                   │ │ Saved tasks run in this project. Use an explicit shell script for pipes or │                   │
+  8 System         │ │ environment expansion.                                                     │                   │
+                   │ │                                                                            │                   │
+  9 Activity       │ ╰────────────────────────────────────────────────────────────────────────────╯                   │
+                   │                                                                                                  │
+                   │                                                                                                  │
+                   │                                                                                                  │
+                   │                                                                                                  │
+                   │                                                                                                  │
+  ▰ ▰ ▰ ▰          │                                                                                                  │
+  Catppuccin       │                                                                                                  │
+  Macchiato        │                                                                                                  │
+                   ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
  NORMAL  j/k move · e editor · t shell · g Git · h Herdr · f files · / commands · ? help · q quit

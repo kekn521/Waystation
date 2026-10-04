@@ -1,7 +1,7 @@
 use anyhow::Result;
 use crossterm::{
     cursor::Show,
-    event::{DisableMouseCapture, EnableMouseCapture},
+    event::{DisableBracketedPaste, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture},
     execute,
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
@@ -50,7 +50,12 @@ impl TerminalSession {
     pub fn resume(&mut self) -> Result<()> {
         enable_raw_mode()?;
         self.active = true;
-        execute!(io::stdout(), EnterAlternateScreen, EnableMouseCapture)?;
+        execute!(
+            io::stdout(),
+            EnterAlternateScreen,
+            EnableMouseCapture,
+            EnableBracketedPaste
+        )?;
         self.terminal.clear()?;
         Ok(())
     }
@@ -61,6 +66,7 @@ impl TerminalSession {
             let b = execute!(
                 io::stdout(),
                 DisableMouseCapture,
+                DisableBracketedPaste,
                 LeaveAlternateScreen,
                 Show
             );

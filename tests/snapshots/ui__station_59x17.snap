@@ -229,3 +229,54 @@ Stop task?
 
 Resize to at least 60 × 18
 q quit
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ ╭ New agent session ────────────────────────────────────╮
+ │ NAME                                                  │
+ │ ▏                                                     │
+ │                                                       │
+ │ AGENT · ←/→ choose                                    │
+ │ ‹ codex ›                                             │
+ │                                                       │
+ │ PROJECT · ←/→ choose                                  │
+ │ ‹ /projects/機 器 -learning-with-a-long-name ›          │
+ │                                                       │
+ │ [ Create and open ]                                   │
+ │ Tab next · Ctrl+S save · Ctrl+U clear · Esc cancel    │
+ │                                                       │
+ │ F12 returns here. Your session keeps running when     │
+ │ Station closes.                                       │
+ │                                                       │
+ ╰───────────────────────────────────────────────────────╯
+
+ ╭ Add task · save a reusable command ───────────────────╮
+ │ NAME                                                  │
+ │ ▏                                                     │
+ │                                                       │
+ │ COMMAND · quotes keep arguments together              │
+ │ e.g. cargo test / npm run dev                         │
+ │                                                       │
+ │ PROJECT · ←/→ choose                                  │
+ │ ‹ /projects/機 器 -learning-with-a-long-name ›          │
+ │                                                       │
+ │ [ Save task ]                                         │
+ │ Tab next · Ctrl+S save · Ctrl+U clear · Esc cancel    │
+ │                                                       │
+ │ Saved tasks run in this project. Use an explicit      │
+ │ shell script for pipes or environment expansion.      │
+ │                                                       │
+ ╰───────────────────────────────────────────────────────╯

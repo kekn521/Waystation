@@ -2,6 +2,7 @@ pub mod activity;
 pub mod agents;
 pub mod connections;
 pub mod files;
+pub mod forms;
 pub mod layout;
 pub mod services;
 pub mod system;
@@ -109,6 +110,9 @@ pub fn draw(frame: &mut Frame, app: &App) -> Vec<HitRegion> {
         mode = layout::LayoutMode::Compact;
     }
     if mode == layout::LayoutMode::TooSmall {
+        if app.form.is_some() {
+            return forms::render(frame, app);
+        }
         if let Some(confirm) = &app.confirmation {
             let mut lines = vec![
                 safe(&confirm.title),
@@ -377,8 +381,10 @@ pub fn draw(frame: &mut Frame, app: &App) -> Vec<HitRegion> {
     }
     let footer = if narrow {
         " j/k move · Tab pane · / search · ? help · q quit"
+    } else if app.section == Section::Agents {
+        " n new agent · Enter open · F12 return from agent · x close · / switch · q quit"
     } else if app.section == Section::Tasks {
-        " j/k move · Enter logs · n recipes · r rerun · x stop · q quit"
+        " a add task · n recipes/history · Enter run/logs · r rerun · x stop · q quit"
     } else {
         " j/k move · e editor · t shell · g Git · h Herdr · f files · / commands · ? help · q quit"
     };
@@ -445,8 +451,11 @@ pub fn draw(frame: &mut Frame, app: &App) -> Vec<HitRegion> {
             12.min(area.height - 4),
         );
         frame.render_widget(Clear, rect);
-        frame.render_widget(Paragraph::new("1–9 sections · j/k or arrows move · Tab focus pane\n/ search commands · Enter activate · Esc close\ne editor · t shell · g Git · h Herdr · f files\nn task recipes · r rerun · x stop owned task\n. hidden files · y copy path · F5 refresh\nq quit · keep running / stop owned tasks / cancel").block(panel("Keyboard shortcuts · Esc close",true)).wrap(Wrap{trim:true}),rect);
+        frame.render_widget(Paragraph::new("1–9 sections · j/k or arrows move · Tab focus pane\n/ search commands · Enter activate · Esc close\ne editor · t shell · g Git · h Herdr · f files\nAgents: n new · Enter open · F12 return · x close\nTasks: a add · n saved/history · r rerun · x stop\n. hidden files · y copy path · F5 refresh\nq quit · keep running / stop owned tasks / cancel").block(panel("Keyboard shortcuts · Esc close",true)).wrap(Wrap{trim:true}),rect);
         hits.clear();
+    }
+    if app.form.is_some() {
+        hits = forms::render(frame, app);
     }
     if app.config.theme.accent == "blue" {
         for cell in &mut frame.buffer_mut().content {

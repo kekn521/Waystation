@@ -47,3 +47,25 @@ No review findings remain deferred. The tested executable is installed at
 `~/.local/bin/station`; it was created without replacing an existing command.
 The source branch is `feat/native-station` in `.worktrees/native` and is kept
 for further iteration. No repository was pushed or published.
+
+## 0.2.0 — persistent agents and task creation
+
+- All 93 Rust tests pass, including seven refreshed terminal-size snapshots,
+  agent/task form rendering and input, literal command parsing, recipe reload,
+  and lossless executable paths in non-UTF-8 project directories.
+- Formatting, Clippy with warnings denied, and the locked release build pass.
+- Both PTY scripts pass on the optimized executable. Local stand-ins exercise
+  two named Codex/Claude sessions, F12 detach, quitting and reconnecting,
+  an inherited outer TMUX environment, and closing only the selected session.
+- The task form saves without execution, then runs from the saved-task list;
+  output is logged, recipes reload after restart, and existing TOML stays intact.
+- Agent tests cover retained output after process exit and unavailable records
+  after loss of the private server. Sessions survive Station exit, not reboot.
+- A separate reviewer found one executable-path encoding defect. It was fixed
+  with lossless path serialization and a regression using a non-UTF-8 directory.
+- The actual native form buffer was rendered and visually inspected in
+  [this preview](../artifacts/station-agent-form.png). No real AI provider or
+  remote host was contacted by verification.
+
+Use `3`, `n`, and Ctrl+S to create/open an agent; F12 returns to Station.
+Use `4`, `a`, and Ctrl+S to save a task, then Enter to run it.

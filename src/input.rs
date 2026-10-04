@@ -3,6 +3,7 @@ use crate::model::Section;
 use crossterm::event::{Event, KeyCode, KeyEventKind, KeyModifiers, MouseEventKind};
 pub fn translate(event: Event, app: &App) -> Option<Action> {
     match event {
+        Event::Paste(text) if app.form.is_some() || app.searching => Some(Action::Paste(text)),
         Event::Mouse(m) if m.kind == MouseEventKind::Down(crossterm::event::MouseButton::Left) => {
             app.hits
                 .iter()
@@ -11,6 +12,34 @@ pub fn translate(event: Event, app: &App) -> Option<Action> {
                 .map(|h| h.action.clone())
         }
         Event::Key(k) if k.kind != KeyEventKind::Release => {
+            if app.form.is_some() {
+                return match k.code {
+                    KeyCode::Esc => Some(Action::Escape),
+                    KeyCode::Tab | KeyCode::Down => Some(Action::FormField(1)),
+                    KeyCode::BackTab | KeyCode::Up => Some(Action::FormField(-1)),
+                    KeyCode::Left => Some(Action::FormCursor(-1)),
+                    KeyCode::Right => Some(Action::FormCursor(1)),
+                    KeyCode::Enter => Some(Action::Activate),
+                    KeyCode::Backspace => Some(Action::Backspace),
+                    KeyCode::Char('s') if k.modifiers.contains(KeyModifiers::CONTROL) => {
+                        Some(Action::FormSave)
+                    }
+                    KeyCode::Char('u') if k.modifiers.contains(KeyModifiers::CONTROL) => {
+                        Some(Action::FormClear)
+                    }
+                    KeyCode::Char('c') if k.modifiers.contains(KeyModifiers::CONTROL) => {
+                        Some(Action::Escape)
+                    }
+                    KeyCode::Char(c)
+                        if !k
+                            .modifiers
+                            .intersects(KeyModifiers::CONTROL | KeyModifiers::ALT) =>
+                    {
+                        Some(Action::Insert(c))
+                    }
+                    _ => None,
+                };
+            }
             if k.modifiers.contains(KeyModifiers::CONTROL) && k.code == KeyCode::Char('c') {
                 return Some(Action::Quit);
             }
@@ -64,6 +93,8 @@ pub fn translate(event: Event, app: &App) -> Option<Action> {
                 KeyCode::Char('f') => Action::Files,
                 KeyCode::Char('r') => Action::Rerun,
                 KeyCode::Char('x') => Action::Stop,
+                KeyCode::Char('n') if app.section == Section::Agents => Action::NewAgent,
+                KeyCode::Char('a') => Action::NewRecipe,
                 KeyCode::Char('n') => Action::Recipes,
                 KeyCode::Char('.') => Action::Hidden,
                 KeyCode::Char('y') => Action::Copy,

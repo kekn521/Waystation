@@ -193,7 +193,10 @@ impl Config {
         let raw = match fs::read_to_string(path) {
             Ok(s) => s,
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
-                return Ok(Config::defaults(home));
+                let mut cfg = Config::defaults(home);
+                cfg.tasks.extend(crate::recipes::load(path)?);
+                cfg.validate()?;
+                return Ok(cfg);
             }
             Err(e) => return Err(e).with_context(|| format!("reading config {}", path.display())),
         };
@@ -227,11 +230,12 @@ impl Config {
         for task in &mut cfg.tasks {
             task.cwd = expand_tilde(&task.cwd, home);
         }
+        cfg.tasks.extend(crate::recipes::load(path)?);
         cfg.validate()?;
         Ok(cfg)
     }
 
-    fn validate(&self) -> Result<()> {
+    pub(crate) fn validate(&self) -> Result<()> {
         if let Some(editor) = &self.editor {
             check_nonempty("editor program", &editor.program)?;
         }

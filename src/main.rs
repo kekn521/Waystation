@@ -25,6 +25,10 @@ fn main() -> Result<()> {
         );
         return station::tasks::supervisor::run(std::path::Path::new(&args[3]));
     }
+    if args.get(1).is_some_and(|s| s == "__agent-exec") {
+        anyhow::ensure!(args.len() == 3, "Invalid agent invocation");
+        return station::agents::exec(std::path::Path::new(&args[2]));
+    }
     let cli = Cli::parse();
     let mut paths = Paths::discover()?;
     if let Some(p) = cli.config {
@@ -52,13 +56,53 @@ fn main() -> Result<()> {
     let mut tasks_ready = false;
     let mut last_fast = std::time::Instant::now();
     let mut last_slow = std::time::Instant::now();
-    let mut jobs =
-        station::runtime::jobs::Jobs::new(station::tasks::TaskManager::new(paths.state.clone()));
+    let mut jobs = station::runtime::jobs::Jobs::new(
+        station::tasks::TaskManager::new(paths.state.clone()),
+        station::agents::AgentManager::new(paths.state.clone()),
+        paths.config.clone(),
+        paths.home.clone(),
+    );
     let mut term = TerminalSession::enter()?;
     loop {
         if let Some(result) = jobs.try_recv() {
             match result {
                 Ok(r) => {
+                    if let Some(config) = r.config {
+                        app.config = config;
+                    }
+                    if let Some(id) = r.saved_recipe {
+                        app.form = None;
+                        app.section = station::model::Section::Tasks;
+                        app.recipes = true;
+                        app.selection = app
+                            .config
+                            .tasks
+                            .iter()
+                            .position(|r| r.id == id)
+                            .unwrap_or(0);
+                    }
+                    if let Some(agent) = r.agent {
+                        app.form = None;
+                        app.update(station::app::Action::SelectWorkspace(
+                            agent.workspace.clone(),
+                        ));
+                        app.section = station::model::Section::Agents;
+                        let id = agent.id;
+                        app.agents.retain(|s| s.id != id);
+                        app.agents.push(agent);
+                        app.selection = app.agent_items().iter().position(|(_,_,a)| matches!(a, station::app::Action::OpenAgent(s) if *s == id)).unwrap_or(0);
+                        jobs.submit(Effect::AttachAgent(id));
+                    }
+                    if let Some(spec) = r.attach {
+                        app.section = station::model::Section::Agents;
+                        app.message = Some(match term.run_foreground(&spec) {
+                            Ok(status) if status.success() => {
+                                "Back at Station · agent sessions stay available".into()
+                            }
+                            Ok(status) => format!("Agent attachment ended: {status}"),
+                            Err(e) => format!("Could not open agent: {e:#}"),
+                        });
+                    }
                     if let Some(id) = r.started {
                         app.pending_starts.insert(id);
                     }
@@ -74,7 +118,13 @@ fn main() -> Result<()> {
                         break;
                     }
                 }
-                Err(e) => app.message = Some(e),
+                Err(e) => {
+                    if let Some(form) = &mut app.form {
+                        form.busy = false;
+                        form.error = Some(e.clone());
+                    }
+                    app.message = Some(e);
+                }
             }
         }
         while let Some(event) = pool.try_recv() {
@@ -90,6 +140,7 @@ fn main() -> Result<()> {
         if last_fast.elapsed() >= Duration::from_secs(1) {
             submit(&app, &pool, station::runtime::workers::ProviderId::System);
             submit(&app, &pool, station::runtime::workers::ProviderId::Tasks);
+            submit(&app, &pool, station::runtime::workers::ProviderId::Agents);
             last_fast = std::time::Instant::now();
         }
         if last_slow.elapsed() >= Duration::from_secs(5) {
@@ -140,6 +191,11 @@ fn main() -> Result<()> {
                     }
                     effect => {
                         if !jobs.submit(effect) {
+                            if let Some(form) = &mut app.form {
+                                form.busy = false;
+                                form.error =
+                                    Some("An action is still finishing; try again shortly".into());
+                            }
                             app.message =
                                 Some("An action is still finishing; try again shortly".into())
                         }
@@ -170,6 +226,7 @@ fn refresh(app: &App, pool: &station::runtime::workers::WorkerPool) {
     use station::runtime::workers::ProviderId::*;
     for id in [
         Projects,
+        Agents,
         Git,
         Files,
         System,

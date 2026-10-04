@@ -7,7 +7,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) -> Vec<HitRegion> {
     ui::rows(
         frame,
         area,
-        "Agents · open in selected workspace",
+        "Agents · n new · Enter open · x close",
         &app.agent_items(),
         app.selection,
         true,

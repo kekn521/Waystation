@@ -13,6 +13,16 @@ use ratatui::layout::Rect;
 use std::path::{Path, PathBuf};
 #[derive(Clone, Debug)]
 pub enum Action {
+    NewAgent,
+    NewRecipe,
+    OpenAgent(uuid::Uuid),
+    CloseAgent(uuid::Uuid),
+    FormField(isize),
+    FormFocus(usize),
+    Paste(String),
+    FormCursor(isize),
+    FormClear,
+    FormSave,
     Nav(Section),
     Move(isize),
     FocusNext,
@@ -53,6 +63,15 @@ pub enum Action {
 }
 #[derive(Clone, Debug)]
 pub enum Effect {
+    CreateAgent {
+        name: String,
+        tool: String,
+        command: crate::config::ToolCommand,
+        workspace: PathBuf,
+    },
+    AttachAgent(uuid::Uuid),
+    CloseAgent(uuid::Uuid),
+    SaveRecipe(crate::config::TaskRecipe),
     Foreground(Action),
     Copy(PathBuf),
     DockerLogs(String),
@@ -74,6 +93,8 @@ pub struct Confirmation {
     pub choices: Vec<(String, Action)>,
 }
 pub struct App {
+    pub agents: Vec<crate::agents::AgentSession>,
+    pub form: Option<crate::forms::Form>,
     pinned_paths: std::collections::HashSet<PathBuf>,
     pub pending_starts: std::collections::HashSet<uuid::Uuid>,
     pub runs: Vec<crate::tasks::RunRecord>,
@@ -113,6 +134,8 @@ impl App {
             .map(|p| p.canonicalize().unwrap_or_else(|_| p.clone()))
             .collect();
         Self {
+            agents: vec![],
+            form: None,
             pinned_paths,
             pending_starts: Default::default(),
             runs: vec![],
@@ -159,6 +182,7 @@ impl App {
             Ok(payload) => {
                 self.provider_errors.remove(&key);
                 match payload {
+                    ProviderPayload::Agents(s) => self.agents = s,
                     ProviderPayload::Tasks(r) => {
                         self.pending_starts
                             .retain(|id| !r.iter().any(|run| run.id == *id));
@@ -269,28 +293,49 @@ impl App {
         }
     }
     pub fn agent_items(&self) -> Vec<(String, String, Action)> {
-        ["herdr", "codex", "claude"]
-            .iter()
-            .map(|name| {
-                let program = self
-                    .config
-                    .tools
-                    .get(*name)
-                    .map(|t| t.program.as_str())
-                    .unwrap_or(name);
-                let available = crate::runtime::command::executable(program.as_ref()).is_some();
+        let mut sessions = self.agents.iter().collect::<Vec<_>>();
+        sessions.sort_by(|a, b| {
+            (
+                Some(a.workspace.as_path()) != self.workspace(),
+                &a.workspace,
+                &a.name,
+                a.id,
+            )
+                .cmp(&(
+                    Some(b.workspace.as_path()) != self.workspace(),
+                    &b.workspace,
+                    &b.name,
+                    b.id,
+                ))
+        });
+        let mut items = sessions
+            .into_iter()
+            .map(|s| {
+                let status = match s.status {
+                    crate::agents::AgentStatus::Running => "● running".into(),
+                    crate::agents::AgentStatus::Exited(code) => format!("○ exited {code}"),
+                    crate::agents::AgentStatus::Unavailable => "○ unavailable".into(),
+                };
                 (
-                    name.to_string(),
-                    if available {
-                        "Ready · Enter to launch"
-                    } else {
-                        "Unavailable · configure tools in config.toml"
-                    }
-                    .into(),
-                    Action::Tool(name.to_string()),
+                    format!("{} · {} · {}", s.name, s.tool, status),
+                    s.workspace.display().to_string(),
+                    Action::OpenAgent(s.id),
                 )
             })
-            .collect()
+            .collect::<Vec<_>>();
+        items.push((
+            "＋ New agent session".into(),
+            "Codex or Claude · choose a project · F12 returns here".into(),
+            Action::NewAgent,
+        ));
+        if let Some(error) = self.provider_errors.get("Agents") {
+            items.push((
+                "Agent status unavailable · F5 retries".into(),
+                error.clone(),
+                Action::Reload,
+            ));
+        }
+        items
     }
     pub fn connection_items(&self) -> Vec<(String, String, Action)> {
         let mut items = self
@@ -350,6 +395,7 @@ impl App {
             ("Git changes", Action::Git),
             ("Browse files", Action::Files),
             ("Refresh providers", Action::Reload),
+            ("Add task", Action::NewRecipe),
         ] {
             items.push(SearchItem {
                 id: label.into(),
@@ -408,6 +454,9 @@ impl App {
         if self.help && !matches!(action, Action::Escape | Action::Help | Action::Quit) {
             return vec![];
         }
+        if let Some(e) = self.workflow_action(&action) {
+            return e;
+        }
         if let Some(e) = self.task_action(&action) {
             return e;
         }
@@ -443,6 +492,10 @@ impl App {
         }
 
         match action {
+            Action::Paste(text) if self.searching => {
+                self.query.extend(text.chars().filter(|c| !c.is_control()));
+                self.selection = 0;
+            }
             Action::Nav(s) => {
                 self.section = s;
                 self.selection = 0;

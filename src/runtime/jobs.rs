@@ -5,6 +5,10 @@ pub struct JobResult {
     pub detail: Option<(String, String)>,
     pub quit: bool,
     pub started: Option<uuid::Uuid>,
+    pub agent: Option<crate::agents::AgentSession>,
+    pub attach: Option<crate::runtime::command::CommandSpec>,
+    pub config: Option<crate::config::Config>,
+    pub saved_recipe: Option<String>,
 }
 pub struct Jobs {
     tx: SyncSender<Effect>,
@@ -12,7 +16,12 @@ pub struct Jobs {
     pub busy: bool,
 }
 impl Jobs {
-    pub fn new(manager: TaskManager) -> Self {
+    pub fn new(
+        manager: TaskManager,
+        agents: crate::agents::AgentManager,
+        config: std::path::PathBuf,
+        home: std::path::PathBuf,
+    ) -> Self {
         let (tx, rx) = mpsc::sync_channel::<Effect>(1);
         let (out, results) = mpsc::sync_channel(1);
         std::thread::spawn(move || {
@@ -23,8 +32,42 @@ impl Jobs {
                         detail: None,
                         quit: false,
                         started: None,
+                        agent: None,
+                        attach: None,
+                        config: None,
+                        saved_recipe: None,
                     };
                     match effect {
+                        Effect::CreateAgent {
+                            name,
+                            tool,
+                            command,
+                            workspace,
+                        } => {
+                            let session = agents.create(
+                                &name,
+                                &tool,
+                                &command,
+                                &workspace,
+                                &std::env::current_exe()?,
+                            )?;
+                            // Persisted before attachment: a failed terminal handoff is recoverable.
+                            result.agent = Some(session);
+                            result.message =
+                                "Session created · Enter opens · F12 returns to Station".into();
+                        }
+                        Effect::AttachAgent(id) => result.attach = Some(agents.attach(id)?),
+                        Effect::CloseAgent(id) => {
+                            agents.close(id)?;
+                            result.message = "Agent session closed".into();
+                        }
+                        Effect::SaveRecipe(recipe) => {
+                            result.config = Some(crate::recipes::save(&config, &home, &recipe)?);
+                            result.saved_recipe = Some(recipe.id);
+                            result.message =
+                                "Task saved · Enter runs it · logs appear in history".into();
+                        }
+
                         Effect::StartTask(recipe) => {
                             let id = manager.start(&recipe)?;
                             result.started = Some(id);

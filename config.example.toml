@@ -1,5 +1,5 @@
-# Station configuration example.
-# Copy to ~/.config/station/config.toml (or pass --config PATH) and edit.
+# Waystation configuration example.
+# Copy to ~/.config/waystation/config.toml (or pass --config PATH) and edit.
 # Nothing listed here runs on startup: tunnels start only when you
 # explicitly launch them from the UI.
 
@@ -14,14 +14,14 @@ pinned_projects = []
 accent = "mauve" # "mauve" or "blue"
 compact = false
 
-# Optional editor override. When omitted, Station picks the first installed
+# Optional editor override. When omitted, Waystation picks the first installed
 # of: hx, nvim, vim, vi.
 [editor]
 program = "hx"
 args = []
 
 # Optional tool overrides, e.g. a custom Git UI. Without this section
-# Station uses the first installed program it knows about.
+# Waystation uses the first installed program it knows about.
 # [tools.git-ui]
 # program = "lazygit"
 # args = []

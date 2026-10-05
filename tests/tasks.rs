@@ -1,10 +1,10 @@
-use station::{
-    config::{TaskRecipe, ToolCommand},
-    tasks::{RunStatus, TaskManager, identity},
-};
 use std::{
     path::Path,
     time::{Duration, Instant},
+};
+use waystation::{
+    config::{TaskRecipe, ToolCommand},
+    tasks::{RunStatus, TaskManager, identity},
 };
 fn recipe(cwd: &Path, script: &str) -> TaskRecipe {
     TaskRecipe {
@@ -32,7 +32,7 @@ fn wait(m: &TaskManager, id: uuid::Uuid, status: RunStatus) {
 #[test]
 fn durable_runs_and_owned_stop() {
     let d = tempfile::tempdir().unwrap();
-    let m = TaskManager::with_executable(d.path().into(), env!("CARGO_BIN_EXE_station").into());
+    let m = TaskManager::with_executable(d.path().into(), env!("CARGO_BIN_EXE_waystation").into());
     let a = m
         .start(&recipe(d.path(), "echo hello; sleep .2; exit 0"))
         .unwrap();
@@ -51,7 +51,7 @@ fn durable_runs_and_owned_stop() {
             .exit_code,
         Some(7)
     );
-    let m = TaskManager::with_executable(d.path().into(), env!("CARGO_BIN_EXE_station").into());
+    let m = TaskManager::with_executable(d.path().into(), env!("CARGO_BIN_EXE_waystation").into());
     let c = m.start(&recipe(d.path(), "sleep 30")).unwrap();
     wait(&m, c, RunStatus::Running);
     m.request_stop(c).unwrap();
@@ -82,14 +82,14 @@ fn identity_rejects_reboot_reuse_and_malformed_stat() {
 #[test]
 fn forged_saved_identity_never_stops_a_process() {
     let d = tempfile::tempdir().unwrap();
-    let m = TaskManager::with_executable(d.path().into(), env!("CARGO_BIN_EXE_station").into());
+    let m = TaskManager::with_executable(d.path().into(), env!("CARGO_BIN_EXE_waystation").into());
     let id = m.start(&recipe(d.path(), "sleep 30")).unwrap();
     wait(&m, id, RunStatus::Running);
     let path = m.run_dir(id).join("record.json");
     let original = std::fs::read(&path).unwrap();
-    let mut r: station::tasks::RunRecord = serde_json::from_slice(&original).unwrap();
+    let mut r: waystation::tasks::RunRecord = serde_json::from_slice(&original).unwrap();
     r.supervisor.as_mut().unwrap().start_ticks += 1;
-    station::store::atomic_json(&path, &r).unwrap();
+    waystation::store::atomic_json(&path, &r).unwrap();
     assert_eq!(m.list().unwrap()[0].status, RunStatus::Unknown);
     assert!(m.request_stop(id).is_err());
     std::fs::write(path, original).unwrap();
@@ -99,7 +99,7 @@ fn forged_saved_identity_never_stops_a_process() {
 #[test]
 fn concurrent_managers_keep_distinct_runs() {
     let d = tempfile::tempdir().unwrap();
-    let m = TaskManager::with_executable(d.path().into(), env!("CARGO_BIN_EXE_station").into());
+    let m = TaskManager::with_executable(d.path().into(), env!("CARGO_BIN_EXE_waystation").into());
     let r = recipe(d.path(), "exit 0");
     let a = m.clone();
     let rr = r.clone();
@@ -113,7 +113,7 @@ fn concurrent_managers_keep_distinct_runs() {
 }
 #[test]
 fn logs_rotate_and_tail_is_bounded_and_sanitized() {
-    use station::tasks::logs;
+    use waystation::tasks::logs;
     let d = tempfile::tempdir().unwrap();
     let mut log = logs::LogWriter::new(d.path()).unwrap();
     for _ in 0..6 {
@@ -136,7 +136,7 @@ fn bounded_tail_keeps_the_final_message() {
     let mut bytes = vec![0xff; 100_000];
     bytes.extend_from_slice(b"UNIQUE_FINAL_ERROR");
     std::fs::write(d.path().join("output.log"), bytes).unwrap();
-    let tail = station::tasks::logs::tail(d.path(), 1024).unwrap();
+    let tail = waystation::tasks::logs::tail(d.path(), 1024).unwrap();
     assert!(tail.len() <= 1024);
     assert!(
         tail.ends_with("UNIQUE_FINAL_ERROR"),

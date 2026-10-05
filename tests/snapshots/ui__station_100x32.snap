@@ -3,7 +3,7 @@ source: tests/ui.rs
 expression: "snapshots.join(\"\\n\\n\")"
 ---
 --- Overview ---
- ╭─┬─╮  S T A T I O N     dispatch / your terminal, connected
+ ╭─┬─╮  W A Y S T A T I O N     dispatch / your terminal, connected
  ╰─┼─╯  機 器 -learning-with-a-long-name  · Overview
 
 ────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -37,7 +37,7 @@ expression: "snapshots.join(\"\\n\\n\")"
  NORMAL  j/k move · e editor · t shell · g Git · h Herdr · f files · / commands · ? help · q quit
 
 --- Workspaces ---
- ╭─┬─╮  S T A T I O N     dispatch / your terminal, connected
+ ╭─┬─╮  W A Y S T A T I O N     dispatch / your terminal, connected
  ╰─┼─╯  機 器 -learning-with-a-long-name  · Workspaces
 
 ────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -71,7 +71,7 @@ expression: "snapshots.join(\"\\n\\n\")"
  NORMAL  j/k move · e editor · t shell · g Git · h Herdr · f files · / commands · ? help · q quit
 
 --- Agents ---
- ╭─┬─╮  S T A T I O N     dispatch / your terminal, connected
+ ╭─┬─╮  W A Y S T A T I O N     dispatch / your terminal, connected
  ╰─┼─╯  機 器 -learning-with-a-long-name  · Agents
 
 ────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -105,7 +105,7 @@ expression: "snapshots.join(\"\\n\\n\")"
  NORMAL  n new agent · Enter open · F12 return from agent · x close · / switch · q quit
 
 --- Services ---
- ╭─┬─╮  S T A T I O N     dispatch / your terminal, connected
+ ╭─┬─╮  W A Y S T A T I O N     dispatch / your terminal, connected
  ╰─┼─╯  機 器 -learning-with-a-long-name  · Services
 
 ────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -139,7 +139,7 @@ expression: "snapshots.join(\"\\n\\n\")"
  NORMAL  j/k move · e editor · t shell · g Git · h Herdr · f files · / commands · ? help · q quit
 
 --- Connections ---
- ╭─┬─╮  S T A T I O N     dispatch / your terminal, connected
+ ╭─┬─╮  W A Y S T A T I O N     dispatch / your terminal, connected
  ╰─┼─╯  機 器 -learning-with-a-long-name  · Connections
 
 ────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -173,7 +173,7 @@ expression: "snapshots.join(\"\\n\\n\")"
  NORMAL  j/k move · e editor · t shell · g Git · h Herdr · f files · / commands · ? help · q quit
 
 --- Files ---
- ╭─┬─╮  S T A T I O N     dispatch / your terminal, connected
+ ╭─┬─╮  W A Y S T A T I O N     dispatch / your terminal, connected
  ╰─┼─╯  機 器 -learning-with-a-long-name  · Files
 
 ────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -207,7 +207,7 @@ expression: "snapshots.join(\"\\n\\n\")"
  NORMAL  j/k move · e editor · t shell · g Git · h Herdr · f files · / commands · ? help · q quit
 
 --- System ---
- ╭─┬─╮  S T A T I O N     dispatch / your terminal, connected
+ ╭─┬─╮  W A Y S T A T I O N     dispatch / your terminal, connected
  ╰─┼─╯  機 器 -learning-with-a-long-name  · System
 
 ────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -241,7 +241,7 @@ expression: "snapshots.join(\"\\n\\n\")"
  NORMAL  j/k move · e editor · t shell · g Git · h Herdr · f files · / commands · ? help · q quit
 
 --- Activity ---
- ╭─┬─╮  S T A T I O N     dispatch / your terminal, connected
+ ╭─┬─╮  W A Y S T A T I O N     dispatch / your terminal, connected
  ╰─┼─╯  機 器 -learning-with-a-long-name  · Activity
 
 ────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -251,7 +251,7 @@ expression: "snapshots.join(\"\\n\\n\")"
  │ / Jump to anything…                                                                            │
  ╰────────────────────────────────────────────────────────────────────────────────────────────────╯
   1 workspaces  ·  local observations
- ╭ Activity · Station launches & tunnels ─────────────────────────────────────────────────────────╮
+ ╭ Activity · Waystation launches & tunnels ──────────────────────────────────────────────────────╮
  │                                                                                                │
  │ Nothing here yet.                                                                              │
  │                                                                                                │
@@ -274,7 +274,7 @@ expression: "snapshots.join(\"\\n\\n\")"
 ────────────────────────────────────────────────────────────────────────────────────────────────────
  NORMAL  j/k move · e editor · t shell · g Git · h Herdr · f files · / commands · ? help · q quit
 
- ╭─┬─╮  S T A T I O N     dispatch / your terminal, connected
+ ╭─┬─╮  W A Y S T A T I O N     dispatch / your terminal, connected
  ╰─┼─╯  機 器 -learning-with-a-long-name  · Activity
 
 ────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -307,7 +307,7 @@ expression: "snapshots.join(\"\\n\\n\")"
 ────────────────────────────────────────────────────────────────────────────────────────────────────
  SEARCH  j/k move · e editor · t shell · g Git · h Herdr · f files · / commands · ? help · q quit
 
- ╭─┬─╮  S T A T I O N     dispatch / your terminal, connected
+ ╭─┬─╮  W A Y S T A T I O N     dispatch / your terminal, connected
  ╰─┼─╯  機 器 -learning-with-a-long-name  · Activity
 
 ──╭ Keyboard shortcuts · Esc close ──────────────────────────────────────────────────────────────╮──
@@ -340,7 +340,7 @@ expression: "snapshots.join(\"\\n\\n\")"
 ────────────────────────────────────────────────────────────────────────────────────────────────────
  NORMAL  j/k move · e editor · t shell · g Git · h Herdr · f files · / commands · ? help · q quit
 
- ╭─┬─╮  S T A T I O N     dispatch / your terminal, connected
+ ╭─┬─╮  W A Y S T A T I O N     dispatch / your terminal, connected
  ╰─┼─╯  機 器 -learning-with-a-long-name  · Activity
 
 ────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -373,7 +373,7 @@ expression: "snapshots.join(\"\\n\\n\")"
 ────────────────────────────────────────────────────────────────────────────────────────────────────
  NORMAL  j/k move · e editor · t shell · g Git · h Herdr · f files · / commands · ? help · q quit
 
- ╭─┬─╮  S T A T I O N     dispatch / your terminal, connected
+ ╭─┬─╮  W A Y S T A T I O N     dispatch / your terminal, connected
  ╰─┼─╯  機 器 -learning-with-a-long-name  · Activity
   ╭ Tunnel run logs ─────────────────────────────────────────────────────────────────────────────╮
 ──│Permission denied                                                                             │──
@@ -406,7 +406,7 @@ expression: "snapshots.join(\"\\n\\n\")"
 ────────────────────────────────────────────────────────────────────────────────────────────────────
  NORMAL  j/k move · e editor · t shell · g Git · h Herdr · f files · / commands · ? help · q quit
 
- ╭─┬─╮  S T A T I O N     dispatch / your terminal, connected
+ ╭─┬─╮  W A Y S T A T I O N     dispatch / your terminal, connected
  ╰─┼─╯  機 器 -learning-with-a-long-name  · Activity
 
 ────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -426,7 +426,7 @@ expression: "snapshots.join(\"\\n\\n\")"
  │         │ [ Create and open ]                                                        │         │
  │         │ Tab next · Ctrl+S save · Ctrl+U clear · Esc cancel                         │         │
  │         │                                                                            │         │
- │         │ F12 returns here. Your session keeps running when Station closes.          │         │
+ │         │ F12 returns here. Your session keeps running when Waystation closes.       │         │
  │         │                                                                            │         │
  │         │                                                                            │         │
  │         ╰────────────────────────────────────────────────────────────────────────────╯         │

@@ -157,7 +157,10 @@ pub fn draw(frame: &mut Frame, app: &App) -> Vec<HitRegion> {
         .unwrap_or("select a workspace".into());
     let header = vec![
         Line::from(vec![
-            Span::styled(" ╭─┬─╮  S T A T I O N", Style::default().fg(MAUVE).bold()),
+            Span::styled(
+                " ╭─┬─╮  W A Y S T A T I O N",
+                Style::default().fg(MAUVE).bold(),
+            ),
             Span::styled(
                 if narrow {
                     ""

@@ -1,4 +1,4 @@
-use station::{app::App, config::Config, model::AppState, providers::projects::Workspace};
+use waystation::{app::App, config::Config, model::AppState, providers::projects::Workspace};
 #[test]
 fn refresh_preserves_selected_path() {
     let mut app = App::new(Config::default(), AppState::default());
@@ -8,7 +8,7 @@ fn refresh_preserves_selected_path() {
     };
     app.set_workspaces(vec![w("a"), w("b")]);
     assert_eq!(app.workspace().unwrap(), std::path::Path::new("/tmp/a"));
-    app.update(station::app::Action::Project(1));
+    app.update(waystation::app::Action::Project(1));
     app.set_workspaces(vec![w("b"), w("a")]);
     assert_eq!(app.workspace().unwrap(), std::path::Path::new("/tmp/b"));
 }
@@ -26,13 +26,13 @@ fn unicode_names_survive_selection() {
             id: p.clone(),
             name: p.to_string_lossy().into(),
         }]);
-        app.update(station::app::Action::Project(0));
+        app.update(waystation::app::Action::Project(0));
         assert_eq!(app.workspace(), Some(p.as_path()));
     }
 }
 #[test]
 fn file_refresh_keeps_selected_path() {
-    use station::{model::Section, providers::files::FileEntry, runtime::workers::*};
+    use waystation::{model::Section, providers::files::FileEntry, runtime::workers::*};
     let mut a = App::new(Config::default(), AppState::default());
     a.section = Section::Files;
     a.file_dir = Some("/tmp".into());

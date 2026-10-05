@@ -3,9 +3,9 @@ use std::fs;
 use std::os::unix::ffi::OsStringExt;
 use std::path::{Path, PathBuf};
 
-use station::config::Config;
-use station::providers::git::{parse_status, parse_worktrees};
-use station::providers::projects::discover;
+use waystation::config::Config;
+use waystation::providers::git::{parse_status, parse_worktrees};
+use waystation::providers::projects::discover;
 
 /// Create `dir` and drop an empty marker file `name` inside it.
 fn marker(dir: &Path, name: &str) {
@@ -21,7 +21,7 @@ fn config_with(roots: Vec<PathBuf>, pins: Vec<PathBuf>) -> Config {
     }
 }
 
-fn names(workspaces: &[station::providers::projects::Workspace]) -> Vec<&str> {
+fn names(workspaces: &[waystation::providers::projects::Workspace]) -> Vec<&str> {
     workspaces.iter().map(|w| w.name.as_str()).collect()
 }
 

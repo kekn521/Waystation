@@ -1,5 +1,5 @@
-use station::providers::system::SystemSampler;
 use std::fs;
+use waystation::providers::system::SystemSampler;
 #[test]
 fn first_sample_has_no_rate() {
     let d = tempfile::tempdir().unwrap();
@@ -28,20 +28,20 @@ fn first_sample_has_no_rate() {
 }
 #[test]
 fn terminal_controls_are_harmless() {
-    let text = station::ui::safe("file\x1b]52;c;secret\x07\x1b[31m");
+    let text = waystation::ui::safe("file\x1b]52;c;secret\x07\x1b[31m");
     assert!(!text.contains('\x1b'));
     assert!(!text.contains('\x07'));
 }
 #[test]
 fn slow_provider_does_not_block_keys_and_late_result_is_discarded() {
-    use station::{
+    use std::sync::{Arc, Mutex, mpsc};
+    use std::time::{Duration, Instant};
+    use waystation::{
         app::{Action, App},
         config::Config,
         model::AppState,
         runtime::workers::*,
     };
-    use std::sync::{Arc, Mutex, mpsc};
-    use std::time::{Duration, Instant};
     let (tx, rx) = mpsc::channel();
     let rx = Arc::new(Mutex::new(rx));
     let pool = WorkerPool::with_provider(move |_| {

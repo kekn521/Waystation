@@ -1,13 +1,13 @@
 use anyhow::Result;
 use clap::Parser;
-use station::{
+use std::{path::PathBuf, time::Duration};
+use waystation::{
     app::{App, Effect},
     config::{Config, Paths},
     input,
     runtime::terminal::TerminalSession,
     store::Store,
 };
-use std::{path::PathBuf, time::Duration};
 #[derive(Parser)]
 #[command(version, about = "A project-aware terminal workflow hub")]
 struct Cli {
@@ -23,11 +23,11 @@ fn main() -> Result<()> {
             args.len() == 4 && args[2] == "--run-dir",
             "Invalid private supervisor invocation"
         );
-        return station::tasks::supervisor::run(std::path::Path::new(&args[3]));
+        return waystation::tasks::supervisor::run(std::path::Path::new(&args[3]));
     }
     if args.get(1).is_some_and(|s| s == "__agent-exec") {
         anyhow::ensure!(args.len() == 3, "Invalid agent invocation");
-        return station::agents::exec(std::path::Path::new(&args[2]));
+        return waystation::agents::exec(std::path::Path::new(&args[2]));
     }
     let cli = Cli::parse();
     let mut paths = Paths::discover()?;
@@ -47,7 +47,7 @@ fn main() -> Result<()> {
     }
     let store = Store::open(paths.state.clone())?;
     let mut app = App::new(config, store.load()?);
-    let pool = station::runtime::workers::WorkerPool::new(
+    let pool = waystation::runtime::workers::WorkerPool::new(
         app.config.clone(),
         paths.home.clone(),
         paths.state.clone(),
@@ -56,9 +56,9 @@ fn main() -> Result<()> {
     let mut tasks_ready = false;
     let mut last_fast = std::time::Instant::now();
     let mut last_slow = std::time::Instant::now();
-    let mut jobs = station::runtime::jobs::Jobs::new(
-        station::tasks::TaskManager::new(paths.state.clone()),
-        station::agents::AgentManager::new(paths.state.clone()),
+    let mut jobs = waystation::runtime::jobs::Jobs::new(
+        waystation::tasks::TaskManager::new(paths.state.clone()),
+        waystation::agents::AgentManager::new(paths.state.clone()),
     );
     let mut term = TerminalSession::enter()?;
     let animation_started = std::time::Instant::now();
@@ -68,21 +68,21 @@ fn main() -> Result<()> {
                 Ok(r) => {
                     if let Some(agent) = r.agent {
                         app.form = None;
-                        app.update(station::app::Action::SelectWorkspace(
+                        app.update(waystation::app::Action::SelectWorkspace(
                             agent.workspace.clone(),
                         ));
-                        app.section = station::model::Section::Agents;
+                        app.section = waystation::model::Section::Agents;
                         let id = agent.id;
                         app.agents.retain(|s| s.id != id);
                         app.agents.push(agent);
-                        app.selection = app.agent_items().iter().position(|(_,_,a)| matches!(a, station::app::Action::OpenAgent(s) if *s == id)).unwrap_or(0);
+                        app.selection = app.agent_items().iter().position(|(_,_,a)| matches!(a, waystation::app::Action::OpenAgent(s) if *s == id)).unwrap_or(0);
                         jobs.submit(Effect::AttachAgent(id));
                     }
                     if let Some(spec) = r.attach {
-                        app.section = station::model::Section::Agents;
+                        app.section = waystation::model::Section::Agents;
                         app.message = Some(match term.run_foreground(&spec) {
                             Ok(status) if status.success() => {
-                                "Back at Station · agent sessions stay available".into()
+                                "Back at Waystation · agent sessions stay available".into()
                             }
                             Ok(status) => format!("Agent attachment ended: {status}"),
                             Err(e) => format!("Could not open agent: {e:#}"),
@@ -113,7 +113,7 @@ fn main() -> Result<()> {
             }
         }
         while let Some(event) = pool.try_recv() {
-            if event.request.id == station::runtime::workers::ProviderId::Tasks {
+            if event.request.id == waystation::runtime::workers::ProviderId::Tasks {
                 tasks_ready = true;
             }
             let first = app.workspace().is_none();
@@ -123,9 +123,17 @@ fn main() -> Result<()> {
             }
         }
         if last_fast.elapsed() >= Duration::from_secs(1) {
-            submit(&app, &pool, station::runtime::workers::ProviderId::System);
-            submit(&app, &pool, station::runtime::workers::ProviderId::Tasks);
-            submit(&app, &pool, station::runtime::workers::ProviderId::Agents);
+            submit(
+                &app,
+                &pool,
+                waystation::runtime::workers::ProviderId::System,
+            );
+            submit(&app, &pool, waystation::runtime::workers::ProviderId::Tasks);
+            submit(
+                &app,
+                &pool,
+                waystation::runtime::workers::ProviderId::Agents,
+            );
             last_fast = std::time::Instant::now();
         }
         if last_slow.elapsed() >= Duration::from_secs(5) {
@@ -134,12 +142,13 @@ fn main() -> Result<()> {
         }
         let mut hits = vec![];
         app.animation_elapsed = animation_started.elapsed();
-        term.terminal.draw(|f| hits = station::ui::draw(f, &app))?;
+        term.terminal
+            .draw(|f| hits = waystation::ui::draw(f, &app))?;
         app.hits = hits;
         if crossterm::event::poll(Duration::from_millis(100))?
             && let Some(action) = input::translate(crossterm::event::read()?, &app)
         {
-            if matches!(action, station::app::Action::Quit) && (!tasks_ready || jobs.busy) {
+            if matches!(action, waystation::app::Action::Quit) && (!tasks_ready || jobs.busy) {
                 app.message =
                     Some("Finishing background synchronization; try quit again shortly".into());
                 continue;
@@ -152,25 +161,26 @@ fn main() -> Result<()> {
                 match effect {
                     Effect::Refresh => refresh(&app, &pool),
                     Effect::Foreground(action) => {
-                        let cwd = if matches!(action, station::app::Action::Shell)
-                            && app.section == station::model::Section::Files
+                        let cwd = if matches!(action, waystation::app::Action::Shell)
+                            && app.section == waystation::model::Section::Files
                         {
                             app.file_dir.clone()
                         } else {
                             app.state.selected_workspace.clone()
                         }
                         .unwrap_or(paths.home.clone());
-                        let result = station::runtime::actions::resolve(&action, &app.config, &cwd)
-                            .and_then(|s| term.run_foreground(&s));
+                        let result =
+                            waystation::runtime::actions::resolve(&action, &app.config, &cwd)
+                                .and_then(|s| term.run_foreground(&s));
                         let outcome = match result {
                             Ok(status) => format!("Returned · {status}"),
                             Err(e) => format!("{e:#}"),
                         };
-                        app.state.activity.push(station::model::ActivityEntry {
+                        app.state.activity.push(waystation::model::ActivityEntry {
                             id: uuid::Uuid::new_v4().to_string(),
                             at: std::time::SystemTime::now(),
                             workspace: app.state.selected_workspace.clone(),
-                            kind: station::model::ActivityKind::Launch(format!("{action:?}")),
+                            kind: waystation::model::ActivityKind::Launch(format!("{action:?}")),
                             outcome: outcome.clone(),
                         });
                         app.message = Some(outcome);
@@ -198,10 +208,10 @@ fn main() -> Result<()> {
 
 fn submit(
     app: &App,
-    pool: &station::runtime::workers::WorkerPool,
-    id: station::runtime::workers::ProviderId,
+    pool: &waystation::runtime::workers::WorkerPool,
+    id: waystation::runtime::workers::ProviderId,
 ) {
-    pool.submit(station::runtime::workers::ProviderRequest {
+    pool.submit(waystation::runtime::workers::ProviderRequest {
         id,
         generation: app.generation,
         workspace: app.state.selected_workspace.clone(),
@@ -209,8 +219,8 @@ fn submit(
         hidden: app.hidden,
     });
 }
-fn refresh(app: &App, pool: &station::runtime::workers::WorkerPool) {
-    use station::runtime::workers::ProviderId::*;
+fn refresh(app: &App, pool: &waystation::runtime::workers::WorkerPool) {
+    use waystation::runtime::workers::ProviderId::*;
     for id in [
         Projects,
         Agents,

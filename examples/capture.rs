@@ -1,12 +1,12 @@
 //! Render the actual Ratatui cell buffer to SVG for visual inspection.
-use station::{
+use std::{fmt::Write, path::Path};
+use waystation::{
     app::App,
     config::{Config, Paths},
     model::{AppState, Snapshot},
     providers,
     runtime::command::CommandRunner,
 };
-use std::{fmt::Write, path::Path};
 fn main() -> anyhow::Result<()> {
     let p = Paths::discover()?;
     let c = Config::load(&p.config, &p.home)?;
@@ -26,16 +26,16 @@ fn main() -> anyhow::Result<()> {
         a.cpu_history.push_back(cpu as u64);
     }
     a.services = providers::services::collect(&CommandRunner);
-    a.runs = station::tasks::TaskManager::new(p.state).list()?;
+    a.runs = waystation::tasks::TaskManager::new(p.state).list()?;
     let args = std::env::args().collect::<Vec<_>>();
     if let Some(view) = args.get(4) {
         match view.as_str() {
             "agent-form" => {
-                a.section = station::model::Section::Agents;
-                a.update(station::app::Action::NewAgent);
+                a.section = waystation::model::Section::Agents;
+                a.update(waystation::app::Action::NewAgent);
             }
             "agents" => {
-                a.section = station::model::Section::Agents;
+                a.section = waystation::model::Section::Agents;
             }
             _ => {}
         }
@@ -44,7 +44,7 @@ fn main() -> anyhow::Result<()> {
     let h = args.get(3).and_then(|s| s.parse().ok()).unwrap_or(45);
     let mut t = ratatui::Terminal::new(ratatui::backend::TestBackend::new(w, h))?;
     t.draw(|f| {
-        station::ui::draw(f, &a);
+        waystation::ui::draw(f, &a);
     })?;
     let mut svg = format!(
         "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"{}\" height=\"{}\"><rect width=\"100%\" height=\"100%\" fill=\"#24273a\"/>",
@@ -80,7 +80,7 @@ fn main() -> anyhow::Result<()> {
     std::fs::write(
         args.get(1)
             .map(String::as_str)
-            .unwrap_or("/tmp/station-native.svg"),
+            .unwrap_or("/tmp/waystation-native.svg"),
         svg,
     )?;
     Ok(())

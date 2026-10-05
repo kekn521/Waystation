@@ -1,8 +1,8 @@
-use station::{
+use std::{path::Path, time::Duration};
+use waystation::{
     agents::{AgentManager, AgentStatus},
     config::ToolCommand,
 };
-use std::{path::Path, time::Duration};
 
 #[test]
 fn sessions_survive_manager_restart_and_preserve_literal_arguments() {
@@ -19,7 +19,7 @@ fn sessions_survive_manager_restart_and_preserve_literal_arguments() {
             "codex",
             &command,
             d.path(),
-            Path::new(env!("CARGO_BIN_EXE_station")),
+            Path::new(env!("CARGO_BIN_EXE_waystation")),
         )
         .unwrap();
     let other = manager
@@ -31,7 +31,7 @@ fn sessions_survive_manager_restart_and_preserve_literal_arguments() {
                 args: vec!["60".into()],
             },
             d.path(),
-            Path::new(env!("CARGO_BIN_EXE_station")),
+            Path::new(env!("CARGO_BIN_EXE_waystation")),
         )
         .unwrap();
     let reloaded = AgentManager::new(d.path().into());
@@ -79,7 +79,7 @@ fn agent_sessions_enable_tmux_mouse_scrollback() {
                 args: vec!["60".into()],
             },
             d.path(),
-            Path::new(env!("CARGO_BIN_EXE_station")),
+            Path::new(env!("CARGO_BIN_EXE_waystation")),
         )
         .unwrap();
     let key: uuid::Uuid =
@@ -109,7 +109,7 @@ fn agent_sessions_enable_tmux_mouse_scrollback() {
                 args: vec!["60".into()],
             },
             d.path(),
-            Path::new(env!("CARGO_BIN_EXE_station")),
+            Path::new(env!("CARGO_BIN_EXE_waystation")),
         )
         .unwrap();
     let existing = mouse();
@@ -137,7 +137,7 @@ fn rejects_bad_workspace_or_missing_command_without_creating_session() {
                 "codex",
                 &command,
                 d.path(),
-                Path::new(env!("CARGO_BIN_EXE_station"))
+                Path::new(env!("CARGO_BIN_EXE_waystation"))
             )
             .is_err()
     );
@@ -165,7 +165,7 @@ fn relative_executable_in_non_utf8_workspace_is_lossless() {
                 args: vec![],
             },
             &workspace,
-            Path::new(env!("CARGO_BIN_EXE_station")),
+            Path::new(env!("CARGO_BIN_EXE_waystation")),
         )
         .unwrap();
     let mut output = String::new();
@@ -193,7 +193,7 @@ fn lost_server_leaves_recoverable_records_and_can_be_closed() {
                 args: vec!["60".into()],
             },
             d.path(),
-            Path::new(env!("CARGO_BIN_EXE_station")),
+            Path::new(env!("CARGO_BIN_EXE_waystation")),
         )
         .unwrap();
     let key: uuid::Uuid =

@@ -1,8 +1,10 @@
-# Station
+# Waystation
+
+![Waystation logo](assets/branding/waystation-avatar.svg)
 
 A project-aware terminal workflow hub for Linux, built in Rust with
 [Ratatui](https://ratatui.rs/) and themed with Catppuccin Macchiato.
-Station shows your workspaces, persistent agent sessions, system metrics,
+Waystation shows your workspaces, persistent agent sessions, system metrics,
 files, and services in one keyboard-driven dashboard. It never
 autostarts anything: every agent session, tunnel, or tool launches only
 when you explicitly start it.
@@ -15,23 +17,27 @@ pane, including the animation when selected.
 ## Build and install
 
 ```sh
-cargo build --release --locked   # binary at target/release/station
+cargo build --release --locked   # binary at target/release/waystation
 cargo install --path . --locked  # or install into ~/.cargo/bin
 ```
 
 Run it:
 
 ```sh
-station
-station --config PATH --state-dir PATH   # override either location
+waystation
+waystation --config PATH --state-dir PATH   # override either location
 ```
 
 ## Files
 
 | What | Default | Override |
 | --- | --- | --- |
-| Config | `~/.config/station/config.toml` | `--config PATH` or `$XDG_CONFIG_HOME` |
-| State (tunnel logs, history, agent session metadata) | `~/.local/state/station` | `--state-dir PATH` or `$XDG_STATE_HOME` |
+| Config | `~/.config/waystation/config.toml` | `--config PATH` or `$XDG_CONFIG_HOME` |
+| State (tunnel logs, history, agent session metadata) | `~/.local/state/waystation` | `--state-dir PATH` or `$XDG_STATE_HOME` |
+
+If an older `station` config file or state directory exists and the corresponding
+Waystation path does not, Waystation continues using the old path. Nothing is
+moved automatically. The new path takes precedence once created.
 
 A missing config file is fine — sensible defaults are used and nothing is
 written to your configuration file. See [`config.example.toml`](config.example.toml) for all
@@ -54,7 +60,7 @@ that file never run on startup, and the `[editor]` override is optional.
 | `h` | Herdr |
 | `f` | Files |
 | `n` | New session in Agents |
-| `F12` | Return from an agent to Station |
+| `F12` | Return from an agent to Waystation |
 | `x` | Close selected agent or stop selected tunnel (confirmation required) |
 | `.` | Toggle hidden items |
 | `y` | Copy |
@@ -67,19 +73,19 @@ that file never run on startup, and the `[editor]` override is optional.
 Press **3 → n** to create a named Codex or Claude session. Enter a name,
 choose the tool and project, then **Ctrl+S** creates and opens it. Tab moves
 between fields; left/right chooses the tool or project. Enter opens an
-existing session; **F12 returns to Station** without stopping it. Use `/` to
+existing session; **F12 returns to Waystation** without stopping it. Use `/` to
 find another session or project. Sessions are grouped by project, with the
 current project first.
 
-Station uses a private tmux server and requires `tmux`. Your ordinary tmux
+Waystation uses a private tmux server and requires `tmux`. Your ordinary tmux
 and Herdr sessions keep their own configuration. Named sessions survive
-Station quitting or restarting, but not a computer reboot. `q` leaves agents
+Waystation quitting or restarting, but not a computer reboot. `q` leaves agents
 running; `x` closes a selected session after confirmation, ending its process
 and scrollback. Unavailable sessions can be closed and recreated.
 
 Status means the process is running, exited, or unavailable; it does not infer
 whether the model needs input. Exited output stays in scrollback: Ctrl+B then
-`[` enters copy mode, `q` leaves it, and F12 returns to Station. Configure
+`[` enters copy mode, `q` leaves it, and F12 returns to Waystation. Configure
 custom invocations through `[tools.codex]` or `[tools.claude]`.
 
 ## System information
@@ -89,14 +95,14 @@ appear only when `nvidia-smi` is available.
 
 ## External tools
 
-Station uses tools you already have installed, detecting each from an
+Waystation uses tools you already have installed, detecting each from an
 optional set: editors `hx`/`nvim`/`vim`/`vi` (or the `[editor]` override),
 plus `herdr`, `codex`, `claude`, `git`, `lazygit`, `tmux`, `ssh`, `htop`,
 `docker`, `ss`, `nvidia-smi`, and `wl-copy`/`xclip`. Missing tools produce an unavailable message with configuration guidance.
 
 ## SSH tunnels
 
-Tunnel hosts can use a hostname or saved SSH alias. Station lists aliases from
+Tunnel hosts can use a hostname or saved SSH alias. Waystation lists aliases from
 ssh_config with bounded `Include` files. Conditional settings are
 left to SSH itself, which performs the actual connection.
 
@@ -105,7 +111,7 @@ in Connections; Enter opens its logs and `x` offers to stop it. Each run has
 a durable supervisor that verifies process ownership before stopping it.
 
 The Tasks feature has been removed. Older task configuration and saved
-recipes are ignored; existing recipe files and logs remain on disk. Station
+recipes are ignored; existing recipe files and logs remain on disk. Waystation
 still checks for previously started background processes when quitting.
 
 ## Verification and development
@@ -117,8 +123,8 @@ cargo fmt --check
 cargo clippy --all-targets -- -D warnings
 cargo test --all-targets
 cargo build --release --locked
-python3 scripts/pty-check.py target/release/station
-python3 scripts/workflow-pty.py target/release/station
+python3 scripts/pty-check.py target/release/waystation
+python3 scripts/workflow-pty.py target/release/waystation
 ```
 
 The PTY checks use temporary local commands for editor, shell, and SSH handoff;

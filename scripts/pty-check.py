@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Exercise disposable Station instances through a real PTY; never contact SSH hosts."""
+"""Exercise disposable Waystation instances through a real PTY; never contact SSH hosts."""
 import fcntl
 import json
 import os

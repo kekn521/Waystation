@@ -1,13 +1,13 @@
-use station::runtime::command::{CommandRunner, CommandSpec};
 use std::{
     fs,
     process::Command,
     time::{Duration, Instant},
 };
+use waystation::runtime::command::{CommandRunner, CommandSpec};
 #[test]
 fn fresh_environment_help_and_invalid_config_preservation() {
     let d = tempfile::tempdir().unwrap();
-    let binary = env!("CARGO_BIN_EXE_station");
+    let binary = env!("CARGO_BIN_EXE_waystation");
     let output = Command::new(binary)
         .arg("--help")
         .env("HOME", d.path())

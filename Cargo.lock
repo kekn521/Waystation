@@ -1430,25 +1430,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
-name = "station"
-version = "0.2.0"
-dependencies = [
- "anyhow",
- "clap",
- "crossterm",
- "glob",
- "insta",
- "nix 0.31.3",
- "ratatui",
- "serde",
- "serde_json",
- "tempfile",
- "toml",
- "unicode-width",
- "uuid",
-]
-
-[[package]]
 name = "strsim"
 version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1830,6 +1811,25 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "23f0c9c52aa7cd7d77769a4cfe2a9adb1b331f489a41d912ce14513d5ab995c6"
 dependencies = [
  "unicode-ident",
+]
+
+[[package]]
+name = "waystation"
+version = "0.2.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "crossterm",
+ "glob",
+ "insta",
+ "nix 0.31.3",
+ "ratatui",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "toml",
+ "unicode-width",
+ "uuid",
 ]
 
 [[package]]

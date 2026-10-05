@@ -1,8 +1,8 @@
-use station::{
+use std::{fs, time::SystemTime};
+use waystation::{
     model::{ActivityEntry, ActivityKind, AppState},
     store::Store,
 };
-use std::{fs, time::SystemTime};
 #[test]
 fn state_round_trip_merges_concurrent_activity() {
     let dir = tempfile::tempdir().unwrap();
@@ -44,9 +44,9 @@ fn future_schema_is_not_overwritten() {
 fn non_utf8_paths_round_trip() {
     use std::{ffi::OsString, os::unix::ffi::OsStringExt};
     let d = tempfile::tempdir().unwrap();
-    let store = station::store::Store::open(d.path().into()).unwrap();
+    let store = waystation::store::Store::open(d.path().into()).unwrap();
     let p = std::path::PathBuf::from(OsString::from_vec(b"/tmp/bad\xff".to_vec()));
-    let s = station::model::AppState {
+    let s = waystation::model::AppState {
         selected_workspace: Some(p.clone()),
         recent_workspaces: vec![p.clone()],
         ..Default::default()

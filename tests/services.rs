@@ -1,4 +1,4 @@
-use station::providers::services::*;
+use waystation::providers::services::*;
 #[test]
 fn parses_read_only_services() {
     let rows = parse_docker(

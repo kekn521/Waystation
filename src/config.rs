@@ -1,4 +1,4 @@
-//! Configuration loading for Station.
+//! Configuration loading for Waystation.
 //!
 //! Values are read verbatim - program arguments are never shell-split, and
 //! paths are expanded here so the rest of the app only sees absolute or
@@ -257,7 +257,7 @@ impl Config {
     }
 }
 
-/// Where Station keeps its files.
+/// Where Waystation keeps its files.
 #[derive(Clone, Debug)]
 pub struct Paths {
     pub home: PathBuf,
@@ -272,19 +272,34 @@ fn xdg_dir(env: &str, home: &Path, fallback: &str) -> PathBuf {
     }
 }
 
+fn prefer_current(current: PathBuf, legacy: PathBuf) -> Result<PathBuf> {
+    if current.try_exists()? || !legacy.try_exists()? {
+        Ok(current)
+    } else {
+        Ok(legacy)
+    }
+}
+
 impl Paths {
+    fn from_roots(home: PathBuf, config_root: PathBuf, state_root: PathBuf) -> Result<Self> {
+        Ok(Self {
+            config: prefer_current(
+                config_root.join("waystation/config.toml"),
+                config_root.join("station/config.toml"),
+            )?,
+            state: prefer_current(state_root.join("waystation"), state_root.join("station"))?,
+            home,
+        })
+    }
+
     /// Resolve from `HOME` plus the XDG variables (absolute, non-empty only).
     pub fn discover() -> Result<Self> {
         let home = std::env::var("HOME")
-            .context("HOME is not set; cannot locate the station directories")?;
+            .context("HOME is not set; cannot locate the Waystation directories")?;
         let home = PathBuf::from(home);
-        Ok(Paths {
-            config: xdg_dir("XDG_CONFIG_HOME", &home, ".config")
-                .join("station")
-                .join("config.toml"),
-            state: xdg_dir("XDG_STATE_HOME", &home, ".local/state").join("station"),
-            home,
-        })
+        let config_root = xdg_dir("XDG_CONFIG_HOME", &home, ".config");
+        let state_root = xdg_dir("XDG_STATE_HOME", &home, ".local/state");
+        Self::from_roots(home, config_root, state_root)
     }
 }
 
@@ -335,5 +350,48 @@ impl TaskRecipe {
                 ],
             },
         })
+    }
+}
+
+#[cfg(test)]
+mod paths_tests {
+    use super::Paths;
+    use std::fs;
+
+    #[test]
+    fn fresh_install_uses_waystation_directories() {
+        let root = tempfile::tempdir().unwrap();
+        let home = root.path().join("home");
+        let paths = Paths::from_roots(
+            home.clone(),
+            home.join(".config"),
+            home.join(".local/state"),
+        )
+        .unwrap();
+        assert_eq!(paths.config, home.join(".config/waystation/config.toml"));
+        assert_eq!(paths.state, home.join(".local/state/waystation"));
+    }
+
+    #[test]
+    fn existing_station_data_remains_visible_until_new_paths_exist() {
+        let root = tempfile::tempdir().unwrap();
+        let home = root.path().join("home");
+        let config_root = home.join(".config");
+        let state_root = home.join(".local/state");
+        fs::create_dir_all(config_root.join("station")).unwrap();
+        fs::write(config_root.join("station/config.toml"), "").unwrap();
+        fs::create_dir_all(state_root.join("station/agents")).unwrap();
+
+        let paths =
+            Paths::from_roots(home.clone(), config_root.clone(), state_root.clone()).unwrap();
+        assert_eq!(paths.config, config_root.join("station/config.toml"));
+        assert_eq!(paths.state, state_root.join("station"));
+
+        fs::create_dir_all(config_root.join("waystation")).unwrap();
+        fs::write(config_root.join("waystation/config.toml"), "").unwrap();
+        fs::create_dir_all(state_root.join("waystation")).unwrap();
+        let paths = Paths::from_roots(home, config_root.clone(), state_root.clone()).unwrap();
+        assert_eq!(paths.config, config_root.join("waystation/config.toml"));
+        assert_eq!(paths.state, state_root.join("waystation"));
     }
 }

@@ -1,5 +1,5 @@
 use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
-use station::{
+use waystation::{
     app::{Action, App, Effect},
     config::Config,
     input,
@@ -67,7 +67,7 @@ fn forms_render_at_small_and_wide_sizes() {
             ratatui::Terminal::new(ratatui::backend::TestBackend::new(w, h)).unwrap();
         terminal
             .draw(|f| {
-                station::ui::draw(f, &a);
+                waystation::ui::draw(f, &a);
             })
             .unwrap();
         if w >= 59 {

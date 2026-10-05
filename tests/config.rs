@@ -1,8 +1,8 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use station::config::{Config, Paths};
 use tempfile::TempDir;
+use waystation::config::{Config, Paths};
 
 /// Write `body` to a fresh config file and load it with the given home.
 fn load_str(home: &Path, body: &str) -> anyhow::Result<(Config, TempDir)> {
@@ -284,22 +284,38 @@ fn paths_discover_follows_env_without_mutation() {
     let home = PathBuf::from(std::env::var("HOME").expect("HOME set in test env"));
     let p = Paths::discover().expect("discover works with a normal env");
     assert_eq!(p.home, home);
+    let current_config = xdg_or(
+        "XDG_CONFIG_HOME",
+        &home.join(".config"),
+        "waystation/config.toml",
+    );
+    let legacy_config = xdg_or(
+        "XDG_CONFIG_HOME",
+        &home.join(".config"),
+        "station/config.toml",
+    );
+    let current_state = xdg_or("XDG_STATE_HOME", &home.join(".local/state"), "waystation");
+    let legacy_state = xdg_or("XDG_STATE_HOME", &home.join(".local/state"), "station");
     assert_eq!(
         p.config,
-        xdg_or(
-            "XDG_CONFIG_HOME",
-            &home.join(".config"),
-            "station/config.toml"
-        )
+        if current_config.exists() || !legacy_config.exists() {
+            current_config
+        } else {
+            legacy_config
+        }
     );
     assert_eq!(
         p.state,
-        xdg_or("XDG_STATE_HOME", &home.join(".local/state"), "station")
+        if current_state.exists() || !legacy_state.exists() {
+            current_state
+        } else {
+            legacy_state
+        }
     );
 }
 #[test]
 fn tunnel_arguments_are_discrete_and_loopback() {
-    use station::config::{TaskRecipe, TunnelRecipe};
+    use waystation::config::{TaskRecipe, TunnelRecipe};
     let t = TunnelRecipe {
         id: "db".into(),
         host: "saved".into(),
@@ -323,5 +339,5 @@ fn tunnel_arguments_are_discrete_and_loopback() {
 #[test]
 fn config_directory_is_an_error() {
     let d = tempfile::tempdir().unwrap();
-    assert!(station::config::Config::load(d.path(), d.path()).is_err());
+    assert!(waystation::config::Config::load(d.path(), d.path()).is_err());
 }

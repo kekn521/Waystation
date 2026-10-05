@@ -1,4 +1,4 @@
-use station::{
+use waystation::{
     app::Action,
     providers::files,
     search::{SearchItem, rank},

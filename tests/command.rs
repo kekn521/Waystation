@@ -1,8 +1,8 @@
-use station::runtime::command::{CommandRunner, CommandSpec};
 use std::{
     ffi::OsString,
     time::{Duration, Instant},
 };
+use waystation::runtime::command::{CommandRunner, CommandSpec};
 fn spec(program: &str, args: &[&str], cwd: &std::path::Path) -> CommandSpec {
     CommandSpec {
         program: program.into(),

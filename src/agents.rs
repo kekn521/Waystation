@@ -201,7 +201,7 @@ impl AgentManager {
         // Loaded before the first session starts, including commands that exit immediately.
         fs::write(
             self.dir.join("tmux.conf"),
-            "set -g remain-on-exit on\nset -g remain-on-exit-format ''\nset -g history-limit 50000\nset -g mouse on\nset -g status-style 'bg=#1e2030,fg=#cad3f5'\nset -g status-left '#[fg=#c6a0f6,bold] STATION #[default]'\nset -g status-right '#[fg=#8bd5ca] F12 → Station  '\nset -g status-right-length 40\nset -g allow-rename off\nset -g automatic-rename off\nbind-key -n F12 detach-client\n",
+            "set -g remain-on-exit on\nset -g remain-on-exit-format ''\nset -g history-limit 50000\nset -g mouse on\nset -g status-style 'bg=#1e2030,fg=#cad3f5'\nset -g status-left '#[fg=#c6a0f6,bold] WAYSTATION #[default]'\nset -g status-right '#[fg=#8bd5ca] F12 → Waystation  '\nset -g status-right-length 40\nset -g allow-rename off\nset -g automatic-rename off\nbind-key -n F12 detach-client\n",
         )?;
         let session = AgentSession {
             id: Uuid::new_v4(),

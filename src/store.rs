@@ -24,10 +24,10 @@ impl Store {
             Ok(bytes) => {
                 ensure!(bytes.len() < 8 * 1024 * 1024, "State file too large");
                 let state: AppState =
-                    serde_json::from_slice(&bytes).context("Reading Station state")?;
+                    serde_json::from_slice(&bytes).context("Reading Waystation state")?;
                 ensure!(
                     state.schema_version == 1,
-                    "Unsupported Station state version {}",
+                    "Unsupported Waystation state version {}",
                     state.schema_version
                 );
                 Ok(state)

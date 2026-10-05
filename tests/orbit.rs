@@ -6,13 +6,13 @@ use ratatui::{
     style::{Color, Stylize},
     widgets::Block,
 };
-use station::{
+use std::time::Duration;
+use waystation::{
     app::App,
     config::Config,
     model::{AppState, Section},
     ui::{draw, orbit},
 };
-use std::time::Duration;
 fn app() -> App {
     App::new(Config::default(), AppState::default())
 }

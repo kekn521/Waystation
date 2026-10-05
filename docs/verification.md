@@ -1,5 +1,8 @@
 # Native release verification
 
+This file records earlier Station releases. Current Waystation build and usage
+instructions are in the [README](../README.md).
+
 The initial release was exercised on this Linux/Hyprland machine using its
 Catppuccin Macchiato Kitty theme, without modifying terminal or desktop settings.
 
@@ -43,10 +46,10 @@ regression tests, followed by a green full suite and release PTY run.
 - Foreground actions and async providers were implemented in one integrated
   commit while parsing work was pending. The tradeoff is a larger review unit.
 
-No review findings remain deferred. The tested executable is installed at
-`~/.local/bin/station`; it was created without replacing an existing command.
-The source branch is `feat/native-station` in `.worktrees/native` and is kept
-for further iteration. No repository was pushed or published.
+At the time, no review findings remained deferred. The tested executable was
+installed at `~/.local/bin/station` without replacing an existing command.
+The source branch was `feat/native-station` in `.worktrees/native`; no repository
+had been pushed yet.
 
 ## 0.2.0 — persistent agents and task creation
 
@@ -88,3 +91,15 @@ build, and both PTY scripts passed. The scripts exercised local tunnel stand-ins
 agent creation and return, removed task shortcuts, navigation, resizing, and
 terminal restoration. Seven terminal snapshots were refreshed, and the actual
 120×38 overview buffer was visually inspected.
+
+## 2026-10-05 — Waystation name and logo
+
+The Cargo package, command, UI labels, and current README use Waystation.
+Fresh installs use Waystation config and state directories; an existing Station
+config or state path remains in use until its Waystation counterpart exists.
+The private tmux socket prefix stays unchanged so existing agent sessions can
+be reattached. The approved waypoint logo is saved as SVG, with a 512-pixel
+avatar PNG.
+
+All 85 Rust tests, formatting, Clippy with warnings denied, the locked release
+build, and both PTY scripts passed after the rename.

@@ -1,5 +1,5 @@
 use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
-use station::{
+use waystation::{
     app::{Action, App},
     config::Config,
     input,
@@ -64,7 +64,7 @@ fn shell_is_usable_at_each_terminal_size() {
         let app = App::new(Config::default(), AppState::default());
         terminal
             .draw(|f| {
-                station::ui::draw(f, &app);
+                waystation::ui::draw(f, &app);
             })
             .unwrap();
         let text = terminal
@@ -83,7 +83,7 @@ fn shell_is_usable_at_each_terminal_size() {
 fn screen(app: &App, w: u16, h: u16) -> String {
     let mut t = ratatui::Terminal::new(ratatui::backend::TestBackend::new(w, h)).unwrap();
     t.draw(|f| {
-        station::ui::draw(f, app);
+        waystation::ui::draw(f, app);
     })
     .unwrap();
     t.backend()
@@ -118,7 +118,7 @@ fn complete_snapshots() {
         (59, 17),
     ] {
         let mut a = App::new(Config::default(), AppState::default());
-        a.workspaces = vec![station::providers::projects::Workspace {
+        a.workspaces = vec![waystation::providers::projects::Workspace {
             id: "/projects/機器-learning-with-a-long-name".into(),
             name: "機器-learning-with-a-long-name".into(),
         }];
@@ -137,7 +137,7 @@ fn complete_snapshots() {
         a.help = true;
         snapshots.push(screen(&a, w, h));
         a.help = false;
-        a.confirmation = Some(station::app::Confirmation {
+        a.confirmation = Some(waystation::app::Confirmation {
             title: "Stop tunnel?".into(),
             choices: vec![
                 ("Cancel".into(), Action::Escape),
@@ -161,7 +161,7 @@ fn complete_snapshots() {
 #[test]
 fn quit_confirmation_is_visible_below_minimum_size() {
     let mut a = App::new(Config::default(), AppState::default());
-    a.confirmation = Some(station::app::Confirmation {
+    a.confirmation = Some(waystation::app::Confirmation {
         title: "Background processes are still running".into(),
         choices: vec![
             ("Keep running and quit".into(), Action::QuitKeep),

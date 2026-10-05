@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
+  <title id="title">Waystation mark</title>
+  <desc id="desc">A four-point waypoint star inside an orbit with one satellite.</desc>
+  <ellipse cx="64" cy="64" rx="46" ry="30" transform="rotate(-23 64 64)" fill="none" stroke="#8aadf4" stroke-width="8"/>
+  <path d="M64 42 C67 55 73 61 86 64 C73 67 67 73 64 86 C61 73 55 67 42 64 C55 61 61 55 64 42 Z" fill="#c6a0f6"/>
+  <circle cx="86" cy="32" r="6" fill="#cad3f5"/>
+</svg>

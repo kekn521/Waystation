@@ -1,4 +1,4 @@
-use station::{
+use waystation::{
     app::Action,
     config::{Config, ToolCommand},
     runtime::actions::resolve,

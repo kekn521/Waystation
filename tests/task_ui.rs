@@ -1,4 +1,4 @@
-use station::{
+use waystation::{
     app::{Action, App, Effect},
     config::{Config, TaskRecipe, ToolCommand, TunnelRecipe},
     model::{ActivityEntry, ActivityKind, AppState, Section},
@@ -59,8 +59,8 @@ fn overview_focus_activates_matching_panel_and_the_orbit_pane_is_inert() {
         "Activate is a no-op there"
     );
 }
-fn run_record() -> station::tasks::RunRecord {
-    use station::tasks::{RunRecord, RunStatus};
+fn run_record() -> waystation::tasks::RunRecord {
+    use waystation::tasks::{RunRecord, RunStatus};
     RunRecord {
         id: uuid::Uuid::new_v4(),
         recipe: TaskRecipe {
@@ -84,19 +84,19 @@ fn run_record() -> station::tasks::RunRecord {
         error: None,
     }
 }
-fn live_identity() -> station::tasks::identity::ProcessIdentity {
+fn live_identity() -> waystation::tasks::identity::ProcessIdentity {
     // This very test process is running and matches its own /proc identity.
-    station::tasks::identity::read(std::path::Path::new("/proc"), std::process::id()).unwrap()
+    waystation::tasks::identity::read(std::path::Path::new("/proc"), std::process::id()).unwrap()
 }
 #[test]
 fn stop_confirms_only_on_a_selected_tunnel_run_in_connections() {
     let mut a = App::new(Config::default(), AppState::default());
     let mut legacy = run_record();
-    legacy.status = station::tasks::RunStatus::Running;
+    legacy.status = waystation::tasks::RunStatus::Running;
     legacy.supervisor = Some(live_identity());
     let mut tunnel = run_record();
     tunnel.recipe.id = "tunnel:fixture".into();
-    tunnel.status = station::tasks::RunStatus::Running;
+    tunnel.status = waystation::tasks::RunStatus::Running;
     tunnel.supervisor = Some(live_identity());
     let tunnel_id = tunnel.id;
     a.runs.push(legacy.clone());
@@ -171,14 +171,14 @@ fn legacy_task_history_stays_out_of_search_connections_and_activity() {
 fn stop_and_quit_waits_for_starting_tasks() {
     let mut a = App::new(Config::default(), AppState::default());
     let mut r = run_record();
-    r.status = station::tasks::RunStatus::Starting;
+    r.status = waystation::tasks::RunStatus::Starting;
     a.runs.push(r);
     assert!(a.update(Action::QuitStop).is_empty());
     assert!(a.message.unwrap().contains("starting"));
 }
 #[test]
 fn files_error_row_and_keyboard_actions_agree() {
-    use station::providers::files::FileEntry;
+    use waystation::providers::files::FileEntry;
     let mut a = App::new(Config::default(), AppState::default());
     a.section = Section::Files;
     a.files = vec![FileEntry {
@@ -199,7 +199,7 @@ fn files_error_row_and_keyboard_actions_agree() {
 }
 #[test]
 fn quit_waits_until_new_run_is_in_a_snapshot() {
-    use station::runtime::workers::*;
+    use waystation::runtime::workers::*;
     let mut a = App::new(Config::default(), AppState::default());
     let r = run_record();
     a.pending_starts.insert(r.id);

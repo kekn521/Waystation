@@ -7,7 +7,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) -> Vec<HitRegion> {
     ui::rows(
         frame,
         area,
-        "Activity · Station launches & tunnels",
+        "Activity · Waystation launches & tunnels",
         &app.activity_items(),
         app.selection,
         true,

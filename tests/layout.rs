@@ -1,4 +1,4 @@
-use station::ui::layout::{LayoutMode, mode};
+use waystation::ui::layout::{LayoutMode, mode};
 
 #[test]
 fn mode_boundaries() {

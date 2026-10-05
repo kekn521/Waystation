@@ -1,4 +1,4 @@
-use station::providers::connections::aliases;
+use waystation::providers::connections::aliases;
 #[test]
 fn includes_are_bounded_and_literal() {
     let d = tempfile::tempdir().unwrap();

@@ -75,7 +75,11 @@ fn shell_is_usable_at_each_terminal_size() {
             .map(|c| c.symbol())
             .collect::<String>();
         assert!(
-            text.contains(if w < 60 { "Resize" } else { "S T A T I O N" }),
+            text.contains(if w < 60 {
+                "Resize"
+            } else {
+                "W A Y S T A T I O N"
+            }),
             "missing usable shell at {w}x{h}"
         );
     }

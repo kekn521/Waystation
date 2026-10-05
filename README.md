@@ -1,122 +1,133 @@
-# Waystation
+<p align="center">
+  <img src="assets/branding/waystation-avatar.svg" width="104" alt="Waystation logo: a waypoint star inside an orbit">
+</p>
 
-![Waystation logo](assets/branding/waystation-avatar.svg)
+<h1 align="center">Waystation</h1>
 
-A project-aware terminal workflow hub for Linux, built in Rust with
-[Ratatui](https://ratatui.rs/) and themed with Catppuccin Macchiato.
-Waystation shows your workspaces, persistent agent sessions, system metrics,
-files, and services in one keyboard-driven dashboard. It never
-autostarts anything: every agent session, tunnel, or tool launches only
-when you explicitly start it.
+<p align="center">A home base for the work happening in your terminal.</p>
 
-Overview has four panes: orbiting planets at the top left, workspaces at the
-top right, system information at the bottom left, and services and ports at
-the bottom right. Tab cycles the panes; smaller terminals show the focused
-pane, including the animation when selected.
+Waystation brings project workspaces, persistent AI agent sessions, system
+status, services, and SSH tunnels into one keyboard-driven Linux dashboard.
+The overview has a little orbiting solar system, too.
 
-## Build and install
+![Waystation overview with orbit, workspaces, system metrics, and services](artifacts/waystation-overview.png)
+
+*The real Waystation interface, rendered with illustrative project and service
+data. The planets move when the app is running.*
+
+## What you can do
+
+- **Pick up where you left off.** Discover projects, see Git context, and open
+  an editor, shell, Git UI, or file browser from the selected workspace.
+- **Keep agents close.** Create named Codex or Claude sessions, switch away with
+  F12, and return without losing their terminal output.
+- **See your machine at a glance.** Check CPU, memory, disk, network, Docker
+  containers, and listening ports without leaving the dashboard.
+- **Open connections on demand.** Start configured SSH tunnels, inspect their
+  logs, and stop them with confirmation.
+
+Waystation does not start agents, tunnels, or external tools on launch. Missing
+integrations show as unavailable without blocking the dashboard.
+
+## Install and run
+
+You need Linux, a UTF-8 terminal, and a Rust toolchain that supports edition
+2024. Install the current source from GitHub:
 
 ```sh
-cargo build --release --locked   # binary at target/release/waystation
-cargo install --path . --locked  # or install into ~/.cargo/bin
-```
-
-Run it:
-
-```sh
+cargo install --git https://github.com/kekn521/Waystation.git --locked
 waystation
-waystation --config PATH --state-dir PATH   # override either location
 ```
 
-## Files
+Or build a local checkout:
 
-| What | Default | Override |
-| --- | --- | --- |
-| Config | `~/.config/waystation/config.toml` | `--config PATH` or `$XDG_CONFIG_HOME` |
-| State (tunnel logs, history, agent session metadata) | `~/.local/state/waystation` | `--state-dir PATH` or `$XDG_STATE_HOME` |
+```sh
+git clone https://github.com/kekn521/Waystation.git
+cd Waystation
+cargo install --path . --locked
+waystation
+```
 
-If an older `station` config file or state directory exists and the corresponding
-Waystation path does not, Waystation continues using the old path. Nothing is
-moved automatically. The new path takes precedence once created.
+No configuration file is required. If `~/code` exists, Waystation scans it for
+projects; if `~/dotfiles` exists, it appears as a pinned workspace. Agent
+sessions require `tmux`; other optional tools are described below.
 
-A missing config file is fine — sensible defaults are used and nothing is
-written to your configuration file. See [`config.example.toml`](config.example.toml) for all
-options; `project_roots`/`pinned_projects` accept `~/`, and `[theme]` offers
-`accent = "mauve" | "blue"` plus a `compact` mode. Tunnel examples in
-that file never run on startup, and the `[editor]` override is optional.
-
-## Keys
+## Find your way around
 
 | Key | Action |
 | --- | --- |
 | `1`–`8` | Overview, Workspaces, Agents, Services, Connections, Files, System, Activity |
-| `/` | Search |
-| `j` / `k`, arrows | Move |
-| `Tab` | Switch pane |
-| `Enter` | Activate selection |
-| `e` | Open editor |
-| `t` | Shell in the selected workspace |
-| `g` | Git view |
-| `h` | Herdr |
-| `f` | Files |
-| `n` | New session in Agents |
-| `F12` | Return from an agent to Waystation |
-| `x` | Close selected agent or stop selected tunnel (confirmation required) |
-| `.` | Toggle hidden items |
-| `y` | Copy |
-| `F5` | Refresh |
-| `?` | Help |
-| `q` | Quit — while background processes run, choose keep running, stop them, or cancel |
+| `/` | Search projects, sessions, and available actions |
+| `j` / `k` or arrows | Move through items |
+| `Tab` | Switch the focused overview pane |
+| `Enter` | Open the selected item |
+| `e` / `t` / `g` / `h` / `f` | Editor, shell, Git UI, Herdr, or files for the workspace |
+| `n` | Create a session in Agents |
+| `F12` | Return to Waystation from an agent session |
+| `?` | Show all shortcuts |
+| `q` | Quit |
 
-## Agents
+The overview shows orbiting planets, workspaces, machine status, and services
+in four panes. On smaller terminals it shows the focused pane; use `Tab` to
+move between them.
 
-Press **3 → n** to create a named Codex or Claude session. Enter a name,
-choose the tool and project, then **Ctrl+S** creates and opens it. Tab moves
-between fields; left/right chooses the tool or project. Enter opens an
-existing session; **F12 returns to Waystation** without stopping it. Use `/` to
-find another session or project. Sessions are grouped by project, with the
-current project first.
+### Agent sessions
 
-Waystation uses a private tmux server and requires `tmux`. Your ordinary tmux
-and Herdr sessions keep their own configuration. Named sessions survive
-Waystation quitting or restarting, but not a computer reboot. `q` leaves agents
-running; `x` closes a selected session after confirmation, ending its process
-and scrollback. Unavailable sessions can be closed and recreated.
+Press `3`, then `n` to name a Codex or Claude session and choose its project.
+`Ctrl+S` creates and opens it. `F12` returns to Waystation; `Enter` opens the
+session again. Waystation uses its own private `tmux` server, separate from
+your regular sessions. Agents survive Waystation exiting and restarting, but
+not a computer reboot. Closing a session with `x` ends its process and
+scrollback after confirmation.
 
-Status means the process is running, exited, or unavailable; it does not infer
-whether the model needs input. Exited output stays in scrollback: Ctrl+B then
-`[` enters copy mode, `q` leaves it, and F12 returns to Waystation. Configure
-custom invocations through `[tools.codex]` or `[tools.claude]`.
+### SSH tunnels
 
-## System information
+Add a tunnel in your configuration, then start it from Connections (`5`) or
+search. Waystation shows its logs and offers a confirmed stop action. It never
+connects to an SSH host just because you launched the dashboard.
 
-Baseline CPU, memory, and network metrics come from `/proc`, with disk capacity from filesystem statistics. GPU stats
-appear only when `nvidia-smi` is available.
+## Make it yours
 
-## External tools
+Create `~/.config/waystation/config.toml` only if you want to change the
+defaults. For example:
 
-Waystation uses tools you already have installed, detecting each from an
-optional set: editors `hx`/`nvim`/`vim`/`vi` (or the `[editor]` override),
-plus `herdr`, `codex`, `claude`, `git`, `lazygit`, `tmux`, `ssh`, `htop`,
-`docker`, `ss`, `nvidia-smi`, and `wl-copy`/`xclip`. Missing tools produce an unavailable message with configuration guidance.
+```toml
+project_roots = ["~/code", "~/projects"]
+pinned_projects = ["~/code/my-app"]
 
-## SSH tunnels
+[theme]
+accent = "mauve" # or "blue"
+compact = false
+```
 
-Tunnel hosts can use a hostname or saved SSH alias. Waystation lists aliases from
-ssh_config with bounded `Include` files. Conditional settings are
-left to SSH itself, which performs the actual connection.
+See [config.example.toml](config.example.toml) for editor, tool, and SSH tunnel
+settings. `~/` expands to your home directory; relative paths are resolved
+from the config file's directory.
 
-Start a configured tunnel from Connections (**5**) or search. Its run appears
-in Connections; Enter opens its logs and `x` offers to stop it. Each run has
-a durable supervisor that verifies process ownership before stopping it.
+| Data | Default path | Override |
+| --- | --- | --- |
+| Config | `~/.config/waystation/config.toml` | `--config PATH` or `$XDG_CONFIG_HOME` |
+| State and logs | `~/.local/state/waystation` | `--state-dir PATH` or `$XDG_STATE_HOME` |
 
-The Tasks feature has been removed. Older task configuration and saved
-recipes are ignored; existing recipe files and logs remain on disk. Waystation
-still checks for previously started background processes when quitting.
+If you used the earlier app named Station, Waystation keeps using an existing
+`station` config file or state directory until the corresponding `waystation`
+path exists. It does not move or delete your saved data.
 
-## Verification and development
+## Optional tools
 
-Requires Linux, a UTF-8 terminal, and a Rust toolchain supporting edition 2024.
+Waystation uses programs already installed on your machine:
+
+- `tmux` plus `codex` or `claude` for persistent agent sessions.
+- `ssh` for configured tunnels.
+- `git` and optionally `lazygit` for workspace context and Git actions.
+- An editor such as `hx`, `nvim`, `vim`, or `vi`; set `[editor]` to choose one.
+- `docker`, `ss`, and optionally `nvidia-smi` for service, port, and GPU details.
+- `herdr`, `htop`, and `wl-copy` or `xclip` for their corresponding actions.
+
+Missing tools show an unavailable message instead of blocking the dashboard.
+The system view reads baseline CPU, memory, and network data from `/proc`.
+
+## Develop and verify
 
 ```sh
 cargo fmt --check
@@ -127,15 +138,13 @@ python3 scripts/pty-check.py target/release/waystation
 python3 scripts/workflow-pty.py target/release/waystation
 ```
 
-The PTY checks use temporary local commands for editor, shell, and SSH handoff;
-they never contact a remote host. Agent workflow checks use local stand-ins
-and a private tmux server, without invoking a real AI provider. Supervisor tests require permission to create local
-Unix sockets. File and subprocess discovery runs in a bounded worker pool.
-Git and services refresh about every five seconds; system and background process state refresh
-about every second. CPU and network rates warm up after their first sample.
+The terminal checks use temporary local stand-ins; they do not contact a real
+SSH host or AI provider. To regenerate the illustrative overview as SVG:
 
-Background stdin is closed; interactive commands belong in foreground tools. A run's
-process group ends when its leader exits, including any remaining descendants.
-Tunnels use SSH BatchMode: establish credentials with a normal SSH connection
-first. Unknown historical process ownership disables stopping instead of trusting
-a saved PID. Tunnel log viewing is a bounded snapshot; reopen to refresh.
+```sh
+cargo run --example capture -- /tmp/waystation-overview.svg 120 38 overview-demo
+```
+
+Waystation is built with [Ratatui](https://ratatui.rs/) and uses the
+Catppuccin Macchiato palette. Earlier
+release checks and implementation notes are in [docs/verification.md](docs/verification.md).

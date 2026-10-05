@@ -1,20 +1,13 @@
 use crate::{
     app::{Action, App, Effect},
-    config::{TaskRecipe, ToolCommand},
+    config::ToolCommand,
     model::Section,
 };
 use std::path::PathBuf;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum FormKind {
-    Agent,
-    Task,
-}
 #[derive(Clone, Debug)]
 pub struct Form {
-    pub kind: FormKind,
     pub name: String,
-    pub command: String,
     pub tool: usize,
     pub projects: Vec<PathBuf>,
     pub project: usize,
@@ -27,7 +20,6 @@ impl Form {
     fn text(&mut self) -> Option<&mut String> {
         match self.field {
             0 => Some(&mut self.name),
-            1 if self.kind == FormKind::Task => Some(&mut self.command),
             _ => None,
         }
     }
@@ -117,7 +109,7 @@ impl App {
                     form.end();
                 }
                 Action::FormCursor(n) => {
-                    if form.field == 1 && form.kind == FormKind::Agent {
+                    if form.field == 1 {
                         form.tool = (form.tool as isize + n).rem_euclid(2) as usize;
                     } else if form.field == 2 && !form.projects.is_empty() {
                         form.project = (form.project as isize + n)
@@ -141,41 +133,21 @@ impl App {
                         form.error = Some("Enter a name (up to 200 bytes)".into());
                         return Some(vec![]);
                     }
-                    let effect = match form.kind {
-                        FormKind::Agent => {
-                            let tool = form.tool_name().to_string();
-                            let command =
-                                self.config
-                                    .tools
-                                    .get(&tool)
-                                    .cloned()
-                                    .unwrap_or(ToolCommand {
-                                        program: tool.clone(),
-                                        args: vec![],
-                                    });
-                            Effect::CreateAgent {
-                                name: form.name.trim().into(),
-                                tool,
-                                command,
-                                workspace,
-                            }
-                        }
-                        FormKind::Task => {
-                            let command = match crate::command_line::parse(&form.command) {
-                                Ok(c) => c,
-                                Err(e) => {
-                                    form.error = Some(e.to_string());
-                                    return Some(vec![]);
-                                }
-                            };
-                            Effect::SaveRecipe(TaskRecipe {
-                                id: uuid::Uuid::new_v4().to_string(),
-                                label: form.name.trim().into(),
-                                command,
-                                cwd: workspace,
-                                required_ports: vec![],
-                            })
-                        }
+                    let tool = form.tool_name().to_string();
+                    let command = self
+                        .config
+                        .tools
+                        .get(&tool)
+                        .cloned()
+                        .unwrap_or(ToolCommand {
+                            program: tool.clone(),
+                            args: vec![],
+                        });
+                    let effect = Effect::CreateAgent {
+                        name: form.name.trim().into(),
+                        tool,
+                        command,
+                        workspace,
                     };
                     form.busy = true;
                     return Some(vec![effect]);
@@ -185,7 +157,7 @@ impl App {
             return Some(vec![]);
         }
         match action {
-            Action::NewAgent | Action::NewRecipe => {
+            Action::NewAgent => {
                 let mut projects = self
                     .workspaces
                     .iter()
@@ -200,15 +172,8 @@ impl App {
                     .iter()
                     .position(|p| Some(p.as_path()) == self.workspace())
                     .unwrap_or(0);
-                let kind = if matches!(action, Action::NewAgent) {
-                    FormKind::Agent
-                } else {
-                    FormKind::Task
-                };
                 self.form = Some(Form {
-                    kind,
                     name: String::new(),
-                    command: String::new(),
                     tool: 0,
                     projects,
                     project,

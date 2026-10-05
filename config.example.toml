@@ -1,6 +1,6 @@
 # Station configuration example.
 # Copy to ~/.config/station/config.toml (or pass --config PATH) and edit.
-# Nothing listed here runs on startup: tasks and tunnels start only when you
+# Nothing listed here runs on startup: tunnels start only when you
 # explicitly launch them from the UI.
 
 # Directories scanned for projects. `~/` expands to your home directory;
@@ -25,15 +25,6 @@ args = []
 # [tools.git-ui]
 # program = "lazygit"
 # args = []
-
-# Task recipes appear in the Recipes pane and run exactly as written: an
-# explicit program plus argument array, never a shell command line.
-[[tasks]]
-id = "check"
-label = "Cargo check"
-cwd = "." # "." = the selected workspace; `~/` expands to home
-required_ports = []
-command = { program = "cargo", args = ["check"] }
 
 # SSH port-forward example. `host` can be a hostname or an alias from your ssh_config.
 # Uncomment and adjust; tunnels start only when you launch them.

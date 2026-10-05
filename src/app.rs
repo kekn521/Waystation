@@ -14,7 +14,6 @@ use std::path::{Path, PathBuf};
 #[derive(Clone, Debug)]
 pub enum Action {
     NewAgent,
-    NewRecipe,
     OpenAgent(uuid::Uuid),
     CloseAgent(uuid::Uuid),
     FormField(isize),
@@ -42,8 +41,6 @@ pub enum Action {
     Hidden,
     Copy,
     Stop,
-    Rerun,
-    Recipes,
     Project(usize),
     SelectWorkspace(PathBuf),
     OpenPath(PathBuf),
@@ -52,7 +49,6 @@ pub enum Action {
     Attach(String),
     DockerLogs(String),
     ShowText(String),
-    StartRecipe(String),
     StartTunnel(String),
     StartTask(crate::config::TaskRecipe),
     RunLog(uuid::Uuid),
@@ -71,7 +67,6 @@ pub enum Effect {
     },
     AttachAgent(uuid::Uuid),
     CloseAgent(uuid::Uuid),
-    SaveRecipe(crate::config::TaskRecipe),
     Foreground(Action),
     Copy(PathBuf),
     DockerLogs(String),
@@ -93,12 +88,13 @@ pub struct Confirmation {
     pub choices: Vec<(String, Action)>,
 }
 pub struct App {
+    /// Monotonic animation time supplied by the event loop; never persisted.
+    pub animation_elapsed: std::time::Duration,
     pub agents: Vec<crate::agents::AgentSession>,
     pub form: Option<crate::forms::Form>,
     pinned_paths: std::collections::HashSet<PathBuf>,
     pub pending_starts: std::collections::HashSet<uuid::Uuid>,
     pub runs: Vec<crate::tasks::RunRecord>,
-    pub recipes: bool,
     pub confirmation: Option<Confirmation>,
     pub modal_selection: usize,
     pub detail: Option<(String, String)>,
@@ -134,12 +130,12 @@ impl App {
             .map(|p| p.canonicalize().unwrap_or_else(|_| p.clone()))
             .collect();
         Self {
+            animation_elapsed: std::time::Duration::ZERO,
             agents: vec![],
             form: None,
             pinned_paths,
             pending_starts: Default::default(),
             runs: vec![],
-            recipes: false,
             confirmation: None,
             modal_selection: 0,
             detail: None,
@@ -147,7 +143,7 @@ impl App {
             config,
             state,
             section: Section::Overview,
-            pane: 0,
+            pane: 1,
             selection: 0,
             query: String::new(),
             searching: false,
@@ -187,7 +183,8 @@ impl App {
                         self.pending_starts
                             .retain(|id| !r.iter().any(|run| run.id == *id));
                         for run in &r {
-                            if run.ended.is_some()
+                            if run.recipe.id.starts_with("tunnel:")
+                                && run.ended.is_some()
                                 && !self
                                     .state
                                     .activity
@@ -366,6 +363,18 @@ impl App {
                 Action::StartTunnel(t.id.clone()),
             )
         }));
+        items.extend(
+            self.runs
+                .iter()
+                .filter(|r| r.recipe.id.starts_with("tunnel:"))
+                .map(|r| {
+                    (
+                        format!("{} · {:?}", r.recipe.label, r.status),
+                        "Enter logs · x stop tunnel".into(),
+                        Action::RunLog(r.id),
+                    )
+                }),
+        );
         for key in ["Connections", "Sessions"] {
             if let Some(e) = self.provider_errors.get(key) {
                 items.push((
@@ -395,7 +404,6 @@ impl App {
             ("Git changes", Action::Git),
             ("Browse files", Action::Files),
             ("Refresh providers", Action::Reload),
-            ("Add task", Action::NewRecipe),
         ] {
             items.push(SearchItem {
                 id: label.into(),
@@ -408,7 +416,6 @@ impl App {
             .agent_items()
             .into_iter()
             .chain(self.connection_items())
-            .chain(self.recipe_items())
         {
             items.push(SearchItem {
                 id: label.clone(),

@@ -37,7 +37,6 @@ fn load_missing_file_returns_defaults_without_writing() {
     assert!(cfg.pinned_projects.is_empty()); // dotfiles does not exist
     assert!(cfg.editor.is_none());
     assert!(cfg.tools.is_empty());
-    assert!(cfg.tasks.is_empty());
     assert!(cfg.tunnels.is_empty());
     assert_eq!(cfg.theme.accent, "mauve");
     assert!(!cfg.theme.compact);
@@ -96,7 +95,7 @@ build = { program = "bash", args = ["-lc", "echo hi && rm -rf $HOME/target | gre
 }
 
 #[test]
-fn task_defaults_and_full_round_trip() {
+fn legacy_tasks_are_ignored_and_valid_tunnel_still_loads() {
     let home = PathBuf::from("/home/tester");
     let (cfg, _tmp) = load_str(
         &home,
@@ -116,19 +115,22 @@ remote_port = 5432
     )
     .unwrap();
 
-    let task = &cfg.tasks[0];
-    assert_eq!(task.command.args, Vec::<String>::new());
-    assert_eq!(task.cwd, PathBuf::from(".")); // stays relative
-    assert!(task.required_ports.is_empty());
+    // Removed task config parses without error but never resurfaces, and the
+    // serialized config no longer round-trips a tasks key.
+    let serialized = toml::to_string(&cfg).unwrap();
+    assert!(
+        !serialized.contains("tasks"),
+        "serialized config must not carry tasks: {serialized}"
+    );
 
     let tunnel = &cfg.tunnels[0];
     assert_eq!(tunnel.bind, "127.0.0.1");
 }
 
 #[test]
-fn duplicate_task_ids_rejected() {
+fn legacy_task_entries_are_ignored() {
     let home = PathBuf::from("/home/tester");
-    let result = load_str(
+    let (cfg, _tmp) = load_str(
         &home,
         r#"
 [[tasks]]
@@ -140,8 +142,46 @@ id = "dup"
 label = "B"
 command = { program = "make" }
 "#,
+    )
+    .unwrap();
+    // Task ids are no longer validated because tasks are ignored entirely.
+    let serialized = toml::to_string(&cfg).unwrap();
+    assert!(!serialized.contains("dup"), "tasks must not be loaded");
+}
+
+#[test]
+fn legacy_tasks_and_sidecar_are_preserved_verbatim() {
+    let tmp = TempDir::new().unwrap();
+    let home = tmp.path().join("home");
+    fs::create_dir_all(&home).unwrap();
+    let cfg_path = home.join(".config/station/config.toml");
+    fs::create_dir_all(cfg_path.parent().unwrap()).unwrap();
+    let toml_bytes: &[u8] = b"theme.accent = \"blue\"\n\n[[tasks]]\nlabel = \"Legacy build\"\n";
+    fs::write(&cfg_path, toml_bytes).unwrap();
+
+    // Pre-removal sidecar directory: one malformed JSON file and one
+    // well-formed one that now references a program the UI cannot run.
+    let sidecar = cfg_path.with_extension("tasks");
+    fs::create_dir_all(&sidecar).unwrap();
+    let junk_bytes: &[u8] = b"{ this is not json at all \xff\xfe";
+    fs::write(sidecar.join("junk.json"), junk_bytes).unwrap();
+    let recipe_bytes: &[u8] = br#"{"id":"old-legacy-id","label":"Old task","command":{"program":"make","args":[]},"cwd":".","required_ports":[]}"#;
+    let old_path = sidecar.join("old.json");
+    fs::write(&old_path, recipe_bytes).unwrap();
+
+    // Load succeeds even though the sidecar is malformed and the legacy TOML
+    // task has no id at all.
+    let cfg = Config::load(&cfg_path, &home).unwrap();
+    assert_eq!(cfg.theme.accent, "blue");
+    assert!(cfg.tunnels.is_empty());
+
+    // Nothing is deleted and nothing is rewritten.
+    assert_eq!(fs::read(&cfg_path).unwrap().as_slice(), toml_bytes);
+    assert_eq!(
+        fs::read(sidecar.join("junk.json")).unwrap().as_slice(),
+        junk_bytes
     );
-    assert!(result.is_err(), "duplicate task ids must be rejected");
+    assert_eq!(fs::read(&old_path).unwrap().as_slice(), recipe_bytes);
 }
 
 #[test]
@@ -180,10 +220,6 @@ fn invalid_accent_rejected() {
 fn other_invalid_fields_rejected() {
     let home = PathBuf::from("/home/tester");
     let cases = [
-        // empty task id
-        "[[tasks]]\nid = \"\"\nlabel = \"x\"\ncommand = { program = \"make\" }\n",
-        // empty task program
-        "[[tasks]]\nid = \"t\"\nlabel = \"x\"\ncommand = { program = \"\" }\n",
         // empty editor program
         "editor = { program = \"\" }\n",
         // empty tool program
@@ -197,7 +233,7 @@ fn other_invalid_fields_rejected() {
         // remote port 0
         "[[tunnels]]\nid = \"t\"\nhost = \"h\"\nlocal_port = 1\nremote_host = \"r\"\nremote_port = 0\n",
         // control character in identifier
-        "[[tasks]]\nid = \"a\\u{7}b\"\nlabel = \"x\"\ncommand = { program = \"make\" }\n",
+        "[[tunnels]]\nid = \"a\\u{7}b\"\nhost = \"h\"\nlocal_port = 1\nremote_host = \"r\"\nremote_port = 2\n",
     ];
     for body in cases {
         assert!(load_str(&home, body).is_err(), "should reject: {body}");
@@ -212,12 +248,6 @@ fn relative_and_tilde_paths_expanded() {
         r#"
 project_roots = ["relative/sub", "~/elsewhere"]
 pinned_projects = ["pinned", "~/dots"]
-
-[[tasks]]
-id = "t"
-label = "T"
-command = { program = "make" }
-cwd = "~/ws"
 "#,
     )
     .unwrap();
@@ -227,7 +257,6 @@ cwd = "~/ws"
     assert_eq!(cfg.project_roots[1], home.join("elsewhere"));
     assert_eq!(cfg.pinned_projects[0], cfg_parent.join("pinned"));
     assert_eq!(cfg.pinned_projects[1], home.join("dots"));
-    assert_eq!(cfg.tasks[0].cwd, home.join("ws"));
 }
 
 #[test]

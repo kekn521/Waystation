@@ -59,28 +59,13 @@ fn main() -> Result<()> {
     let mut jobs = station::runtime::jobs::Jobs::new(
         station::tasks::TaskManager::new(paths.state.clone()),
         station::agents::AgentManager::new(paths.state.clone()),
-        paths.config.clone(),
-        paths.home.clone(),
     );
     let mut term = TerminalSession::enter()?;
+    let animation_started = std::time::Instant::now();
     loop {
         if let Some(result) = jobs.try_recv() {
             match result {
                 Ok(r) => {
-                    if let Some(config) = r.config {
-                        app.config = config;
-                    }
-                    if let Some(id) = r.saved_recipe {
-                        app.form = None;
-                        app.section = station::model::Section::Tasks;
-                        app.recipes = true;
-                        app.selection = app
-                            .config
-                            .tasks
-                            .iter()
-                            .position(|r| r.id == id)
-                            .unwrap_or(0);
-                    }
                     if let Some(agent) = r.agent {
                         app.form = None;
                         app.update(station::app::Action::SelectWorkspace(
@@ -148,13 +133,15 @@ fn main() -> Result<()> {
             last_slow = std::time::Instant::now();
         }
         let mut hits = vec![];
+        app.animation_elapsed = animation_started.elapsed();
         term.terminal.draw(|f| hits = station::ui::draw(f, &app))?;
         app.hits = hits;
         if crossterm::event::poll(Duration::from_millis(100))?
             && let Some(action) = input::translate(crossterm::event::read()?, &app)
         {
             if matches!(action, station::app::Action::Quit) && (!tasks_ready || jobs.busy) {
-                app.message = Some("Finishing task synchronization; try quit again shortly".into());
+                app.message =
+                    Some("Finishing background synchronization; try quit again shortly".into());
                 continue;
             }
             let effects = app.update(action);

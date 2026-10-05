@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Exercise agent switching and task creation without invoking any real AI provider."""
+"""Exercise agent switching and navigation without invoking any real AI provider."""
 import json
 import runpy
 import subprocess
@@ -9,7 +9,6 @@ from pathlib import Path
 
 helpers = runpy.run_path(str(Path(__file__).with_name('pty-check.py')))
 Session = helpers['Session']
-await_status = helpers['await_status']
 
 
 def tmux(root, *args):
@@ -69,19 +68,14 @@ with tempfile.TemporaryDirectory(prefix='station-workflow-') as directory:
         session.send(b'\x1b[B\r', .5)
         until(lambda: len(agent_records(root)) == 1, session, 'close selected session only')
         assert agent_records(root)[0]['name'] == 'Review'
-        session.send(b'4aGreeting\tprintf "%s" "TASK_FROM_FORM"\x13', .5)
-        until(lambda: bool(list(root.glob('config.tasks/*.json'))), session, 'save task form')
+        session.send(b'1anr9', .3)
+        assert session.process.poll() is None
+        assert b'Add task' not in session.output
+        assert not list(root.glob('config.tasks/*.json'))
         assert config.read_text() == original
         assert not list((root / 'state/runs').glob('*/record.json'))
-        session.send(b'\r', .4)
-        run = await_status(root, 'Passed')
-        assert 'TASK_FROM_FORM' in (root / 'state/runs' / run['id'] / 'output.log').read_text()
-        session.send(b'q')
-        session.finished()
-        session.close()
-        session = Session(root, config)
-        session.send(b'4n', .3)
-        assert b'Greeting' in session.output
+        session.send(b'4', .3)
+        assert b'Services' in session.output
         session.send(b'q')
         session.finished()
     finally:
@@ -89,4 +83,4 @@ with tempfile.TemporaryDirectory(prefix='station-workflow-') as directory:
         if (root / 'state/agents/server.json').exists():
             tmux(root, 'kill-server')
 print('Workflow PTY passed: two named agents, F12 return, nested TMUX environment, restart/reconnect,')
-print('close isolation, task form save/run, literal argv, config preservation, and recipe reload.')
+print('close isolation, removed task shortcuts, services navigation, and config preservation.')

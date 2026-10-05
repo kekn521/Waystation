@@ -29,40 +29,12 @@ impl App {
         }
         items
     }
-    pub fn recipe_items(&self) -> Vec<(String, String, Action)> {
-        self.config
-            .tasks
-            .iter()
-            .map(|r| {
-                (
-                    r.label.clone(),
-                    format!("{} {}", r.command.program, r.command.args.join(" ")),
-                    Action::StartRecipe(r.id.clone()),
-                )
-            })
-            .collect()
-    }
-    pub fn task_items(&self) -> Vec<(String, String, Action)> {
-        if self.recipes {
-            return self.recipe_items();
-        }
-        self.runs
-            .iter()
-            .map(|r| {
-                (
-                    format!("{}  · {:?}", r.recipe.label, r.status),
-                    format!("{} · {}", r.cwd.display(), &r.id.to_string()[..8]),
-                    Action::RunLog(r.id),
-                )
-            })
-            .collect()
-    }
     pub fn section_items(&self) -> Vec<(String, String, Action)> {
         let section = if self.section == Section::Overview {
             [
+                Section::Overview,
                 Section::Workspaces,
                 Section::System,
-                Section::Tasks,
                 Section::Services,
             ][self.pane]
         } else {
@@ -81,7 +53,6 @@ impl App {
                 })
                 .collect(),
             Section::Agents => self.agent_items(),
-            Section::Tasks => self.task_items(),
             Section::Services => crate::ui::services::items(self),
             Section::Connections => self.connection_items(),
             Section::Files => self.file_items(),
@@ -99,6 +70,13 @@ impl App {
             .activity
             .iter()
             .rev()
+            .filter(|a| match &a.kind {
+                crate::model::ActivityKind::TaskRun(id) => self
+                    .runs
+                    .iter()
+                    .any(|r| r.id.to_string() == *id && r.recipe.id.starts_with("tunnel:")),
+                _ => true,
+            })
             .map(|a| {
                 let action = match &a.kind {
                     crate::model::ActivityKind::TaskRun(id) => uuid::Uuid::parse_str(id)
@@ -122,17 +100,16 @@ impl App {
             .collect()
     }
     fn selected_run(&self) -> Option<&crate::tasks::RunRecord> {
-        if self.recipes
-            || !(self.section == Section::Tasks
-                || self.section == Section::Overview && self.pane == 2)
-        {
+        if self.section != Section::Connections {
             return None;
         }
-        let items = self.task_items();
+        let items = self.connection_items();
         let (_, _, Action::RunLog(id)) = items.get(self.selection)? else {
             return None;
         };
-        self.runs.iter().find(|r| r.id == *id)
+        self.runs
+            .iter()
+            .find(|r| r.id == *id && r.recipe.id.starts_with("tunnel:"))
     }
     pub fn task_action(&mut self, a: &Action) -> Option<Vec<Effect>> {
         let effects = match a {
@@ -140,24 +117,6 @@ impl App {
                 let choice = self.confirmation.as_ref()?.choices.get(*i)?.1.clone();
                 self.confirmation = None;
                 return Some(self.update(choice));
-            }
-            Action::Recipes => {
-                self.section = Section::Tasks;
-                self.recipes = !self.recipes;
-                self.selection = 0;
-                vec![]
-            }
-            Action::StartRecipe(id) => {
-                let mut recipe = self.config.tasks.iter().find(|r| &r.id == id)?.clone();
-                if recipe.cwd.is_relative() {
-                    let Some(w) = self.workspace() else {
-                        self.message =
-                            Some("Select a workspace before starting this recipe".into());
-                        return Some(vec![]);
-                    };
-                    recipe.cwd = w.join(&recipe.cwd);
-                }
-                return Some(self.preflight(recipe));
             }
             Action::StartTunnel(id) => {
                 let t = self.config.tunnels.iter().find(|t| &t.id == id)?;
@@ -174,15 +133,12 @@ impl App {
                 }
             }
             Action::StartTask(recipe) => {
-                self.recipes = false;
-                self.section = Section::Tasks;
+                self.section = Section::Connections;
+                self.searching = false;
+                self.selection = 0;
                 vec![Effect::StartTask(recipe.clone())]
             }
             Action::RunLog(id) => vec![Effect::ReadLog(*id)],
-            Action::Rerun => {
-                let r = self.selected_run()?.recipe.clone();
-                return Some(self.preflight(r));
-            }
             Action::Stop => {
                 let r = self.selected_run()?;
                 if !r.stoppable() {
@@ -194,7 +150,7 @@ impl App {
                         title: format!("Stop {}?", r.recipe.label),
                         choices: vec![
                             ("Cancel".into(), Action::Escape),
-                            ("Stop this Station task".into(), Action::ConfirmStop(r.id)),
+                            ("Stop this tunnel".into(), Action::ConfirmStop(r.id)),
                         ],
                     });
                     self.modal_selection = 0;
@@ -204,7 +160,7 @@ impl App {
             Action::ConfirmStop(id) => vec![Effect::StopTask(*id)],
             Action::Quit if !self.pending_starts.is_empty() => {
                 self.message =
-                    Some("Waiting for newly started tasks to appear; quit again shortly".into());
+                    Some("Waiting for background processes to appear; quit again shortly".into());
                 vec![]
             }
             Action::Quit => {
@@ -217,10 +173,10 @@ impl App {
                     return None;
                 }
                 self.confirmation = Some(Confirmation {
-                    title: format!("{running} tasks are still running"),
+                    title: format!("{running} background processes are still running"),
                     choices: vec![
-                        ("Keep tasks running and quit".into(), Action::QuitKeep),
-                        ("Stop owned tasks and quit".into(), Action::QuitStop),
+                        ("Keep running and quit".into(), Action::QuitKeep),
+                        ("Stop owned processes and quit".into(), Action::QuitStop),
                         ("Cancel".into(), Action::Escape),
                     ],
                 });
@@ -232,7 +188,7 @@ impl App {
                 if !self.pending_starts.is_empty()
                     || self.runs.iter().any(|r| r.status == RunStatus::Starting) =>
             {
-                self.message=Some("Tasks are still starting; wait for ownership to be verified before stopping and quitting".into());
+                self.message=Some("Background processes are still starting; wait for ownership to be verified before stopping and quitting".into());
                 vec![]
             }
             Action::QuitStop => vec![Effect::StopAllAndQuit(

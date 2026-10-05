@@ -59,25 +59,6 @@ q quit
 
 
 
---- Tasks ---
-Resize to at least 60 × 18
-q quit
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 --- Services ---
 Resize to at least 60 × 18
 q quit
@@ -209,7 +190,7 @@ q quit
 
 
 
-Stop task?
+Stop tunnel?
 ↑/↓ choose · Enter confirm · Esc cancel
 ❯ Cancel
   Stop
@@ -260,23 +241,5 @@ q quit
  │                                                       │
  │ F12 returns here. Your session keeps running when     │
  │ Station closes.                                       │
- │                                                       │
- ╰───────────────────────────────────────────────────────╯
-
- ╭ Add task · save a reusable command ───────────────────╮
- │ NAME                                                  │
- │ ▏                                                     │
- │                                                       │
- │ COMMAND · quotes keep arguments together              │
- │ e.g. cargo test / npm run dev                         │
- │                                                       │
- │ PROJECT · ←/→ choose                                  │
- │ ‹ /projects/機 器 -learning-with-a-long-name ›          │
- │                                                       │
- │ [ Save task ]                                         │
- │ Tab next · Ctrl+S save · Ctrl+U clear · Esc cancel    │
- │                                                       │
- │ Saved tasks run in this project. Use an explicit      │
- │ shell script for pipes or environment expansion.      │
  │                                                       │
  ╰───────────────────────────────────────────────────────╯

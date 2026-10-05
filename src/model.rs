@@ -6,7 +6,6 @@ pub enum Section {
     Overview,
     Workspaces,
     Agents,
-    Tasks,
     Services,
     Connections,
     Files,
@@ -14,11 +13,10 @@ pub enum Section {
     Activity,
 }
 impl Section {
-    pub const ALL: [Self; 9] = [
+    pub const ALL: [Self; 8] = [
         Self::Overview,
         Self::Workspaces,
         Self::Agents,
-        Self::Tasks,
         Self::Services,
         Self::Connections,
         Self::Files,
@@ -30,7 +28,6 @@ impl Section {
             Self::Overview => "Overview",
             Self::Workspaces => "Workspaces",
             Self::Agents => "Agents",
-            Self::Tasks => "Tasks",
             Self::Services => "Services",
             Self::Connections => "Connections",
             Self::Files => "Files",

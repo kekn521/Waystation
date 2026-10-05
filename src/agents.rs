@@ -201,7 +201,7 @@ impl AgentManager {
         // Loaded before the first session starts, including commands that exit immediately.
         fs::write(
             self.dir.join("tmux.conf"),
-            "set -g remain-on-exit on\nset -g remain-on-exit-format ''\nset -g history-limit 50000\nset -g status-style 'bg=#1e2030,fg=#cad3f5'\nset -g status-left '#[fg=#c6a0f6,bold] STATION #[default]'\nset -g status-right '#[fg=#8bd5ca] F12 → Station  '\nset -g status-right-length 40\nset -g allow-rename off\nset -g automatic-rename off\nbind-key -n F12 detach-client\n",
+            "set -g remain-on-exit on\nset -g remain-on-exit-format ''\nset -g history-limit 50000\nset -g mouse on\nset -g status-style 'bg=#1e2030,fg=#cad3f5'\nset -g status-left '#[fg=#c6a0f6,bold] STATION #[default]'\nset -g status-right '#[fg=#8bd5ca] F12 → Station  '\nset -g status-right-length 40\nset -g allow-rename off\nset -g automatic-rename off\nbind-key -n F12 detach-client\n",
         )?;
         let session = AgentSession {
             id: Uuid::new_v4(),
@@ -229,7 +229,18 @@ impl AgentManager {
             "__agent-exec".into(),
             manifest.clone().into_os_string(),
         ];
-        if let Err(error) = self.checked(key, args) {
+        let started = self.checked(key, args).and_then(|_| {
+            self.checked(
+                key,
+                vec![
+                    "set-option".into(),
+                    "-g".into(),
+                    "mouse".into(),
+                    "on".into(),
+                ],
+            )
+        });
+        if let Err(error) = started {
             // Preserve the record if tmux did start despite a client timeout.
             if self
                 .live(key)

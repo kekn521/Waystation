@@ -75,7 +75,9 @@ struct RawConfig {
     pinned_projects: Vec<PathBuf>,
     editor: Option<ToolCommand>,
     tools: BTreeMap<String, ToolCommand>,
-    tasks: Vec<TaskRecipe>,
+    // Accept legacy task configuration without exposing or loading removed recipes.
+    #[serde(rename = "tasks")]
+    _legacy_tasks: Option<serde::de::IgnoredAny>,
     tunnels: Vec<TunnelRecipe>,
     theme: ThemeConfig,
 }
@@ -87,7 +89,6 @@ pub struct Config {
     pub pinned_projects: Vec<PathBuf>,
     pub editor: Option<ToolCommand>,
     pub tools: BTreeMap<String, ToolCommand>,
-    pub tasks: Vec<TaskRecipe>,
     pub tunnels: Vec<TunnelRecipe>,
     pub theme: ThemeConfig,
 }
@@ -109,7 +110,6 @@ impl Default for Config {
             pinned_projects: Vec::new(),
             editor: None,
             tools: BTreeMap::new(),
-            tasks: Vec::new(),
             tunnels: Vec::new(),
             theme: ThemeConfig {
                 accent: default_accent(),
@@ -193,8 +193,7 @@ impl Config {
         let raw = match fs::read_to_string(path) {
             Ok(s) => s,
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
-                let mut cfg = Config::defaults(home);
-                cfg.tasks.extend(crate::recipes::load(path)?);
+                let cfg = Config::defaults(home);
                 cfg.validate()?;
                 return Ok(cfg);
             }
@@ -209,7 +208,6 @@ impl Config {
             pinned_projects: parsed.pinned_projects,
             editor: parsed.editor,
             tools: parsed.tools,
-            tasks: parsed.tasks,
             tunnels: parsed.tunnels,
             theme: parsed.theme,
         };
@@ -225,12 +223,6 @@ impl Config {
             .into_iter()
             .map(|p| expand_path_field(p, home, base))
             .collect();
-        // A task cwd of `.` must stay relative to the selected workspace, so
-        // only `~/` is expanded - never the config directory.
-        for task in &mut cfg.tasks {
-            task.cwd = expand_tilde(&task.cwd, home);
-        }
-        cfg.tasks.extend(crate::recipes::load(path)?);
         cfg.validate()?;
         Ok(cfg)
     }
@@ -242,11 +234,6 @@ impl Config {
         for (name, tool) in &self.tools {
             check_id("tool", name)?;
             check_nonempty("tool program", &tool.program)?;
-        }
-        check_ids(&self.tasks.iter().map(|t| t.id.clone()).collect::<Vec<_>>())?;
-        for task in &self.tasks {
-            check_id("task", &task.id)?;
-            check_nonempty("task program", &task.command.program)?;
         }
         check_ids(
             &self

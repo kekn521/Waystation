@@ -34,10 +34,6 @@ fn main() -> anyhow::Result<()> {
                 a.section = station::model::Section::Agents;
                 a.update(station::app::Action::NewAgent);
             }
-            "task-form" => {
-                a.section = station::model::Section::Tasks;
-                a.update(station::app::Action::NewRecipe);
-            }
             "agents" => {
                 a.section = station::model::Section::Agents;
             }

@@ -19,7 +19,8 @@ pub fn bytes(n: u64) -> String {
 pub fn render(frame: &mut Frame, area: Rect, app: &App) -> Vec<HitRegion> {
     let block = ui::panel(
         "Machine pulse · live",
-        app.pane == 1 || app.section == crate::model::Section::System,
+        app.section == crate::model::Section::System
+            || (app.section == crate::model::Section::Overview && app.pane == 2),
     );
     let inner = block.inner(area);
     frame.render_widget(block, area);

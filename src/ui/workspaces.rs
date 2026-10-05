@@ -10,7 +10,8 @@ use ratatui::{
     widgets::Paragraph,
 };
 pub fn render(frame: &mut Frame, area: Rect, app: &App) -> Vec<HitRegion> {
-    let focus = app.section == Section::Workspaces || app.pane == 0;
+    let focus =
+        app.section == Section::Workspaces || (app.section == Section::Overview && app.pane == 1);
     let block = ui::panel("Continue working", focus);
     let inner = block.inner(area);
     frame.render_widget(block, area);

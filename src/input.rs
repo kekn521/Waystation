@@ -71,9 +71,9 @@ pub fn translate(event: Event, app: &App) -> Option<Action> {
                 };
             }
             Some(match k.code {
-                KeyCode::Char('1'..='9') => {
+                KeyCode::Char('1'..='8') => {
                     if let KeyCode::Char(c) = k.code {
-                        Action::Nav(Section::ALL[c as usize - '1' as usize])
+                        Action::Nav(*Section::ALL.get(c as usize - '1' as usize)?)
                     } else {
                         return None;
                     }
@@ -91,11 +91,8 @@ pub fn translate(event: Event, app: &App) -> Option<Action> {
                 KeyCode::Char('g') => Action::Git,
                 KeyCode::Char('h') => Action::Herdr,
                 KeyCode::Char('f') => Action::Files,
-                KeyCode::Char('r') => Action::Rerun,
                 KeyCode::Char('x') => Action::Stop,
                 KeyCode::Char('n') if app.section == Section::Agents => Action::NewAgent,
-                KeyCode::Char('a') => Action::NewRecipe,
-                KeyCode::Char('n') => Action::Recipes,
                 KeyCode::Char('.') => Action::Hidden,
                 KeyCode::Char('y') => Action::Copy,
                 KeyCode::F(5) => Action::Reload,

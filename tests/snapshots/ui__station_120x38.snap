@@ -10,35 +10,35 @@ expression: "snapshots.join(\"\\n\\n\")"
                    ╭ commands ────────────────────────────────────────────────────────────────────────────────────────╮
   WORK             │ / Jump to anything…                                                                              │
   1 Overview       ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
-                    1 workspaces  ·  0 task runs  ·  local observations
-  2 Workspaces     ╭ Continue working ────────────────────────────────────────╮ ╭ Machine pulse · live ───────────────╮
-                   │ ❯ 機 器 -learning-with-a-long-name · unavailable           │ │permission denied                    │
-  3 Agents         │   /projects/機 器 -learning-with-a-long-name               │ │                                     │
-                   │                                                          │ │                                     │
-                   │                                                          │ │                                     │
-  OPERATE          │                                                          │ │                                     │
-  4 Tasks          │                                                          │ │                                     │
-                   │                                                          │ │                                     │
-  5 Services       │                                                          │ │                                     │
-                   │                                                          │ │                                     │
-  6 Connections    │ e editor · t shell · g Git · h Herdr · f files           │ │                                     │
-                   │ Git context loads for the selected workspace             │ │                                     │
-                   │                                                          │ │                                     │
-  EXPLORE          │                                                          │ │                                     │
-  7 Files          ╰──────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────╯
-
-  8 System         ╭ Tasks & recent runs · n saved tasks · a add ＋  Add task ─╮ ╭ Services & ports · read only ───────╮
-                   │No task runs yet.                                         │ │                                     │
-  9 Activity       │                                                          │ │ Nothing here yet.                   │
-                   │Press a to add a task, or n to choose a saved task.       │ │                                     │
-                   │Tasks keep their logs and completion status after Station │ │                                     │
-                   │closes.                                                   │ │                                     │
-                   │                                                          │ │                                     │
-                   │                                                          │ │                                     │
-  ▰ ▰ ▰ ▰          │                                                          │ │                                     │
-  Catppuccin       │                                                          │ │                                     │
-  Macchiato        │                                                          │ │                                     │
-                   ╰──────────────────────────────────────────────────────────╯ ╰─────────────────────────────────────╯
+                    1 workspaces  ·  local observations
+  2 Workspaces     ╭ Orbit ─────────────────────────────────────────╮ ╭ Continue working ─────────────────────────────╮
+                   │            · ⡀⣀⠠⠄⠤⠄⠒⠐⠂⠂⠒⠐⠂⠒⠠⠤⠠⠄⣀⢀              │ │ ❯ 機 器 -learning-with-a-long-name · unavailable│
+  3 Agents         │  ·     ⢀⡀⠤⠒·⠉─●─  ⢀⣀⣀⣀⣀⣀⣀⣀⣀⡀     ⠉⋆⠒⠤⢀⡀        │ │   /projects/機 器 -learning-with-a-long-name    │
+                   │     ⢀⠤⠊⠁·    ⣀⠤⠔⠊⠉⠁        ⠈⠉⠑⠢⠤⣀     ⠈⠑⠤⡀  ·  │ │                                               │
+                   │   ⢀⠔⠉     ⢀⡴⠊     ⣀⠤⠖⠒⠒⠒⠒⠲⠤⣀     ⠑⢦⡀     ⠉⠢⡀   │ │                                               │
+  OPERATE          │  ⢠⠊  ⋆   ⡰⠋     ⡴⠊          ⠑⢦     ⠙⢆   ·  ⠑⡄  │ │                                               │
+  4 Services       │  ⡏      ⢠⠃     ⢸⠁            ⠈⡇     ⠘⡄      ⢹  │ │                                               │
+                   │  ⣇      ⠘⡄     ⢸⡀      ✦     ●·     ⢠⠃      ⣸  │ │                                               │
+  5 Connections    │  ⠘⢄      ⠱⣄     ⠳⢄          ⡠⠞     ⣠⠎      ⡠⠃  │ │                                               │
+                   │   ⠈⠢⣀     ⠈◉⢄·    ⠉⠒⠦⠤⠤⠤⠤⠴⠒⠉     ⡠⠞⠁     ⣀⠔⠁   │ │ e editor · t shell · g Git · h Herdr · f files│
+                   │     ⠈⠒⢄⡀     ⠉·⠢⢄⣀⡀        ⢀⣀⡠⠔⠒⠉     ⢀⡠⠒⠁     │ │ Git context loads for the selected workspace  │
+  EXPLORE          │        ⠈⠁⠒⠤⡀⣀     ⠈⠉⠉⠉⠉⠉⠉⠉⠉⠁     ⣀⢀⠤⠒⠈⠁        │ │                                               │
+  6 Files          │              ⠁⠉⠐⠂⠒⠂⠤⠠⠄⠤⠠⠠⠄⠤⠐⠒⠐⠂⠉⠈              │ │                                               │
+                   ╰────────────────────────────────────────────────╯ ╰───────────────────────────────────────────────╯
+  7 System
+                   ╭ Machine pulse · live ──────────────────────────╮ ╭ Services & ports · read only ─────────────────╮
+  8 Activity       │permission denied                               │ │                                               │
+                   │                                                │ │ Nothing here yet.                             │
+                   │                                                │ │                                               │
+                   │                                                │ │                                               │
+                   │                                                │ │                                               │
+                   │                                                │ │                                               │
+                   │                                                │ │                                               │
+                   │                                                │ │                                               │
+  ▰ ▰ ▰ ▰          │                                                │ │                                               │
+  Catppuccin       │                                                │ │                                               │
+  Macchiato        │                                                │ │                                               │
+                   ╰────────────────────────────────────────────────╯ ╰───────────────────────────────────────────────╯
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
  NORMAL  j/k move · e editor · t shell · g Git · h Herdr · f files · / commands · ? help · q quit
 
@@ -50,26 +50,26 @@ expression: "snapshots.join(\"\\n\\n\")"
                    ╭ commands ────────────────────────────────────────────────────────────────────────────────────────╮
   WORK             │ / Jump to anything…                                                                              │
   1 Overview       ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
-                    1 workspaces  ·  0 task runs  ·  local observations
+                    1 workspaces  ·  local observations
   2 Workspaces     ╭ Continue working ────────────────────────────────────────────────────────────────────────────────╮
                    │ ❯ 機 器 -learning-with-a-long-name · unavailable                                                   │
   3 Agents         │   /projects/機 器 -learning-with-a-long-name                                                       │
                    │                                                                                                  │
                    │                                                                                                  │
   OPERATE          │                                                                                                  │
-  4 Tasks          │                                                                                                  │
+  4 Services       │                                                                                                  │
                    │                                                                                                  │
-  5 Services       │                                                                                                  │
-                   │                                                                                                  │
-  6 Connections    │                                                                                                  │
+  5 Connections    │                                                                                                  │
                    │                                                                                                  │
                    │                                                                                                  │
   EXPLORE          │                                                                                                  │
-  7 Files          │                                                                                                  │
+  6 Files          │                                                                                                  │
                    │                                                                                                  │
-  8 System         │                                                                                                  │
+  7 System         │                                                                                                  │
                    │                                                                                                  │
-  9 Activity       │                                                                                                  │
+  8 Activity       │                                                                                                  │
+                   │                                                                                                  │
+                   │                                                                                                  │
                    │                                                                                                  │
                    │                                                                                                  │
                    │                                                                                                  │
@@ -90,26 +90,26 @@ expression: "snapshots.join(\"\\n\\n\")"
                    ╭ commands ────────────────────────────────────────────────────────────────────────────────────────╮
   WORK             │ / Jump to anything…                                                                              │
   1 Overview       ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
-                    1 workspaces  ·  0 task runs  ·  local observations
+                    1 workspaces  ·  local observations
   2 Workspaces     ╭ Agents · n new · Enter open · x close ───────────────────────────────────────────────────────────╮
                    │ ❯ ＋  New agent session                                                                           │
   3 Agents         │   Codex or Claude · choose a project · F12 returns here                                          │
                    │                                                                                                  │
                    │                                                                                                  │
   OPERATE          │                                                                                                  │
-  4 Tasks          │                                                                                                  │
+  4 Services       │                                                                                                  │
                    │                                                                                                  │
-  5 Services       │                                                                                                  │
-                   │                                                                                                  │
-  6 Connections    │                                                                                                  │
+  5 Connections    │                                                                                                  │
                    │                                                                                                  │
                    │                                                                                                  │
   EXPLORE          │                                                                                                  │
-  7 Files          │                                                                                                  │
+  6 Files          │                                                                                                  │
                    │                                                                                                  │
-  8 System         │                                                                                                  │
+  7 System         │                                                                                                  │
                    │                                                                                                  │
-  9 Activity       │                                                                                                  │
+  8 Activity       │                                                                                                  │
+                   │                                                                                                  │
+                   │                                                                                                  │
                    │                                                                                                  │
                    │                                                                                                  │
                    │                                                                                                  │
@@ -122,46 +122,6 @@ expression: "snapshots.join(\"\\n\\n\")"
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
  NORMAL  n new agent · Enter open · F12 return from agent · x close · / switch · q quit
 
---- Tasks ---
- ╭─┬─╮  S T A T I O N     dispatch / your terminal, connected
- ╰─┼─╯  機 器 -learning-with-a-long-name  · Tasks
-                                                                                                ● LOCAL  /  MACCHIATO
-────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-                   ╭ commands ────────────────────────────────────────────────────────────────────────────────────────╮
-  WORK             │ / Jump to anything…                                                                              │
-  1 Overview       ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
-                    1 workspaces  ·  0 task runs  ·  local observations
-  2 Workspaces     ╭ Tasks & recent runs · n saved tasks · a add ─────────────────────────────────────── ＋  Add task ─╮
-                   │No task runs yet.                                                                                 │
-  3 Agents         │                                                                                                  │
-                   │Press a to add a task, or n to choose a saved task.                                               │
-                   │Tasks keep their logs and completion status after Station closes.                                 │
-  OPERATE          │                                                                                                  │
-  4 Tasks          │                                                                                                  │
-                   │                                                                                                  │
-  5 Services       │                                                                                                  │
-                   │                                                                                                  │
-  6 Connections    │                                                                                                  │
-                   │                                                                                                  │
-                   │                                                                                                  │
-  EXPLORE          │                                                                                                  │
-  7 Files          │                                                                                                  │
-                   │                                                                                                  │
-  8 System         │                                                                                                  │
-                   │                                                                                                  │
-  9 Activity       │                                                                                                  │
-                   │                                                                                                  │
-                   │                                                                                                  │
-                   │                                                                                                  │
-                   │                                                                                                  │
-                   │                                                                                                  │
-  ▰ ▰ ▰ ▰          │                                                                                                  │
-  Catppuccin       │                                                                                                  │
-  Macchiato        │                                                                                                  │
-                   ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
-────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
- NORMAL  a add task · n recipes/history · Enter run/logs · r rerun · x stop · q quit
-
 --- Services ---
  ╭─┬─╮  S T A T I O N     dispatch / your terminal, connected
  ╰─┼─╯  機 器 -learning-with-a-long-name  · Services
@@ -170,26 +130,26 @@ expression: "snapshots.join(\"\\n\\n\")"
                    ╭ commands ────────────────────────────────────────────────────────────────────────────────────────╮
   WORK             │ / Jump to anything…                                                                              │
   1 Overview       ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
-                    1 workspaces  ·  0 task runs  ·  local observations
+                    1 workspaces  ·  local observations
   2 Workspaces     ╭ Services & ports · read only ────────────────────────────────────────────────────────────────────╮
                    │                                                                                                  │
   3 Agents         │ Nothing here yet.                                                                                │
                    │                                                                                                  │
                    │                                                                                                  │
   OPERATE          │                                                                                                  │
-  4 Tasks          │                                                                                                  │
+  4 Services       │                                                                                                  │
                    │                                                                                                  │
-  5 Services       │                                                                                                  │
-                   │                                                                                                  │
-  6 Connections    │                                                                                                  │
+  5 Connections    │                                                                                                  │
                    │                                                                                                  │
                    │                                                                                                  │
   EXPLORE          │                                                                                                  │
-  7 Files          │                                                                                                  │
+  6 Files          │                                                                                                  │
                    │                                                                                                  │
-  8 System         │                                                                                                  │
+  7 System         │                                                                                                  │
                    │                                                                                                  │
-  9 Activity       │                                                                                                  │
+  8 Activity       │                                                                                                  │
+                   │                                                                                                  │
+                   │                                                                                                  │
                    │                                                                                                  │
                    │                                                                                                  │
                    │                                                                                                  │
@@ -210,26 +170,26 @@ expression: "snapshots.join(\"\\n\\n\")"
                    ╭ commands ────────────────────────────────────────────────────────────────────────────────────────╮
   WORK             │ / Jump to anything…                                                                              │
   1 Overview       ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
-                    1 workspaces  ·  0 task runs  ·  local observations
+                    1 workspaces  ·  local observations
   2 Workspaces     ╭ Connections · saved destinations ────────────────────────────────────────────────────────────────╮
                    │                                                                                                  │
   3 Agents         │ Nothing here yet.                                                                                │
                    │                                                                                                  │
                    │                                                                                                  │
   OPERATE          │                                                                                                  │
-  4 Tasks          │                                                                                                  │
+  4 Services       │                                                                                                  │
                    │                                                                                                  │
-  5 Services       │                                                                                                  │
-                   │                                                                                                  │
-  6 Connections    │                                                                                                  │
+  5 Connections    │                                                                                                  │
                    │                                                                                                  │
                    │                                                                                                  │
   EXPLORE          │                                                                                                  │
-  7 Files          │                                                                                                  │
+  6 Files          │                                                                                                  │
                    │                                                                                                  │
-  8 System         │                                                                                                  │
+  7 System         │                                                                                                  │
                    │                                                                                                  │
-  9 Activity       │                                                                                                  │
+  8 Activity       │                                                                                                  │
+                   │                                                                                                  │
+                   │                                                                                                  │
                    │                                                                                                  │
                    │                                                                                                  │
                    │                                                                                                  │
@@ -250,26 +210,26 @@ expression: "snapshots.join(\"\\n\\n\")"
                    ╭ commands ────────────────────────────────────────────────────────────────────────────────────────╮
   WORK             │ / Jump to anything…                                                                              │
   1 Overview       ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
-                    1 workspaces  ·  0 task runs  ·  local observations
+                    1 workspaces  ·  local observations
   2 Workspaces     ╭ Files /  ────────────────────────────────────────────────────────────────────────────────────────╮
                    │                                                                                                  │
   3 Agents         │ Nothing here yet.                                                                                │
                    │                                                                                                  │
                    │                                                                                                  │
   OPERATE          │                                                                                                  │
-  4 Tasks          │                                                                                                  │
+  4 Services       │                                                                                                  │
                    │                                                                                                  │
-  5 Services       │                                                                                                  │
-                   │                                                                                                  │
-  6 Connections    │                                                                                                  │
+  5 Connections    │                                                                                                  │
                    │                                                                                                  │
                    │                                                                                                  │
   EXPLORE          │                                                                                                  │
-  7 Files          │                                                                                                  │
+  6 Files          │                                                                                                  │
                    │                                                                                                  │
-  8 System         │                                                                                                  │
+  7 System         │                                                                                                  │
                    │                                                                                                  │
-  9 Activity       │                                                                                                  │
+  8 Activity       │                                                                                                  │
+                   │                                                                                                  │
+                   │                                                                                                  │
                    │                                                                                                  │
                    │                                                                                                  │
                    │                                                                                                  │
@@ -290,26 +250,26 @@ expression: "snapshots.join(\"\\n\\n\")"
                    ╭ commands ────────────────────────────────────────────────────────────────────────────────────────╮
   WORK             │ / Jump to anything…                                                                              │
   1 Overview       ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
-                    1 workspaces  ·  0 task runs  ·  local observations
+                    1 workspaces  ·  local observations
   2 Workspaces     ╭ Machine pulse · live ────────────────────────────────────────────────────────────────────────────╮
                    │permission denied                                                                                 │
   3 Agents         │                                                                                                  │
                    │                                                                                                  │
                    │                                                                                                  │
   OPERATE          │                                                                                                  │
-  4 Tasks          │                                                                                                  │
+  4 Services       │                                                                                                  │
                    │                                                                                                  │
-  5 Services       │                                                                                                  │
-                   │                                                                                                  │
-  6 Connections    │                                                                                                  │
+  5 Connections    │                                                                                                  │
                    │                                                                                                  │
                    │                                                                                                  │
   EXPLORE          │                                                                                                  │
-  7 Files          │                                                                                                  │
+  6 Files          │                                                                                                  │
                    │                                                                                                  │
-  8 System         │                                                                                                  │
+  7 System         │                                                                                                  │
                    │                                                                                                  │
-  9 Activity       │                                                                                                  │
+  8 Activity       │                                                                                                  │
+                   │                                                                                                  │
+                   │                                                                                                  │
                    │                                                                                                  │
                    │                                                                                                  │
                    │                                                                                                  │
@@ -330,26 +290,26 @@ expression: "snapshots.join(\"\\n\\n\")"
                    ╭ commands ────────────────────────────────────────────────────────────────────────────────────────╮
   WORK             │ / Jump to anything…                                                                              │
   1 Overview       ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
-                    1 workspaces  ·  0 task runs  ·  local observations
-  2 Workspaces     ╭ Activity · Station launches & task outcomes ─────────────────────────────────────────────────────╮
+                    1 workspaces  ·  local observations
+  2 Workspaces     ╭ Activity · Station launches & tunnels ───────────────────────────────────────────────────────────╮
                    │                                                                                                  │
   3 Agents         │ Nothing here yet.                                                                                │
                    │                                                                                                  │
                    │                                                                                                  │
   OPERATE          │                                                                                                  │
-  4 Tasks          │                                                                                                  │
+  4 Services       │                                                                                                  │
                    │                                                                                                  │
-  5 Services       │                                                                                                  │
-                   │                                                                                                  │
-  6 Connections    │                                                                                                  │
+  5 Connections    │                                                                                                  │
                    │                                                                                                  │
                    │                                                                                                  │
   EXPLORE          │                                                                                                  │
-  7 Files          │                                                                                                  │
+  6 Files          │                                                                                                  │
                    │                                                                                                  │
-  8 System         │                                                                                                  │
+  7 System         │                                                                                                  │
                    │                                                                                                  │
-  9 Activity       │                                                                                                  │
+  8 Activity       │                                                                                                  │
+                   │                                                                                                  │
+                   │                                                                                                  │
                    │                                                                                                  │
                    │                                                                                                  │
                    │                                                                                                  │
@@ -369,26 +329,26 @@ expression: "snapshots.join(\"\\n\\n\")"
                    ╭ commands ────────────────────────────────────────────────────────────────────────────────────────╮
   WORK             │ / herdr▏                                                                                         │
   1 Overview       ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
-                    1 workspaces  ·  0 task runs  ·  local observations
+                    1 workspaces  ·  local observations
   2 Workspaces     ╭ Jump to anything ────────────────────────────────────────────────────────────────────────────────╮
                    │ ❯ Open Herdr                                                                                     │
   3 Agents         │   selected workspace                                                                             │
                    │ · Refresh providers                                                                              │
                    │   selected workspace                                                                             │
   OPERATE          │                                                                                                  │
-  4 Tasks          │                                                                                                  │
+  4 Services       │                                                                                                  │
                    │                                                                                                  │
-  5 Services       │                                                                                                  │
-                   │                                                                                                  │
-  6 Connections    │                                                                                                  │
+  5 Connections    │                                                                                                  │
                    │                                                                                                  │
                    │                                                                                                  │
   EXPLORE          │                                                                                                  │
-  7 Files          │                                                                                                  │
+  6 Files          │                                                                                                  │
                    │                                                                                                  │
-  8 System         │                                                                                                  │
+  7 System         │                                                                                                  │
                    │                                                                                                  │
-  9 Activity       │                                                                                                  │
+  8 Activity       │                                                                                                  │
+                   │                                                                                                  │
+                   │                                                                                                  │
                    │                                                                                                  │
                    │                                                                                                  │
                    │                                                                                                  │
@@ -405,29 +365,29 @@ expression: "snapshots.join(\"\\n\\n\")"
  ╰─┼─╯  機 器 -learning-with-a-long-name  · Activity
                                                                                                 ● LOCAL  /  MACCHIATO
 ──╭ Keyboard shortcuts · Esc close ──────────────────────────────────────────────────────────────────────────────────╮──
-  │1–9 sections · j/k or arrows move · Tab focus pane                                                                │╮
+  │1–8 sections · j/k or arrows move · Tab focus pane                                                                │╮
   │/ search commands · Enter activate · Esc close                                                                    ││
   │e editor · t shell · g Git · h Herdr · f files                                                                    │╯
-  │Agents: n new · Enter open · F12 return · x close                                                                 │
-  │Tasks: a add · n saved/history · r rerun · x stop                                                                 │╮
+  │Connections: x stop tunnel                                                                                        │
+  │Agents: n new · Enter open · F12 return · x close                                                                 │╮
   │. hidden files · y copy path · F5 refresh                                                                         ││
-  │q quit · keep running / stop owned tasks / cancel                                                                 ││
+  │q quit                                                                                                            ││
   │                                                                                                                  ││
   │                                                                                                                  ││
   │                                                                                                                  ││
   ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯│
                    │                                                                                                  │
-  5 Services       │                                                                                                  │
-                   │                                                                                                  │
-  6 Connections    │                                                                                                  │
+  5 Connections    │                                                                                                  │
                    │                                                                                                  │
                    │                                                                                                  │
   EXPLORE          │                                                                                                  │
-  7 Files          │                                                                                                  │
+  6 Files          │                                                                                                  │
                    │                                                                                                  │
-  8 System         │                                                                                                  │
+  7 System         │                                                                                                  │
                    │                                                                                                  │
-  9 Activity       │                                                                                                  │
+  8 Activity       │                                                                                                  │
+                   │                                                                                                  │
+                   │                                                                                                  │
                    │                                                                                                  │
                    │                                                                                                  │
                    │                                                                                                  │
@@ -447,26 +407,26 @@ expression: "snapshots.join(\"\\n\\n\")"
                    ╭ commands ────────────────────────────────────────────────────────────────────────────────────────╮
   WORK             │ / Jump to anything…                                                                              │
   1 Overview       ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
-                    1 workspaces  ·  0 task runs  ·  local observations
-  2 Workspaces     ╭ Activity · Station launches & task outcomes ─────────────────────────────────────────────────────╮
+                    1 workspaces  ·  local observations
+  2 Workspaces     ╭ Activity · Station launches & tunnels ───────────────────────────────────────────────────────────╮
                    │                                                                                                  │
   3 Agents         │ Nothing here yet.                                                                                │
                    │                                                                                                  │
-   ╭ Stop task? ────────────────────────────────────────────────────────────────────────────────────────────────────╮ │
+   ╭ Stop tunnel? ──────────────────────────────────────────────────────────────────────────────────────────────────╮ │
   O│ ❯ Cancel                                                                                                       │ │
   4│                                                                                                                │ │
    │ · Stop                                                                                                         │ │
   5│                                                                                                                │ │
    │                                                                                                                │ │
-  6│                                                                                                                │ │
-   ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯ │
+   │                                                                                                                │ │
+  E╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯ │
+  6 Files          │                                                                                                  │
                    │                                                                                                  │
-  EXPLORE          │                                                                                                  │
-  7 Files          │                                                                                                  │
+  7 System         │                                                                                                  │
                    │                                                                                                  │
-  8 System         │                                                                                                  │
+  8 Activity       │                                                                                                  │
                    │                                                                                                  │
-  9 Activity       │                                                                                                  │
+                   │                                                                                                  │
                    │                                                                                                  │
                    │                                                                                                  │
                    │                                                                                                  │
@@ -481,7 +441,7 @@ expression: "snapshots.join(\"\\n\\n\")"
 
  ╭─┬─╮  S T A T I O N     dispatch / your terminal, connected
  ╰─┼─╯  機 器 -learning-with-a-long-name  · Activity
-  ╭ Failed task logs ────────────────────────────────────────────────────────────────────────────────────────────────╮
+  ╭ Tunnel run logs ─────────────────────────────────────────────────────────────────────────────────────────────────╮
 ──│Permission denied                                                                                                 │──
   │ESC is sanitized: �]52;c;hidden                                                                                   │╮
   │                                                                                                                  ││
@@ -525,65 +485,26 @@ expression: "snapshots.join(\"\\n\\n\")"
                    ╭ commands ────────────────────────────────────────────────────────────────────────────────────────╮
   WORK             │ / Jump to anything…                                                                              │
   1 Overview       ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
-                    1 workspaces  ·  0 task runs  ·  local observations
-  2 Workspaces     ╭ Activity · Station launches & task outcomes ─────────────────────────────────────────────────────╮
+                    1 workspaces  ·  local observations
+  2 Workspaces     ╭ Activity · Station launches & tunnels ───────────────────────────────────────────────────────────╮
                    │                                                                                                  │
   3 Agents         │ ╭ New agent session ─────────────────────────────────────────────────────────╮                   │
                    │ │ NAME                                                                       │                   │
                    │ │ ▏                                                                          │                   │
   OPERATE          │ │                                                                            │                   │
-  4 Tasks          │ │ AGENT · ←/→ choose                                                         │                   │
+  4 Services       │ │ AGENT · ←/→ choose                                                         │                   │
                    │ │ ‹ codex ›                                                                  │                   │
-  5 Services       │ │                                                                            │                   │
+  5 Connections    │ │                                                                            │                   │
                    │ │ PROJECT · ←/→ choose                                                       │                   │
-  6 Connections    │ │ ‹ /projects/機 器 -learning-with-a-long-name ›                               │                   │
-                   │ │                                                                            │                   │
-                   │ │ [ Create and open ]                                                        │                   │
-  EXPLORE          │ │ Tab next · Ctrl+S save · Ctrl+U clear · Esc cancel                         │                   │
-  7 Files          │ │                                                                            │                   │
+                   │ │ ‹ /projects/機 器 -learning-with-a-long-name ›                               │                   │
+  EXPLORE          │ │                                                                            │                   │
+  6 Files          │ │ [ Create and open ]                                                        │                   │
+                   │ │ Tab next · Ctrl+S save · Ctrl+U clear · Esc cancel                         │                   │
+  7 System         │ │                                                                            │                   │
                    │ │ F12 returns here. Your session keeps running when Station closes.          │                   │
-  8 System         │ │                                                                            │                   │
+  8 Activity       │ │                                                                            │                   │
                    │ │                                                                            │                   │
-  9 Activity       │ ╰────────────────────────────────────────────────────────────────────────────╯                   │
-                   │                                                                                                  │
-                   │                                                                                                  │
-                   │                                                                                                  │
-                   │                                                                                                  │
-                   │                                                                                                  │
-  ▰ ▰ ▰ ▰          │                                                                                                  │
-  Catppuccin       │                                                                                                  │
-  Macchiato        │                                                                                                  │
-                   ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
-────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
- NORMAL  j/k move · e editor · t shell · g Git · h Herdr · f files · / commands · ? help · q quit
-
- ╭─┬─╮  S T A T I O N     dispatch / your terminal, connected
- ╰─┼─╯  機 器 -learning-with-a-long-name  · Activity
-                                                                                                ● LOCAL  /  MACCHIATO
-────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-                   ╭ commands ────────────────────────────────────────────────────────────────────────────────────────╮
-  WORK             │ / Jump to anything…                                                                              │
-  1 Overview       ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
-                    1 workspaces  ·  0 task runs  ·  local observations
-  2 Workspaces     ╭ Activity · Station launches & task outcomes ─────────────────────────────────────────────────────╮
-                   │                                                                                                  │
-  3 Agents         │ ╭ Add task · save a reusable command ────────────────────────────────────────╮                   │
-                   │ │ NAME                                                                       │                   │
-                   │ │ ▏                                                                          │                   │
-  OPERATE          │ │                                                                            │                   │
-  4 Tasks          │ │ COMMAND · quotes keep arguments together                                   │                   │
-                   │ │ e.g. cargo test / npm run dev                                              │                   │
-  5 Services       │ │                                                                            │                   │
-                   │ │ PROJECT · ←/→ choose                                                       │                   │
-  6 Connections    │ │ ‹ /projects/機 器 -learning-with-a-long-name ›                               │                   │
-                   │ │                                                                            │                   │
-                   │ │ [ Save task ]                                                              │                   │
-  EXPLORE          │ │ Tab next · Ctrl+S save · Ctrl+U clear · Esc cancel                         │                   │
-  7 Files          │ │                                                                            │                   │
-                   │ │ Saved tasks run in this project. Use an explicit shell script for pipes or │                   │
-  8 System         │ │ environment expansion.                                                     │                   │
-                   │ │                                                                            │                   │
-  9 Activity       │ ╰────────────────────────────────────────────────────────────────────────────╯                   │
+                   │ ╰────────────────────────────────────────────────────────────────────────────╯                   │
                    │                                                                                                  │
                    │                                                                                                  │
                    │                                                                                                  │

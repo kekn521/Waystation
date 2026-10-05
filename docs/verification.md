@@ -69,3 +69,22 @@ for further iteration. No repository was pushed or published.
 
 Use `3`, `n`, and Ctrl+S to create/open an agent; F12 returns to Station.
 Use `4`, `a`, and Ctrl+S to save a task, then Enter to run it.
+
+## 2026-10-05 — overview layout and Tasks removal
+
+This revision replaces the task UI described in the historical release notes above.
+Overview now has orbiting planets at top left, workspaces at top right, system
+information at bottom left, and services and ports at bottom right. Tab also
+selects the animation in narrow layouts. Navigation has eight sections (1–8).
+
+Task creation, recipe loading, shortcuts, search entries, and task history views
+have been removed. Existing task configuration is ignored without rewriting it;
+saved recipes and logs remain on disk. SSH tunnels use the existing supervisor
+and expose their logs and stop action in Connections. Exit still accounts for
+previously started background processes.
+
+All 83 Rust tests, formatting, Clippy with warnings denied, the locked release
+build, and both PTY scripts passed. The scripts exercised local tunnel stand-ins,
+agent creation and return, removed task shortcuts, navigation, resizing, and
+terminal restoration. Seven terminal snapshots were refreshed, and the actual
+120×38 overview buffer was visually inspected.

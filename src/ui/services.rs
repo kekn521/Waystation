@@ -67,6 +67,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) -> Vec<HitRegion> {
         "Services & ports · read only",
         &items(app),
         app.selection,
-        app.pane == 3 || app.section == crate::model::Section::Services,
+        app.section == crate::model::Section::Services
+            || (app.section == crate::model::Section::Overview && app.pane == 3),
     )
 }

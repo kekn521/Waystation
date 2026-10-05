@@ -1,6 +1,5 @@
 use crate::{
     app::{Action, App, HitRegion},
-    forms::FormKind,
     ui::{panel, safe, theme::*},
 };
 use ratatui::{
@@ -24,12 +23,7 @@ pub fn render(frame: &mut Frame, app: &App) -> Vec<HitRegion> {
         height,
     );
     frame.render_widget(Clear, rect);
-    let title = if form.kind == FormKind::Agent {
-        "New agent session"
-    } else {
-        "Add task · save a reusable command"
-    };
-    let block = panel(title, true);
+    let block = panel("New agent session", true);
     let inner = block.inner(rect);
     frame.render_widget(block, rect);
     let tool = format!("‹ {} ›", form.tool_name());
@@ -37,21 +31,8 @@ pub fn render(frame: &mut Frame, app: &App) -> Vec<HitRegion> {
         .workspace()
         .map(|p| format!("‹ {} ›", p.display()))
         .unwrap_or("Choose a workspace first".into());
-    let command = if form.kind == FormKind::Agent {
-        &tool
-    } else {
-        &form.command
-    };
-    let labels = [
-        "NAME",
-        if form.kind == FormKind::Agent {
-            "AGENT · ←/→ choose"
-        } else {
-            "COMMAND · quotes keep arguments together"
-        },
-        "PROJECT · ←/→ choose",
-    ];
-    for (i, value) in [&form.name, command, &workspace].into_iter().enumerate() {
+    let labels = ["NAME", "AGENT · ←/→ choose", "PROJECT · ←/→ choose"];
+    for (i, value) in [&form.name, &tool, &workspace].into_iter().enumerate() {
         let y = inner.y + i as u16 * 3;
         if y + 1 >= inner.bottom() {
             break;
@@ -67,7 +48,7 @@ pub fn render(frame: &mut Frame, app: &App) -> Vec<HitRegion> {
         );
         let mut text = safe(value);
         let mut scroll = 0;
-        if focused && (i == 0 || i == 1 && form.kind == FormKind::Task) {
+        if focused && i == 0 {
             let index = text
                 .char_indices()
                 .nth(form.cursor)
@@ -78,12 +59,7 @@ pub fn render(frame: &mut Frame, app: &App) -> Vec<HitRegion> {
             text.insert(index, '▏');
         }
         if text.is_empty() {
-            text = if i == 0 {
-                "e.g. Implementation / Test suite"
-            } else {
-                "e.g. cargo test / npm run dev"
-            }
-            .into();
+            text = "e.g. Implementation / Review".into();
         }
         frame.render_widget(
             Paragraph::new(text)
@@ -100,10 +76,8 @@ pub fn render(frame: &mut Frame, app: &App) -> Vec<HitRegion> {
         });
         let button = if form.busy {
             "Working…"
-        } else if form.kind == FormKind::Agent {
-            "[ Create and open ]"
         } else {
-            "[ Save task ]"
+            "[ Create and open ]"
         };
         frame.render_widget(
             Paragraph::new(button)
@@ -117,7 +91,10 @@ pub fn render(frame: &mut Frame, app: &App) -> Vec<HitRegion> {
         );
     }
     if inner.height > 12 {
-        let hint = form.error.as_deref().unwrap_or(if form.kind == FormKind::Agent { "F12 returns here. Your session keeps running when Station closes." } else { "Saved tasks run in this project. Use an explicit shell script for pipes or environment expansion." });
+        let hint = form
+            .error
+            .as_deref()
+            .unwrap_or("F12 returns here. Your session keeps running when Station closes.");
         frame.render_widget(
             Paragraph::new(safe(hint))
                 .fg(if form.error.is_some() { RED } else { TEAL })

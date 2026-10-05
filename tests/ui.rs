@@ -25,8 +25,24 @@ fn text_entry_does_not_activate_shortcuts() {
 #[test]
 fn keys_switch_sections_and_help() {
     let mut app = App::new(Config::default(), AppState::default());
-    app.update(input::translate(key('8'), &app).unwrap());
+    app.update(input::translate(key('7'), &app).unwrap());
     assert_eq!(app.section, Section::System);
+    app.update(input::translate(key('8'), &app).unwrap());
+    assert_eq!(app.section, Section::Activity);
+    // There is no 9th section and the removed task keys do nothing.
+    assert!(input::translate(key('9'), &app).is_none());
+    for c in ['a', 'n', 'r'] {
+        assert!(
+            input::translate(key(c), &app).is_none(),
+            "key {c} must be inert"
+        );
+    }
+    app.update(input::translate(key('3'), &app).unwrap());
+    assert_eq!(app.section, Section::Agents);
+    assert!(matches!(
+        input::translate(key('n'), &app),
+        Some(Action::NewAgent)
+    ));
     app.update(Action::Help);
     assert!(app.help);
     app.update(Action::Escape);
@@ -88,7 +104,7 @@ fn screen(app: &App, w: u16, h: u16) -> String {
 fn narrow_overview_uses_focused_pane() {
     let mut a = App::new(Config::default(), AppState::default());
     a.pane = 2;
-    assert!(screen(&a, 60, 18).contains("Tasks & recent"));
+    assert!(screen(&a, 60, 18).contains("Machine pulse"));
 }
 #[test]
 fn complete_snapshots() {
@@ -122,7 +138,7 @@ fn complete_snapshots() {
         snapshots.push(screen(&a, w, h));
         a.help = false;
         a.confirmation = Some(station::app::Confirmation {
-            title: "Stop task?".into(),
+            title: "Stop tunnel?".into(),
             choices: vec![
                 ("Cancel".into(), Action::Escape),
                 ("Stop".into(), Action::ConfirmStop(uuid::Uuid::nil())),
@@ -131,16 +147,14 @@ fn complete_snapshots() {
         snapshots.push(screen(&a, w, h));
         a.confirmation = None;
         a.detail = Some((
-            "Failed task logs".into(),
+            "Tunnel run logs".into(),
             "Permission denied\nESC is sanitized: \x1b]52;c;hidden".into(),
         ));
         snapshots.push(screen(&a, w, h));
         a.detail = None;
-        for action in [Action::NewAgent, Action::NewRecipe] {
-            a.update(action);
-            snapshots.push(screen(&a, w, h));
-            a.update(Action::Escape);
-        }
+        a.update(Action::NewAgent);
+        snapshots.push(screen(&a, w, h));
+        a.update(Action::Escape);
         insta::assert_snapshot!(format!("station_{w}x{h}"), snapshots.join("\n\n"));
     }
 }
@@ -148,11 +162,11 @@ fn complete_snapshots() {
 fn quit_confirmation_is_visible_below_minimum_size() {
     let mut a = App::new(Config::default(), AppState::default());
     a.confirmation = Some(station::app::Confirmation {
-        title: "Tasks running".into(),
+        title: "Background processes are still running".into(),
         choices: vec![
-            ("Keep tasks running and quit".into(), Action::QuitKeep),
+            ("Keep running and quit".into(), Action::QuitKeep),
             ("Cancel".into(), Action::Escape),
         ],
     });
-    assert!(screen(&a, 59, 17).contains("Keep tasks running"));
+    assert!(screen(&a, 59, 17).contains("Keep running and quit"));
 }

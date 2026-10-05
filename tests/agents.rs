@@ -67,6 +67,62 @@ fn sessions_survive_manager_restart_and_preserve_literal_arguments() {
 }
 
 #[test]
+fn agent_sessions_enable_tmux_mouse_scrollback() {
+    let d = tempfile::tempdir().unwrap();
+    let manager = AgentManager::new(d.path().into());
+    let first = manager
+        .create(
+            "Scrollable",
+            "codex",
+            &ToolCommand {
+                program: "/bin/sleep".into(),
+                args: vec!["60".into()],
+            },
+            d.path(),
+            Path::new(env!("CARGO_BIN_EXE_station")),
+        )
+        .unwrap();
+    let key: uuid::Uuid =
+        serde_json::from_slice(&std::fs::read(d.path().join("agents/server.json")).unwrap())
+            .unwrap();
+    let socket = format!("station-{key}");
+    let mouse = || {
+        std::process::Command::new("tmux")
+            .args(["-L", &socket, "show-options", "-gv", "mouse"])
+            .output()
+            .unwrap()
+    };
+    let fresh = mouse();
+    assert!(
+        std::process::Command::new("tmux")
+            .args(["-L", &socket, "set-option", "-g", "mouse", "off"])
+            .status()
+            .unwrap()
+            .success()
+    );
+    let second = manager
+        .create(
+            "Also scrollable",
+            "codex",
+            &ToolCommand {
+                program: "/bin/sleep".into(),
+                args: vec!["60".into()],
+            },
+            d.path(),
+            Path::new(env!("CARGO_BIN_EXE_station")),
+        )
+        .unwrap();
+    let existing = mouse();
+
+    manager.close(first.id).unwrap();
+    manager.close(second.id).unwrap();
+    assert!(fresh.status.success(), "{fresh:?}");
+    assert_eq!(String::from_utf8_lossy(&fresh.stdout).trim(), "on");
+    assert!(existing.status.success(), "{existing:?}");
+    assert_eq!(String::from_utf8_lossy(&existing.stdout).trim(), "on");
+}
+
+#[test]
 fn rejects_bad_workspace_or_missing_command_without_creating_session() {
     let d = tempfile::tempdir().unwrap();
     let manager = AgentManager::new(d.path().into());

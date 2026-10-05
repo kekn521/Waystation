@@ -6,7 +6,7 @@ expression: "snapshots.join(\"\\n\\n\")"
  ╭─┬─╮  S T A T I O N
  ╰─┼─╯  機 器 -learning-with-a-long-name  · Overview
 ────────────────────────────────────────────────────────────
-1 Hub 2 Work 3 AI 4 Task 5 Svc 6 SSH 7 File 8 Sys 9 Log
+1 Hub 2 Work 3 AI 4 Svc 5 SSH 6 File 7 Sys 8 Log
 
 ╭ commands ────────────────────────────────────────────────╮
 │ / Jump to anything…                                      │
@@ -26,7 +26,7 @@ expression: "snapshots.join(\"\\n\\n\")"
  ╭─┬─╮  S T A T I O N
  ╰─┼─╯  機 器 -learning-with-a-long-name  · Workspaces
 ────────────────────────────────────────────────────────────
-1 Hub 2 Work 3 AI 4 Task 5 Svc 6 SSH 7 File 8 Sys 9 Log
+1 Hub 2 Work 3 AI 4 Svc 5 SSH 6 File 7 Sys 8 Log
 
 ╭ commands ────────────────────────────────────────────────╮
 │ / Jump to anything…                                      │
@@ -46,7 +46,7 @@ expression: "snapshots.join(\"\\n\\n\")"
  ╭─┬─╮  S T A T I O N
  ╰─┼─╯  機 器 -learning-with-a-long-name  · Agents
 ────────────────────────────────────────────────────────────
-1 Hub 2 Work 3 AI 4 Task 5 Svc 6 SSH 7 File 8 Sys 9 Log
+1 Hub 2 Work 3 AI 4 Svc 5 SSH 6 File 7 Sys 8 Log
 
 ╭ commands ────────────────────────────────────────────────╮
 │ / Jump to anything…                                      │
@@ -62,31 +62,11 @@ expression: "snapshots.join(\"\\n\\n\")"
 ────────────────────────────────────────────────────────────
  NORMAL  j/k move · Tab pane · / search · ? help · q quit
 
---- Tasks ---
- ╭─┬─╮  S T A T I O N
- ╰─┼─╯  機 器 -learning-with-a-long-name  · Tasks
-────────────────────────────────────────────────────────────
-1 Hub 2 Work 3 AI 4 Task 5 Svc 6 SSH 7 File 8 Sys 9 Log
-
-╭ commands ────────────────────────────────────────────────╮
-│ / Jump to anything…                                      │
-╰──────────────────────────────────────────────────────────╯
-╭ Tasks & recent runs · n saved tasks · a add ＋  Add task ─╮
-│No task runs yet.                                         │
-│                                                          │
-│Press a to add a task, or n to choose a saved task.       │
-│Tasks keep their logs and completion status after Station │
-│closes.                                                   │
-│                                                          │
-╰──────────────────────────────────────────────────────────╯
-────────────────────────────────────────────────────────────
- NORMAL  j/k move · Tab pane · / search · ? help · q quit
-
 --- Services ---
  ╭─┬─╮  S T A T I O N
  ╰─┼─╯  機 器 -learning-with-a-long-name  · Services
 ────────────────────────────────────────────────────────────
-1 Hub 2 Work 3 AI 4 Task 5 Svc 6 SSH 7 File 8 Sys 9 Log
+1 Hub 2 Work 3 AI 4 Svc 5 SSH 6 File 7 Sys 8 Log
 
 ╭ commands ────────────────────────────────────────────────╮
 │ / Jump to anything…                                      │
@@ -106,7 +86,7 @@ expression: "snapshots.join(\"\\n\\n\")"
  ╭─┬─╮  S T A T I O N
  ╰─┼─╯  機 器 -learning-with-a-long-name  · Connections
 ────────────────────────────────────────────────────────────
-1 Hub 2 Work 3 AI 4 Task 5 Svc 6 SSH 7 File 8 Sys 9 Log
+1 Hub 2 Work 3 AI 4 Svc 5 SSH 6 File 7 Sys 8 Log
 
 ╭ commands ────────────────────────────────────────────────╮
 │ / Jump to anything…                                      │
@@ -126,7 +106,7 @@ expression: "snapshots.join(\"\\n\\n\")"
  ╭─┬─╮  S T A T I O N
  ╰─┼─╯  機 器 -learning-with-a-long-name  · Files
 ────────────────────────────────────────────────────────────
-1 Hub 2 Work 3 AI 4 Task 5 Svc 6 SSH 7 File 8 Sys 9 Log
+1 Hub 2 Work 3 AI 4 Svc 5 SSH 6 File 7 Sys 8 Log
 
 ╭ commands ────────────────────────────────────────────────╮
 │ / Jump to anything…                                      │
@@ -146,7 +126,7 @@ expression: "snapshots.join(\"\\n\\n\")"
  ╭─┬─╮  S T A T I O N
  ╰─┼─╯  機 器 -learning-with-a-long-name  · System
 ────────────────────────────────────────────────────────────
-1 Hub 2 Work 3 AI 4 Task 5 Svc 6 SSH 7 File 8 Sys 9 Log
+1 Hub 2 Work 3 AI 4 Svc 5 SSH 6 File 7 Sys 8 Log
 
 ╭ commands ────────────────────────────────────────────────╮
 │ / Jump to anything…                                      │
@@ -166,12 +146,12 @@ expression: "snapshots.join(\"\\n\\n\")"
  ╭─┬─╮  S T A T I O N
  ╰─┼─╯  機 器 -learning-with-a-long-name  · Activity
 ────────────────────────────────────────────────────────────
-1 Hub 2 Work 3 AI 4 Task 5 Svc 6 SSH 7 File 8 Sys 9 Log
+1 Hub 2 Work 3 AI 4 Svc 5 SSH 6 File 7 Sys 8 Log
 
 ╭ commands ────────────────────────────────────────────────╮
 │ / Jump to anything…                                      │
 ╰──────────────────────────────────────────────────────────╯
-╭ Activity · Station launches & task outcomes ─────────────╮
+╭ Activity · Station launches & tunnels ───────────────────╮
 │                                                          │
 │ Nothing here yet.                                        │
 │                                                          │
@@ -185,7 +165,7 @@ expression: "snapshots.join(\"\\n\\n\")"
  ╭─┬─╮  S T A T I O N
  ╰─┼─╯  機 器 -learning-with-a-long-name  · Activity
 ────────────────────────────────────────────────────────────
-1 Hub 2 Work 3 AI 4 Task 5 Svc 6 SSH 7 File 8 Sys 9 Log
+1 Hub 2 Work 3 AI 4 Svc 5 SSH 6 File 7 Sys 8 Log
 
 ╭ commands ────────────────────────────────────────────────╮
 │ / herdr▏                                                 │
@@ -205,13 +185,13 @@ expression: "snapshots.join(\"\\n\\n\")"
  ╰─┼─╯  機 器 -learning-with-a-long-name  · Activity
 ────────────────────────────────────────────────────────────
 1 ╭ Keyboard shortcuts · Esc close ──────────────────────╮
-  │1–9 sections · j/k or arrows move · Tab focus pane    │
+  │1–8 sections · j/k or arrows move · Tab focus pane    │
 ╭ │/ search commands · Enter activate · Esc close        │─╮
 │ │e editor · t shell · g Git · h Herdr · f files        │ │
-╰─│Agents: n new · Enter open · F12 return · x close     │─╯
-╭ │Tasks: a add · n saved/history · r rerun · x stop     │─╮
+╰─│Connections: x stop tunnel                            │─╯
+╭ │Agents: n new · Enter open · F12 return · x close     │─╮
 │ │. hidden files · y copy path · F5 refresh             │ │
-│ │q quit · keep running / stop owned tasks / cancel     │ │
+│ │q quit                                                │ │
 │ │                                                      │ │
 │ │                                                      │ │
 │ │                                                      │ │
@@ -223,10 +203,10 @@ expression: "snapshots.join(\"\\n\\n\")"
  ╭─┬─╮  S T A T I O N
  ╰─┼─╯  機 器 -learning-with-a-long-name  · Activity
 ────────────────────────────────────────────────────────────
-1 Hub 2 Work 3 AI 4 Task 5 Svc 6 SSH 7 File 8 Sys 9 Log
+1 Hub 2 Work 3 AI 4 Svc 5 SSH 6 File 7 Sys 8 Log
 
 ╭ commands ────────────────────────────────────────────────╮
-│ /╭ Stop task? ────────────────────────────────────────╮  │
+│ /╭ Stop tunnel? ──────────────────────────────────────╮  │
 ╰──│ ❯ Cancel                                           │──╯
 ╭ A│                                                    │──╮
 │  │ · Stop                                             │  │
@@ -241,7 +221,7 @@ expression: "snapshots.join(\"\\n\\n\")"
 
  ╭─┬─╮  S T A T I O N
  ╰─┼─╯  機 器 -learning-with-a-long-name  · Activity
-──╭ Failed task logs ────────────────────────────────────╮──
+──╭ Tunnel run logs ─────────────────────────────────────╮──
 1 │Permission denied                                     │
   │ESC is sanitized: �]52;c;hidden                       │
 ╭ │                                                      │─╮
@@ -273,25 +253,6 @@ expression: "snapshots.join(\"\\n\\n\")"
 ││                                                        ││
 ││ F12 returns here. Your session keeps running when      ││
 ││ Station closes.                                        ││
-╰│                                                        │╯
-─╰────────────────────────────────────────────────────────╯─
- NORMAL  j/k move · Tab pane · / search · ? help · q quit
-
- ╭ Add task · save a reusable command ────────────────────╮
- │ NAME                                                   │
-─│ ▏                                                      │─
-1│                                                        │
- │ COMMAND · quotes keep arguments together               │
-╭│ e.g. cargo test / npm run dev                          │╮
-││                                                        ││
-╰│ PROJECT · ←/→ choose                                   │╯
-╭│ ‹ /projects/機 器 -learning-with-a-long-name ›           │╮
-││                                                        ││
-││ [ Save task ]                                          ││
-││ Tab next · Ctrl+S save · Ctrl+U clear · Esc cancel     ││
-││                                                        ││
-││ Saved tasks run in this project. Use an explicit shell ││
-││ script for pipes or environment expansion.             ││
 ╰│                                                        │╯
 ─╰────────────────────────────────────────────────────────╯─
  NORMAL  j/k move · Tab pane · / search · ? help · q quit

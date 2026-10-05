@@ -92,7 +92,7 @@ def foreground(exit_code=0, interrupt=False, missing=False, ssh=False, shell=Fal
         session = Session(root, config, {'SHELL': str(helper)})
         try:
             if ssh:
-                session.send(b'6', .4)
+                session.send(b'5', .4)
                 session.send(b'\r', .4)
             else:
                 session.send(b't' if shell else b'e', .4)
@@ -123,26 +123,33 @@ def await_status(root, status):
     raise AssertionError((status, records(root)))
 
 
-def durable_task():
+def durable_tunnel():
     with tempfile.TemporaryDirectory() as directory:
         root = Path(directory)
+        commands = root / 'bin'
+        commands.mkdir()
+        ssh = commands / 'ssh'
+        ssh.write_text('#!/bin/sh\necho TUNNEL_READY\nsleep 4\nexit 0\n')
+        ssh.chmod(0o755)
+        with socket.socket() as reservation:
+            reservation.bind(('127.0.0.1', 0))
+            port = reservation.getsockname()[1]
         config = root / 'config.toml'
         config.write_text(f'project_roots=[]\npinned_projects=["{root}"]\n'
-                          '[[tasks]]\nid="fixture"\nlabel="PTY fixture"\n'
-                          'command={program="/bin/sh",args=["-c","echo TASK_READY; sleep 2; exit 0"]}\n')
-        session = Session(root, config)
+                          '[[tunnels]]\nid="fixture"\nhost="fixture-local-only"\n'
+                          f'local_port={port}\nremote_host="127.0.0.1"\nremote_port=5432\n')
+        session = Session(root, config, {'PATH': f'{commands}:{os.environ.get("PATH", "")}'})
         try:
-            session.send(b'n')
-            session.send(b'\r', .3)
+            session.send(b'/Tunnel fixture\r', .3)
             await_status(root, 'Running')
-            session.collect(1.1)  # receive the task provider snapshot
+            session.collect(1.1)  # receive the background process snapshot
             session.send(b'q')
-            assert b'Keep tasks running' in session.output
+            assert b'Keep running and quit' in session.output
             session.send(b'\r')
             session.finished()
             record = await_status(root, 'Passed')
             assert record['exit_code'] == 0
-            assert 'TASK_READY' in (root / 'state/runs' / record['id'] / 'output.log').read_text()
+            assert 'TUNNEL_READY' in (root / 'state/runs' / record['id'] / 'output.log').read_text()
         finally:
             session.close()
             # Authenticated IPC only, never signal a saved PID.
@@ -182,7 +189,7 @@ if __name__ == "__main__":
         foreground(code, interrupt, missing)
     foreground(ssh=True)
     foreground(shell=True)
-    durable_task()
+    durable_tunnel()
     fresh_two_instances()
     print('PTY passed: editor/shell/SSH handoff, exit 7, Ctrl-C, missing tools, all resize thresholds,')
-    print('terminal restoration, task completion after UI exit, fresh HOME, and two UI instances.')
+    print('terminal restoration, tunnel completion after UI exit, fresh HOME, and two UI instances.')

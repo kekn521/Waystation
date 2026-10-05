@@ -4,9 +4,9 @@ pub mod connections;
 pub mod files;
 pub mod forms;
 pub mod layout;
+pub mod orbit;
 pub mod services;
 pub mod system;
-pub mod tasks;
 pub mod theme;
 pub mod workspaces;
 use crate::{
@@ -201,9 +201,12 @@ pub fn draw(frame: &mut Frame, app: &App) -> Vec<HitRegion> {
     frame.render_widget(Block::default().bg(MANTLE), nav);
     if mode == layout::LayoutMode::Wide {
         for (i, section) in Section::ALL.iter().enumerate() {
-            let group = i / 3;
-            let y = nav.y + 2 + i as u16 * 2 + group as u16 * 2;
-            if i % 3 == 0 {
+            // Groups of 3, 2, 3: each heading row plus its item rows, then one blank row.
+            let group = usize::from(i >= 3) + usize::from(i >= 5);
+            let group_start = [0, 3, 5][group];
+            let block_start = [0, 8, 14][group];
+            let y = nav.y + 2 + block_start + (i - group_start) as u16 * 2;
+            if i == group_start {
                 frame.render_widget(
                     Paragraph::new([" WORK", " OPERATE", " EXPLORE"][group]).fg(BLUE),
                     Rect::new(nav.x + 1, y - 1, nav.width - 2, 1),
@@ -242,15 +245,12 @@ pub fn draw(frame: &mut Frame, app: &App) -> Vec<HitRegion> {
         }
     } else {
         let labels = if narrow {
-            [
-                "Hub", "Work", "AI", "Task", "Svc", "SSH", "File", "Sys", "Log",
-            ]
+            ["Hub", "Work", "AI", "Svc", "SSH", "File", "Sys", "Log"]
         } else {
             [
                 "Overview",
                 "Workspaces",
                 "Agents",
-                "Tasks",
                 "Services",
                 "Connections",
                 "Files",
@@ -307,31 +307,11 @@ pub fn draw(frame: &mut Frame, app: &App) -> Vec<HitRegion> {
         area: parts[0],
         action: Action::Search,
     });
-    let failures = app
-        .runs
-        .iter()
-        .take(20)
-        .filter(|r| r.status == crate::tasks::RunStatus::Failed)
-        .count();
-    let attention = if failures > 0 {
-        format!(" ! {failures} failed runs · open Tasks for logs")
-    } else {
-        format!(
-            " {} workspaces  ·  {} task runs  ·  local observations",
-            app.workspaces.len(),
-            app.runs.len()
-        )
-    };
-    frame.render_widget(
-        Paragraph::new(attention).fg(if failures > 0 { PEACH } else { MUTED }),
-        parts[1],
+    let attention = format!(
+        " {} workspaces  ·  local observations",
+        app.workspaces.len()
     );
-    if failures > 0 {
-        hits.push(HitRegion {
-            area: parts[1],
-            action: Action::Nav(Section::Tasks),
-        });
-    }
+    frame.render_widget(Paragraph::new(attention).fg(MUTED), parts[1]);
     if app.searching {
         let items = app
             .matches()
@@ -350,16 +330,16 @@ pub fn draw(frame: &mut Frame, app: &App) -> Vec<HitRegion> {
         if narrow {
             hits.extend(render_pane(frame, parts[2], app, app.pane));
         } else {
-            let cols = Layout::horizontal([Constraint::Percentage(61), Constraint::Percentage(39)])
+            let cols = Layout::horizontal([Constraint::Percentage(50), Constraint::Percentage(50)])
                 .spacing(1)
                 .split(parts[2]);
             for (c, col) in cols.iter().enumerate() {
                 let panes =
-                    Layout::vertical([Constraint::Percentage(58), Constraint::Percentage(42)])
+                    Layout::vertical([Constraint::Percentage(50), Constraint::Percentage(50)])
                         .spacing(1)
                         .split(*col);
                 for (r, pane) in panes.iter().enumerate() {
-                    hits.extend(render_pane(frame, *pane, app, c + r * 2));
+                    hits.extend(render_pane(frame, *pane, app, r * 2 + c));
                 }
             }
         }
@@ -367,7 +347,6 @@ pub fn draw(frame: &mut Frame, app: &App) -> Vec<HitRegion> {
         hits.extend(match app.section {
             Section::Workspaces => workspaces::render(frame, parts[2], app),
             Section::Agents => agents::render(frame, parts[2], app),
-            Section::Tasks => tasks::render(frame, parts[2], app),
             Section::Services => services::render(frame, parts[2], app),
             Section::Connections => connections::render(frame, parts[2], app),
             Section::Files => files::render(frame, parts[2], app),
@@ -383,8 +362,6 @@ pub fn draw(frame: &mut Frame, app: &App) -> Vec<HitRegion> {
         " j/k move · Tab pane · / search · ? help · q quit"
     } else if app.section == Section::Agents {
         " n new agent · Enter open · F12 return from agent · x close · / switch · q quit"
-    } else if app.section == Section::Tasks {
-        " a add task · n recipes/history · Enter run/logs · r rerun · x stop · q quit"
     } else {
         " j/k move · e editor · t shell · g Git · h Herdr · f files · / commands · ? help · q quit"
     };
@@ -451,7 +428,7 @@ pub fn draw(frame: &mut Frame, app: &App) -> Vec<HitRegion> {
             12.min(area.height - 4),
         );
         frame.render_widget(Clear, rect);
-        frame.render_widget(Paragraph::new("1–9 sections · j/k or arrows move · Tab focus pane\n/ search commands · Enter activate · Esc close\ne editor · t shell · g Git · h Herdr · f files\nAgents: n new · Enter open · F12 return · x close\nTasks: a add · n saved/history · r rerun · x stop\n. hidden files · y copy path · F5 refresh\nq quit · keep running / stop owned tasks / cancel").block(panel("Keyboard shortcuts · Esc close",true)).wrap(Wrap{trim:true}),rect);
+        frame.render_widget(Paragraph::new("1–8 sections · j/k or arrows move · Tab focus pane\n/ search commands · Enter activate · Esc close\ne editor · t shell · g Git · h Herdr · f files\nConnections: x stop tunnel\nAgents: n new · Enter open · F12 return · x close\n. hidden files · y copy path · F5 refresh\nq quit").block(panel("Keyboard shortcuts · Esc close",true)).wrap(Wrap{trim:true}),rect);
         hits.clear();
     }
     if app.form.is_some() {
@@ -471,9 +448,15 @@ pub fn draw(frame: &mut Frame, app: &App) -> Vec<HitRegion> {
 }
 fn render_pane(frame: &mut Frame, area: Rect, app: &App, index: usize) -> Vec<HitRegion> {
     match index {
-        0 => workspaces::render(frame, area, app),
-        1 => system::render(frame, area, app),
-        2 => tasks::render(frame, area, app),
+        0 => {
+            let block = panel("Orbit", app.pane == 0);
+            let inner = block.inner(area);
+            frame.render_widget(block, area);
+            orbit::render(frame, inner, app.animation_elapsed);
+            vec![]
+        }
+        1 => workspaces::render(frame, area, app),
+        2 => system::render(frame, area, app),
         _ => services::render(frame, area, app),
     }
 }

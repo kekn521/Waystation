@@ -7,8 +7,6 @@ pub struct JobResult {
     pub started: Option<uuid::Uuid>,
     pub agent: Option<crate::agents::AgentSession>,
     pub attach: Option<crate::runtime::command::CommandSpec>,
-    pub config: Option<crate::config::Config>,
-    pub saved_recipe: Option<String>,
 }
 pub struct Jobs {
     tx: SyncSender<Effect>,
@@ -16,12 +14,7 @@ pub struct Jobs {
     pub busy: bool,
 }
 impl Jobs {
-    pub fn new(
-        manager: TaskManager,
-        agents: crate::agents::AgentManager,
-        config: std::path::PathBuf,
-        home: std::path::PathBuf,
-    ) -> Self {
+    pub fn new(manager: TaskManager, agents: crate::agents::AgentManager) -> Self {
         let (tx, rx) = mpsc::sync_channel::<Effect>(1);
         let (out, results) = mpsc::sync_channel(1);
         std::thread::spawn(move || {
@@ -34,8 +27,6 @@ impl Jobs {
                         started: None,
                         agent: None,
                         attach: None,
-                        config: None,
-                        saved_recipe: None,
                     };
                     match effect {
                         Effect::CreateAgent {
@@ -61,13 +52,6 @@ impl Jobs {
                             agents.close(id)?;
                             result.message = "Agent session closed".into();
                         }
-                        Effect::SaveRecipe(recipe) => {
-                            result.config = Some(crate::recipes::save(&config, &home, &recipe)?);
-                            result.saved_recipe = Some(recipe.id);
-                            result.message =
-                                "Task saved · Enter runs it · logs appear in history".into();
-                        }
-
                         Effect::StartTask(recipe) => {
                             let id = manager.start(&recipe)?;
                             result.started = Some(id);
@@ -76,7 +60,7 @@ impl Jobs {
                         }
                         Effect::StopTask(id) => {
                             manager.request_stop(id)?;
-                            result.message = "Stop requested · waiting for task to exit".into()
+                            result.message = "Stop requested · waiting for process to exit".into()
                         }
                         Effect::ReadLog(id) => {
                             let dir = manager.run_dir(id);

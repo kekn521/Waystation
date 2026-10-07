@@ -40,10 +40,7 @@ pub struct ProviderRequest {
 }
 #[derive(Debug)]
 pub enum ProviderPayload {
-    Agents(
-        Vec<crate::agents::AgentSession>,
-        Option<crate::agents::CodexHookStatus>,
-    ),
+    Agents(Vec<crate::agents::AgentSession>),
     Tasks(Vec<crate::tasks::RunRecord>),
     Services(crate::providers::services::ServicesState),
     Projects(Vec<Workspace>),
@@ -117,7 +114,7 @@ impl WorkerPool {
                                 .is_some_and(|p| p.file_name().is_some_and(|n| n == tool))
                         };
                         let statusline = crate::agents::AgentManager::new(state.clone())
-                            .statusline_status(&std::env::current_exe()?);
+                            .statusline_status(&crate::runtime::command::launcher()?);
                         let mut scanner = scanner.lock().unwrap_or_else(|e| e.into_inner());
                         ProviderPayload::Usage(Box::new(crate::usage::collect(
                             &mut scanner,
@@ -128,19 +125,9 @@ impl WorkerPool {
                             crate::usage::now(),
                         )))
                     }
-                    ProviderId::Agents => {
-                        let manager = crate::agents::AgentManager::new(state.clone());
-                        let codex = config
-                            .tools
-                            .get("codex")
-                            .map_or("codex", |t| t.program.as_str());
-                        // Resuming relies on the real `codex` CLI, not a differently named wrapper.
-                        let hook = crate::runtime::command::executable(codex.as_ref())
-                            .filter(|p| p.file_name().is_some_and(|n| n == "codex"))
-                            .map(|_| anyhow::Ok(manager.codex_hook(&std::env::current_exe()?)))
-                            .transpose()?;
-                        ProviderPayload::Agents(manager.list()?, hook)
-                    }
+                    ProviderId::Agents => ProviderPayload::Agents(
+                        crate::agents::AgentManager::new(state.clone()).list()?,
+                    ),
                     ProviderId::Tasks => ProviderPayload::Tasks(
                         crate::tasks::TaskManager::new(state.clone()).list()?,
                     ),

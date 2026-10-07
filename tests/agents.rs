@@ -271,6 +271,14 @@ fn claude_settings() -> String {
     .to_string()
 }
 
+/// Codex reads hooks from `-c`, which also runs it embedded so hooks see the pane's env.
+fn codex_hook_override() -> String {
+    format!(
+        r#"hooks.SessionStart=[{{hooks=[{{type="command",command="'{}' __agent-hook",timeout=10}}]}}]"#,
+        Path::new(env!("CARGO_BIN_EXE_waystation")).display()
+    )
+}
+
 fn strings(args: &[&str]) -> Vec<String> {
     args.iter().map(|s| s.to_string()).collect()
 }
@@ -568,7 +576,8 @@ fn codex_sessions_resume_the_conversation_their_hook_reported() {
         )
         .unwrap();
     assert!(session.conversation.is_none());
-    let fresh = strings(&["--model", "o3"]);
+    let hook = codex_hook_override();
+    let fresh = strings(&["-c", &hook, "--model", "o3"]);
     assert_eq!(wait_for_args(&program, &fresh), fresh);
 
     let manifest = state.join(format!("agents/{}.json", session.id));
@@ -595,6 +604,8 @@ fn codex_sessions_resume_the_conversation_their_hook_reported() {
     );
     let resumed = strings(&[
         "resume",
+        "-c",
+        &hook,
         "--model",
         "o3",
         "019a0000-aaaa-7000-8000-000000000001",
@@ -602,74 +613,6 @@ fn codex_sessions_resume_the_conversation_their_hook_reported() {
     let args = wait_for_args(&program, &resumed);
     manager.close(session.id).unwrap();
     assert_eq!(args, resumed);
-}
-
-#[test]
-fn codex_hook_install_appends_and_updates_only_its_own_entry() {
-    use waystation::agents::CodexHookStatus;
-    let d = tempfile::tempdir().unwrap();
-    let codex_home = d.path().join("codex-home");
-    std::fs::create_dir_all(&codex_home).unwrap();
-    let hooks = codex_home.join("hooks.json");
-    let manager = AgentManager::new(d.path().join("state"))
-        .with_agent_homes(d.path().join("claude-home"), codex_home.clone());
-    let launcher = Path::new("/opt/way station/waystation");
-    let moved = Path::new("/usr/local/bin/waystation");
-
-    // No hooks.json yet: install creates one holding only Waystation's entry.
-    assert_eq!(manager.codex_hook(launcher), CodexHookStatus::Missing);
-    manager.install_codex_hook(launcher).unwrap();
-    assert_eq!(manager.codex_hook(launcher), CodexHookStatus::Installed);
-    let created: serde_json::Value =
-        serde_json::from_slice(&std::fs::read(&hooks).unwrap()).unwrap();
-    assert_eq!(
-        created["hooks"]["SessionStart"][0]["hooks"][0]["command"],
-        "'/opt/way station/waystation' __agent-hook"
-    );
-
-    let existing = r#"{
-  "zeta": true,
-  "hooks": {
-    "SessionStart": [
-      {"hooks": [{"command": "bash 'herdr.sh' session", "timeout": 10, "type": "command"}]}
-    ],
-    "Stop": [{"hooks": [{"command": "notify", "type": "command"}]}]
-  }
-}"#;
-    std::fs::write(&hooks, existing).unwrap();
-    assert_eq!(manager.codex_hook(launcher), CodexHookStatus::Missing);
-    manager.install_codex_hook(launcher).unwrap();
-    manager.install_codex_hook(launcher).unwrap();
-    let text = std::fs::read_to_string(&hooks).unwrap();
-    assert!(
-        text.find("zeta").unwrap() < text.find("hooks").unwrap(),
-        "{text}"
-    );
-    let value: serde_json::Value = serde_json::from_str(&text).unwrap();
-    let groups = value["hooks"]["SessionStart"].as_array().unwrap();
-    assert_eq!(groups.len(), 2, "{text}");
-    assert_eq!(groups[0]["hooks"][0]["command"], "bash 'herdr.sh' session");
-    assert_eq!(
-        groups[1]["hooks"][0]["command"],
-        "'/opt/way station/waystation' __agent-hook"
-    );
-    assert_eq!(value["hooks"]["Stop"][0]["hooks"][0]["command"], "notify");
-
-    assert_eq!(manager.codex_hook(moved), CodexHookStatus::Stale);
-    manager.install_codex_hook(moved).unwrap();
-    let value: serde_json::Value = serde_json::from_slice(&std::fs::read(&hooks).unwrap()).unwrap();
-    let groups = value["hooks"]["SessionStart"].as_array().unwrap();
-    assert_eq!(groups.len(), 2);
-    assert_eq!(groups[0]["hooks"][0]["command"], "bash 'herdr.sh' session");
-    assert_eq!(
-        groups[1]["hooks"][0]["command"],
-        "'/usr/local/bin/waystation' __agent-hook"
-    );
-    assert_eq!(manager.codex_hook(moved), CodexHookStatus::Installed);
-
-    std::fs::write(&hooks, "{ not json").unwrap();
-    assert!(manager.install_codex_hook(moved).is_err());
-    assert_eq!(std::fs::read_to_string(&hooks).unwrap(), "{ not json");
 }
 
 /// A terminfo directory holding the named entries, laid out as ncurses reads them.

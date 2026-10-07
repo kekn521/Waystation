@@ -40,7 +40,7 @@ impl Jobs {
                                 &tool,
                                 &command,
                                 &workspace,
-                                &std::env::current_exe()?,
+                                &crate::runtime::command::launcher()?,
                             )?;
                             // Persisted before attachment: a failed terminal handoff is recoverable.
                             result.agent = Some(session);
@@ -48,16 +48,11 @@ impl Jobs {
                                 "Session created · Enter opens · F12 or Ctrl-\\ returns to Waystation".into();
                         }
                         Effect::AttachAgent(id) => {
-                            result.attach = Some(agents.attach(id, &std::env::current_exe()?)?)
-                        }
-                        Effect::InstallCodexHook => {
-                            agents.install_codex_hook(&std::env::current_exe()?)?;
-                            result.message =
-                                "Codex hook added · Codex asks you to trust it on its next start"
-                                    .into();
+                            result.attach =
+                                Some(agents.attach(id, &crate::runtime::command::launcher()?)?)
                         }
                         Effect::InstallStatusLine => {
-                            agents.install_statusline(&std::env::current_exe()?)?;
+                            agents.install_statusline(&crate::runtime::command::launcher()?)?;
                             result.message =
                                 "Claude status line set · limits appear after Claude's next reply"
                                     .into();

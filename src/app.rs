@@ -16,8 +16,6 @@ pub enum Action {
     NewAgent,
     OpenAgent(uuid::Uuid),
     CloseAgent(uuid::Uuid),
-    InstallCodexHook,
-    ConfirmInstallCodexHook,
     InstallStatusLine,
     ConfirmInstallStatusLine,
     FormField(isize),
@@ -71,7 +69,6 @@ pub enum Effect {
     },
     AttachAgent(uuid::Uuid),
     CloseAgent(uuid::Uuid),
-    InstallCodexHook,
     InstallStatusLine,
     Foreground(Action),
     Copy(PathBuf),
@@ -97,8 +94,6 @@ pub struct App {
     /// Monotonic animation time supplied by the event loop; never persisted.
     pub animation_elapsed: std::time::Duration,
     pub agents: Vec<crate::agents::AgentSession>,
-    /// `None` when Codex is not installed.
-    pub codex_hook: Option<crate::agents::CodexHookStatus>,
     /// `None` until the first usage scan finishes.
     pub usage: Option<crate::usage::Usage>,
     pub form: Option<crate::forms::Form>,
@@ -142,7 +137,6 @@ impl App {
         Self {
             animation_elapsed: std::time::Duration::ZERO,
             agents: vec![],
-            codex_hook: None,
             usage: None,
             form: None,
             pinned_paths,
@@ -191,10 +185,7 @@ impl App {
                 self.provider_errors.remove(&key);
                 match payload {
                     ProviderPayload::Usage(usage) => self.usage = Some(*usage),
-                    ProviderPayload::Agents(s, hook) => {
-                        self.agents = s;
-                        self.codex_hook = hook;
-                    }
+                    ProviderPayload::Agents(s) => self.agents = s,
                     ProviderPayload::Tasks(r) => {
                         self.pending_starts
                             .retain(|id| !r.iter().any(|run| run.id == *id));
@@ -342,25 +333,12 @@ impl App {
             "Codex or Claude · choose a project · F12 or Ctrl-\\ returns here".into(),
             Action::NewAgent,
         ));
-        match self.codex_hook {
-            Some(crate::agents::CodexHookStatus::Missing) => items.push((
-                "Let Codex sessions resume after a reboot".into(),
-                "Adds Waystation's hook to ~/.codex/hooks.json · Enter to review".into(),
-                Action::InstallCodexHook,
-            )),
-            Some(crate::agents::CodexHookStatus::Stale) => items.push((
-                "Update Waystation's Codex hook".into(),
-                "It points at an older Waystation path · Enter to review".into(),
-                Action::InstallCodexHook,
-            )),
-            Some(crate::agents::CodexHookStatus::Installed) | None => {}
-        }
         if let Some(usage) = self.usage.as_ref().filter(|u| u.claude.is_some()) {
             use crate::usage::StatusLine;
             match &usage.statusline {
                 StatusLine::Missing => items.push((
                     "Show Claude's plan limits in Waystation".into(),
-                    "Sets Claude's status line in ~/.claude/settings.json · Enter to review".into(),
+                    "Adds a silent status line to ~/.claude/settings.json · Enter to review".into(),
                     Action::InstallStatusLine,
                 )),
                 StatusLine::Stale => items.push((
@@ -375,7 +353,7 @@ impl App {
                         "Claude's plan limits reach Waystation only through Claude's status line, and yours already runs:\n\n  {command}\n\nWaystation won't replace it. Remove statusLine from ~/.claude/settings.json to let Waystation add its own; it shows a short usage line in Claude instead."
                     )),
                 )),
-                StatusLine::Installed => {}
+                StatusLine::Installed | StatusLine::Chained => {}
             }
         }
         if let Some(error) = self.provider_errors.get("Agents") {

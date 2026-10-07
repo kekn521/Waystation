@@ -376,38 +376,22 @@ pub fn claude_limits(state: &Path) -> Option<Limits> {
     parse_claude_limits(&saved.rate_limits, saved.saved_at)
 }
 
-/// Handles Claude's status line: saves its documented `rate_limits` and returns the text
-/// to show, which is empty when Claude sent none.
-pub fn statusline(input: &[u8], state: &Path, now: i64) -> String {
+/// Handles Claude's status line command: saves its documented `rate_limits` for the usage
+/// panel. It prints nothing, so Claude Code shows no status line of its own.
+pub fn statusline(input: &[u8], state: &Path, now: i64) {
     let Ok(input) = serde_json::from_slice::<serde_json::Value>(input) else {
-        return String::new();
+        return;
     };
     let rate_limits = &input["rate_limits"];
-    let Some(limits) = parse_claude_limits(rate_limits, now) else {
-        return String::new();
-    };
-    let _ = crate::store::atomic_json(
-        &claude_limits_path(state),
-        &SavedClaudeLimits {
-            saved_at: now,
-            rate_limits: rate_limits.clone(),
-        },
-    );
-    let mut parts = vec![];
-    for (label, window) in [("5h", limits.five_hour), ("wk", limits.weekly)] {
-        if let Some(w) = window {
-            parts.push(format!("{label} {}", remaining_label(Some(&w), now)));
-        }
+    if parse_claude_limits(rate_limits, now).is_some() {
+        let _ = crate::store::atomic_json(
+            &claude_limits_path(state),
+            &SavedClaudeLimits {
+                saved_at: now,
+                rate_limits: rate_limits.clone(),
+            },
+        );
     }
-    let mut text = parts.join(" · ");
-    if [limits.five_hour, limits.weekly]
-        .iter()
-        .flatten()
-        .any(|w| w.remaining(now).is_some_and(|left| left <= 10.))
-    {
-        text.push_str(" !");
-    }
-    text
 }
 
 /// Whether Claude's `statusLine` setting runs Waystation's `__statusline`.
@@ -417,6 +401,8 @@ pub enum StatusLine {
     Missing,
     /// Waystation's, for a different executable or state directory.
     Stale,
+    /// The user's own status line script, which passes Claude's input on to Waystation.
+    Chained,
     /// Someone else's status line, which Waystation never replaces.
     Other(String),
 }
@@ -443,9 +429,28 @@ fn status_of(settings: &serde_json::Value, expected: &str) -> StatusLine {
     match current["command"].as_str() {
         Some(command) if command == expected => StatusLine::Installed,
         Some(command) if command.contains(&format!(" {STATUSLINE_ARG} ")) => StatusLine::Stale,
+        Some(command) if runs_waystation_script(command) => StatusLine::Chained,
         Some(command) => StatusLine::Other(command.into()),
         None => StatusLine::Other(current.to_string()),
     }
+}
+/// Whether `command` runs a script file that itself calls `__statusline`.
+fn runs_waystation_script(command: &str) -> bool {
+    let home = std::env::var_os("HOME").map(PathBuf::from);
+    command.split_whitespace().any(|word| {
+        let word = word.trim_matches(|c| c == '\'' || c == '"');
+        let path = match (word.strip_prefix("~/"), &home) {
+            (Some(rest), Some(home)) => home.join(rest),
+            _ => PathBuf::from(word),
+        };
+        path.is_absolute()
+            && std::fs::metadata(&path).is_ok_and(|m| m.is_file() && m.len() < 1024 * 1024)
+            && std::fs::read(&path).is_ok_and(|script| {
+                script
+                    .windows(STATUSLINE_ARG.len() + 1)
+                    .any(|w| w == format!(" {STATUSLINE_ARG}").as_bytes())
+            })
+    })
 }
 pub fn statusline_status(claude_home: &Path, launcher: &Path, state: &Path) -> StatusLine {
     match (
@@ -460,8 +465,14 @@ pub fn statusline_status(claude_home: &Path, launcher: &Path, state: &Path) -> S
 pub fn install_statusline(claude_home: &Path, launcher: &Path, state: &Path) -> Result<()> {
     let mut settings = claude_settings(claude_home)?;
     let command = statusline_command(launcher, state)?;
-    if let StatusLine::Other(existing) = status_of(&settings, &command) {
-        anyhow::bail!("Claude already has a status line ({existing}); Waystation won't replace it");
+    match status_of(&settings, &command) {
+        StatusLine::Other(existing) => anyhow::bail!(
+            "Claude already has a status line ({existing}); Waystation won't replace it"
+        ),
+        StatusLine::Chained => {
+            anyhow::bail!("Claude's status line already passes its limits to Waystation")
+        }
+        StatusLine::Installed | StatusLine::Missing | StatusLine::Stale => {}
     }
     settings
         .as_object_mut()

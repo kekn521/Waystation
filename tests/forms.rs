@@ -94,38 +94,3 @@ fn paste_never_triggers_navigation_or_execution() {
     assert!(a.form.as_ref().unwrap().error.is_some());
     assert_eq!(a.form.as_ref().unwrap().name, "q3 /hello");
 }
-
-#[test]
-fn codex_hook_row_asks_before_installing() {
-    use waystation::agents::CodexHookStatus;
-    let mut a = app();
-    assert!(
-        !a.agent_items()
-            .iter()
-            .any(|(_, _, action)| matches!(action, Action::InstallCodexHook))
-    );
-    a.codex_hook = Some(CodexHookStatus::Missing);
-    assert!(
-        a.agent_items()
-            .iter()
-            .any(|(_, _, action)| matches!(action, Action::InstallCodexHook))
-    );
-    assert!(a.update(Action::InstallCodexHook).is_empty());
-    let confirmation = a.confirmation.as_ref().expect("asks first");
-    assert!(
-        confirmation.title.contains("hooks.json"),
-        "{}",
-        confirmation.title
-    );
-    let effects = a.update(Action::ConfirmChoice(1));
-    assert!(
-        matches!(effects[..], [Effect::InstallCodexHook]),
-        "{effects:?}"
-    );
-    a.codex_hook = Some(CodexHookStatus::Installed);
-    assert!(
-        !a.agent_items()
-            .iter()
-            .any(|(_, _, action)| matches!(action, Action::InstallCodexHook))
-    );
-}

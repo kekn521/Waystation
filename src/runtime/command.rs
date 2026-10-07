@@ -38,6 +38,23 @@ impl Drop for OwnedChild {
         }
     }
 }
+/// Waystation's own executable, as written into agents' hooks and settings and used to
+/// launch agents and task supervisors.
+pub fn launcher() -> std::io::Result<PathBuf> {
+    std::env::current_exe().map(live_executable)
+}
+/// Linux reports a running program's binary as `<path> (deleted)` once it has been
+/// replaced, say by a reinstall; the file now at `<path>` is the one to run.
+pub fn live_executable(exe: PathBuf) -> PathBuf {
+    use std::os::unix::ffi::OsStrExt;
+    if exe.exists() {
+        return exe;
+    }
+    match exe.as_os_str().as_bytes().strip_suffix(b" (deleted)") {
+        Some(path) => PathBuf::from(std::ffi::OsStr::from_bytes(path)),
+        None => exe,
+    }
+}
 pub fn executable(program: &std::ffi::OsStr) -> Option<PathBuf> {
     executable_in(program, &std::env::current_dir().ok()?)
 }

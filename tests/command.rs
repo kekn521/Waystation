@@ -47,3 +47,23 @@ fn inherited_pipe_does_not_hang() {
     assert!(err.to_string().contains("timed out"));
     assert!(start.elapsed() < Duration::from_secs(3));
 }
+
+#[test]
+fn executable_replaced_while_running_resolves_to_the_new_file() {
+    use waystation::runtime::command::live_executable;
+    let d = tempfile::tempdir().unwrap();
+    let installed = d.path().join("waystation");
+    std::fs::write(&installed, b"new build").unwrap();
+    // Linux names a running program's replaced binary "<path> (deleted)".
+    assert_eq!(
+        live_executable(d.path().join("waystation (deleted)")),
+        installed
+    );
+    assert_eq!(live_executable(installed.clone()), installed);
+    // A file really named like that is left alone.
+    let odd = d.path().join("odd (deleted)");
+    std::fs::write(&odd, b"").unwrap();
+    assert_eq!(live_executable(odd.clone()), odd);
+    let missing = d.path().join("gone");
+    assert_eq!(live_executable(missing.clone()), missing);
+}

@@ -137,7 +137,7 @@ fn reset_windows_and_missing_limits_are_explained() {
     u.claude = u.claude.map(|c| ToolUsage { limits: None, ..c });
     a.usage = Some(u);
     let full = screen(&a, 100, 32);
-    assert!(full.contains("install the status line below"), "{full}");
+    assert!(full.contains("plan limits: enable them below"), "{full}");
 }
 
 #[test]

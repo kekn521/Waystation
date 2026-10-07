@@ -54,14 +54,6 @@ impl AgentSession {
         }
     }
 }
-/// Whether `~/.codex/hooks.json` reports Codex conversation ids to this Waystation.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum CodexHookStatus {
-    Installed,
-    Missing,
-    /// Installed for a Waystation executable at a different path.
-    Stale,
-}
 /// Agents whose conversations Waystation knows how to resume.
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum AgentKind {
@@ -484,7 +476,7 @@ pub fn exec(path: &Path, resume: bool) -> Result<()> {
     let session: AgentSession = serde_json::from_slice(&fs::read(&path)?)?;
     let configured = session.command.args.iter().map(OsString::from);
     let claude_settings = || -> Result<OsString> {
-        let hook = serde_json::json!({"hooks": {"SessionStart": [hook_group(&std::env::current_exe()?)?]}});
+        let hook = serde_json::json!({"hooks": {"SessionStart": [hook_group(&crate::runtime::command::launcher()?)?]}});
         Ok(hook.to_string().into())
     };
     let args: Vec<OsString> = match (session.kind(), session.conversation.as_deref(), resume) {
@@ -496,10 +488,19 @@ pub fn exec(path: &Path, resume: bool) -> Result<()> {
                 id.into(),
             ])
             .collect(),
-        (AgentKind::Codex, Some(id), true) => std::iter::once("resume".into())
-            .chain(configured)
-            .chain([id.into()])
-            .collect(),
+        // `-c` hooks also make Codex run embedded rather than through its shared background
+        // server, whose hooks never see this pane's environment.
+        (AgentKind::Codex, conversation, resume) => {
+            let hook = ["-c".into(), codex_hook_override()?];
+            match conversation.filter(|_| resume) {
+                Some(id) => std::iter::once("resume".into())
+                    .chain(hook)
+                    .chain(configured)
+                    .chain([id.into()])
+                    .collect(),
+                None => hook.into_iter().chain(configured).collect(),
+            }
+        }
         _ => configured.collect(),
     };
     // Identify this session to `__agent-hook`; exec keeps the pid, so it names the agent itself.
@@ -543,62 +544,14 @@ fn hook_group(launcher: &Path) -> Result<serde_json::Value> {
         "hooks": [{"type": "command", "command": hook_command(launcher)?, "timeout": 10}]
     }))
 }
-fn is_waystation_hook(group: &serde_json::Value) -> bool {
-    group["hooks"].as_array().is_some_and(|hooks| {
-        hooks.iter().any(|h| {
-            h["command"]
-                .as_str()
-                .is_some_and(|c| c.ends_with(&format!(" {HOOK_ARG}")))
-        })
-    })
-}
-impl AgentManager {
-    fn codex_hooks_path(&self) -> PathBuf {
-        self.codex_home.join("hooks.json")
-    }
-    fn codex_hooks(&self) -> Result<serde_json::Value> {
-        match fs::read(self.codex_hooks_path()) {
-            Ok(bytes) => serde_json::from_slice(&bytes).context("Reading Codex hooks.json"),
-            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(serde_json::json!({})),
-            Err(e) => Err(e.into()),
-        }
-    }
-    pub fn codex_hook(&self, launcher: &Path) -> CodexHookStatus {
-        let (Ok(hooks), Ok(expected)) = (self.codex_hooks(), hook_group(launcher)) else {
-            return CodexHookStatus::Missing;
-        };
-        let groups = hooks["hooks"]["SessionStart"].as_array();
-        match groups.and_then(|g| g.iter().find(|g| is_waystation_hook(g))) {
-            Some(group) if group["hooks"] == expected["hooks"] => CodexHookStatus::Installed,
-            Some(_) => CodexHookStatus::Stale,
-            None => CodexHookStatus::Missing,
-        }
-    }
-    /// Adds (or repoints) Waystation's SessionStart group, leaving every other hook in place.
-    ///
-    /// Appending keeps the indexes, and so Codex's trust, of existing groups.
-    pub fn install_codex_hook(&self, launcher: &Path) -> Result<()> {
-        let mut hooks = self.codex_hooks()?;
-        let group = hook_group(launcher)?;
-        let root = hooks
-            .as_object_mut()
-            .context("Codex hooks.json is not a JSON object")?;
-        let events = root
-            .entry("hooks")
-            .or_insert_with(|| serde_json::json!({}))
-            .as_object_mut()
-            .context("Codex hooks.json has an unexpected `hooks` value")?;
-        let groups = events
-            .entry("SessionStart")
-            .or_insert_with(|| serde_json::json!([]))
-            .as_array_mut()
-            .context("Codex hooks.json has an unexpected SessionStart value")?;
-        match groups.iter_mut().find(|g| is_waystation_hook(g)) {
-            Some(existing) => *existing = group,
-            None => groups.push(group),
-        }
-        crate::store::replace_user_json(&self.codex_hooks_path(), &hooks)
-    }
+/// Codex's `-c` override adding the SessionStart hook for this launch.
+fn codex_hook_override() -> Result<OsString> {
+    let command = hook_command(&crate::runtime::command::launcher()?)?;
+    let quoted = command.replace('\\', r"\\").replace('"', r#"\""#);
+    Ok(format!(
+        r#"hooks.SessionStart=[{{hooks=[{{type="command",command="{quoted}",timeout=10}}]}}]"#
+    )
+    .into())
 }
 /// Handles an agent's SessionStart hook: records the conversation id it now uses.
 ///

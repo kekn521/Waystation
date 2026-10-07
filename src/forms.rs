@@ -218,21 +218,9 @@ impl App {
                 Some(vec![])
             }
             Action::CloseAgent(id) => Some(vec![Effect::CloseAgent(*id)]),
-            Action::InstallCodexHook => {
-                self.confirmation = Some(crate::app::Confirmation {
-                    title: "Add Waystation's SessionStart hook to ~/.codex/hooks.json? It only acts in Waystation sessions; Codex asks you to trust it once.".into(),
-                    choices: vec![
-                        ("Cancel".into(), Action::Escape),
-                        ("Add the hook".into(), Action::ConfirmInstallCodexHook),
-                    ],
-                });
-                self.modal_selection = 0;
-                Some(vec![])
-            }
-            Action::ConfirmInstallCodexHook => Some(vec![Effect::InstallCodexHook]),
             Action::InstallStatusLine => {
                 self.confirmation = Some(crate::app::Confirmation {
-                    title: "Set Claude's status line in ~/.claude/settings.json to Waystation's? It saves Claude's plan limits for Waystation and shows them in Claude, like 5h 23% · wk 41%.".into(),
+                    title: "Set Claude's status line in ~/.claude/settings.json to Waystation's? It only saves Claude's plan limits for Waystation; nothing shows in Claude.".into(),
                     choices: vec![
                         ("Cancel".into(), Action::Escape),
                         ("Set the status line".into(), Action::ConfirmInstallStatusLine),

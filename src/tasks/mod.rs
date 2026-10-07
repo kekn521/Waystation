@@ -58,7 +58,7 @@ impl TaskManager {
     pub fn new(state_dir: PathBuf) -> Self {
         Self {
             state_dir,
-            executable: std::env::current_exe().unwrap_or_default(),
+            executable: crate::runtime::command::launcher().unwrap_or_default(),
         }
     }
     pub fn with_executable(state_dir: PathBuf, executable: PathBuf) -> Self {

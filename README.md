@@ -92,12 +92,12 @@ Waystation follows the conversation an agent is actually in, including after
 `/clear` in Claude or `/new` in Codex, using the agent's SessionStart hook.
 Claude needs no setup: Waystation passes the hook with `--settings` each time
 it launches Claude, and your `~/.claude/settings.json` is left alone. Codex
-reads hooks only from `~/.codex/hooks.json`. The Agents view shows a "Let
-Codex sessions resume after a reboot" row; pressing `Enter` on it and
-confirming appends Waystation's entry to that file without changing other
-hooks. Codex asks you to trust it once. Until then, Codex sessions can't be
-resumed after a reboot. The hook does nothing outside sessions Waystation
-started.
+gets the hook with `-c` each time Waystation launches it, so your
+`~/.codex/hooks.json` is left alone too; Codex asks you to trust the hook the
+first time. Because of the `-c` override, Waystation's Codex sessions run
+embedded rather than through Codex's shared background server, and Codex
+notes this with a startup warning; that is what lets the hook reach
+Waystation. The hook does nothing outside sessions Waystation started.
 
 ### Usage
 
@@ -108,9 +108,9 @@ next reply.
 
 Claude only shares its limits with a status line command. The Agents view
 offers "Show Claude's plan limits in Waystation"; confirming sets `statusLine`
-in `~/.claude/settings.json` to Waystation's, which saves the limits and
-shows a short line such as `5h 77% left · wk 59% left` in Claude. If you already have
-a status line, Waystation leaves it alone.
+in `~/.claude/settings.json` to Waystation's, which saves the limits and prints
+nothing, so Claude Code still shows no status line. If you already have a
+status line, Waystation leaves it alone.
 
 Token counts cover fresh input and output; cache reads are left out because
 they would dwarf everything else. Everything is read from local files;

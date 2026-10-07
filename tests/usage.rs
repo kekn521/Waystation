@@ -277,7 +277,7 @@ fn scanner_ignores_files_untouched_for_a_week() {
 }
 
 #[test]
-fn statusline_saves_claude_limits_and_prints_a_summary() {
+fn statusline_saves_claude_limits() {
     let d = tempfile::tempdir().unwrap();
     let input = serde_json::json!({
         "model": {"display_name": "Opus"},
@@ -286,10 +286,7 @@ fn statusline_saves_claude_limits_and_prints_a_summary() {
             "seven_day": {"used_percentage": 91.0, "resets_at": NOW + 3 * 24 * HOUR},
         }
     });
-    assert_eq!(
-        statusline(input.to_string().as_bytes(), d.path(), NOW),
-        "5h 77% left · wk 9% left !"
-    );
+    statusline(input.to_string().as_bytes(), d.path(), NOW);
     let limits = claude_limits(d.path()).expect("saved");
     assert_eq!(limits.updated_at, NOW);
     let five = limits.five_hour.unwrap();
@@ -299,10 +296,9 @@ fn statusline_saves_claude_limits_and_prints_a_summary() {
     );
     assert_eq!(limits.weekly.unwrap().window_minutes, 7 * 24 * 60);
 
-    // Without limits (API billing, or before the first reply) it prints nothing and keeps
-    // the last saved figures.
-    assert_eq!(statusline(br#"{"model":{}}"#, d.path(), NOW + 60), "");
-    assert_eq!(statusline(b"garbage", d.path(), NOW + 60), "");
+    // Without limits (API billing, or before the first reply) the last figures stay.
+    statusline(br#"{"model":{}}"#, d.path(), NOW + 60);
+    statusline(b"garbage", d.path(), NOW + 60);
     assert_eq!(claude_limits(d.path()).unwrap().updated_at, NOW);
 }
 
@@ -326,11 +322,19 @@ fn statusline_command_is_silent_and_always_succeeds() {
             .unwrap();
         child.wait_with_output().unwrap()
     };
+    // Claude Code shows no status line when the command prints nothing.
     let out = run(r#"{"rate_limits":{"five_hour":{"used_percentage":5,"resets_at":9999999999}}}"#);
-    assert!(out.status.success() && out.stderr.is_empty(), "{out:?}");
+    assert!(
+        out.status.success() && out.stderr.is_empty() && out.stdout.is_empty(),
+        "{out:?}"
+    );
     assert_eq!(
-        String::from_utf8_lossy(&out.stdout).trim_end(),
-        "5h 95% left"
+        claude_limits(d.path())
+            .unwrap()
+            .five_hour
+            .unwrap()
+            .used_percent,
+        5.
     );
     let out = run("not json");
     assert!(
@@ -409,4 +413,37 @@ fn token_counts_are_short() {
     assert_eq!(format_tokens(1_234_567), "1.2M");
     assert_eq!(format_tokens(18_900_000), "18.9M");
     assert_eq!(format_tokens(2_500_000_000), "2.5B");
+}
+
+#[test]
+fn a_status_line_script_that_calls_waystation_counts_as_chained() {
+    let d = tempfile::tempdir().unwrap();
+    let claude_home = d.path().join("claude");
+    std::fs::create_dir_all(&claude_home).unwrap();
+    let script = claude_home.join("statusline-command.sh");
+    std::fs::write(
+        &script,
+        "#!/usr/bin/env bash\ninput=$(cat)\nprintf '%s' \"$input\" | '/opt/waystation' __statusline '/state'\n",
+    )
+    .unwrap();
+    let settings = claude_home.join("settings.json");
+    let chained = serde_json::json!({"statusLine": {"type": "command", "command": format!("bash {}", script.display())}});
+    std::fs::write(&settings, chained.to_string()).unwrap();
+    let (launcher, state) = (Path::new("/opt/waystation"), Path::new("/state"));
+    assert_eq!(
+        statusline_status(&claude_home, launcher, state),
+        StatusLine::Chained
+    );
+    // Waystation never rewrites a status line that already feeds it.
+    assert!(install_statusline(&claude_home, launcher, state).is_err());
+    assert_eq!(
+        std::fs::read_to_string(&settings).unwrap(),
+        chained.to_string()
+    );
+
+    std::fs::write(&script, "#!/bin/sh\necho mine\n").unwrap();
+    assert!(matches!(
+        statusline_status(&claude_home, launcher, state),
+        StatusLine::Other(_)
+    ));
 }

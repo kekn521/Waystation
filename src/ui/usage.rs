@@ -82,7 +82,7 @@ fn window_line<'a>(
 }
 fn hint(name: &str, statusline: &StatusLine) -> &'static str {
     match (name, statusline) {
-        ("Claude", StatusLine::Missing) => "plan limits: install the status line below",
+        ("Claude", StatusLine::Missing) => "plan limits: enable them below",
         ("Claude", StatusLine::Other(_)) => "plan limits need Waystation's status line (below)",
         ("Claude", _) => "plan limits appear after Claude's next reply",
         _ => "plan limits appear after Codex's next reply",

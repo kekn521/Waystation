@@ -102,6 +102,34 @@ pub fn panel(title: &str, focused: bool) -> Block<'_> {
         .title(Line::from(format!(" {} ", safe(title))).fg(if focused { MAUVE } else { MUTED }))
         .style(Style::default().bg(BASE).fg(TEXT))
 }
+/// The Waystation mark (assets/branding/waystation-mark.svg) in braille: a blue orbit, a
+/// mauve waypoint star and a light satellite. Three rows, or two when space is short.
+fn mark(narrow: bool) -> Vec<Vec<Span<'static>>> {
+    use ratatui::style::Color;
+    const WIDE: [&[(&str, Color)]; 3] = [
+        &[(" ", TEXT), ("  ⣠⠤⠴", BLUE), ("⠰⠶", TEXT), ("⢤⡀", BLUE)],
+        &[(" ", TEXT), ("⢠⡏ ", BLUE), ("⠶⣿⠶", MAUVE), (" ⣸⠃", BLUE)],
+        &[(" ", TEXT), ("⠈⠓⠲⠤⠖⠒⠋  ", BLUE)],
+    ];
+    const NARROW: [&[(&str, Color)]; 2] = [
+        &[
+            (" ", TEXT),
+            ("⣠⠴⠚", BLUE),
+            ("⣤⡀", MAUVE),
+            ("⠃", TEXT),
+            ("⣶", BLUE),
+        ],
+        &[(" ", TEXT), ("⠿⣄⣀", BLUE), ("⠛", MAUVE), ("⡤⠖⠋", BLUE)],
+    ];
+    let rows: &[&[(&str, Color)]] = if narrow { &NARROW } else { &WIDE };
+    rows.iter()
+        .map(|row| {
+            row.iter()
+                .map(|(text, color)| Span::styled(*text, Style::default().fg(*color)))
+                .collect()
+        })
+        .collect()
+}
 pub fn draw(frame: &mut Frame, app: &App) -> Vec<HitRegion> {
     let area = frame.area();
     let mut hits = vec![];
@@ -156,30 +184,43 @@ pub fn draw(frame: &mut Frame, app: &App) -> Vec<HitRegion> {
                 .into_owned()
         })
         .unwrap_or("select a workspace".into());
-    let header = vec![
-        Line::from(vec![
-            Span::styled(
-                " ╭─┬─╮  W A Y S T A T I O N",
-                Style::default().fg(MAUVE).bold(),
-            ),
-            Span::styled(
-                if narrow {
-                    ""
-                } else {
-                    "     dispatch / your terminal, connected"
-                },
-                Style::default().fg(MUTED),
-            ),
-        ]),
-        Line::from(vec![
-            Span::styled(" ╰─┼─╯  ", Style::default().fg(MAUVE)),
-            Span::styled(safe(&context), Style::default().fg(TEAL)),
-            Span::styled(
-                format!("  · {}", app.section.name()),
-                Style::default().fg(MUTED),
-            ),
-        ]),
+    let mut logo = mark(narrow).into_iter();
+    let with_mark = |mark: Option<Vec<Span<'static>>>, rest: Vec<Span<'static>>| {
+        Line::from(
+            mark.unwrap_or_default()
+                .into_iter()
+                .chain(rest)
+                .collect::<Vec<_>>(),
+        )
+    };
+    let mut header = vec![
+        with_mark(
+            logo.next(),
+            vec![
+                Span::styled("  W A Y S T A T I O N", Style::default().fg(MAUVE).bold()),
+                Span::styled(
+                    if narrow {
+                        ""
+                    } else {
+                        "     dispatch / your terminal, connected"
+                    },
+                    Style::default().fg(MUTED),
+                ),
+            ],
+        ),
+        with_mark(
+            logo.next(),
+            vec![
+                Span::raw("  "),
+                Span::styled(safe(&context), Style::default().fg(TEAL)),
+                Span::styled(
+                    format!("  · {}", app.section.name()),
+                    Style::default().fg(MUTED),
+                ),
+            ],
+        ),
     ];
+    header.extend(logo.map(Line::from));
     frame.render_widget(
         Paragraph::new(header).bg(MANTLE).block(
             Block::default()
@@ -390,7 +431,14 @@ pub fn draw(frame: &mut Frame, app: &App) -> Vec<HitRegion> {
         vertical[2],
     );
     if let Some((title, text)) = &app.detail {
-        let rect = Rect::new(area.x + 2, area.y + 2, area.width - 4, area.height - 4);
+        // Below the header, so the mark is never half covered.
+        let top = vertical[0].bottom().max(area.y + 2);
+        let rect = Rect::new(
+            area.x + 2,
+            top,
+            area.width - 4,
+            area.bottom().saturating_sub(2).saturating_sub(top).max(3),
+        );
         frame.render_widget(Clear, rect);
         frame.render_widget(
             Paragraph::new(safe(text))

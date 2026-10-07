@@ -3,8 +3,8 @@ source: tests/ui.rs
 expression: "snapshots.join(\"\\n\\n\")"
 ---
 --- Overview ---
- ╭─┬─╮  W A Y S T A T I O N
- ╰─┼─╯  機 器 -learning-with-a-long-name  · Overview
+ ⣠⠴⠚⣤⡀⠃⣶  W A Y S T A T I O N
+ ⠿⣄⣀⠛⡤⠖⠋  機 器 -learning-with-a-long-name  · Overview
 ─────────────────────────────────────────────────────────────────────────────────────────
 1 Hub 2 Work 3 AI 4 Svc 5 SSH 6 File 7 Sys 8 Log
 
@@ -35,8 +35,8 @@ expression: "snapshots.join(\"\\n\\n\")"
  NORMAL  j/k move · Tab pane · / search · ? help · q quit
 
 --- Workspaces ---
- ╭─┬─╮  W A Y S T A T I O N
- ╰─┼─╯  機 器 -learning-with-a-long-name  · Workspaces
+ ⣠⠴⠚⣤⡀⠃⣶  W A Y S T A T I O N
+ ⠿⣄⣀⠛⡤⠖⠋  機 器 -learning-with-a-long-name  · Workspaces
 ─────────────────────────────────────────────────────────────────────────────────────────
 1 Hub 2 Work 3 AI 4 Svc 5 SSH 6 File 7 Sys 8 Log
 
@@ -67,8 +67,8 @@ expression: "snapshots.join(\"\\n\\n\")"
  NORMAL  j/k move · Tab pane · / search · ? help · q quit
 
 --- Agents ---
- ╭─┬─╮  W A Y S T A T I O N
- ╰─┼─╯  機 器 -learning-with-a-long-name  · Agents
+ ⣠⠴⠚⣤⡀⠃⣶  W A Y S T A T I O N
+ ⠿⣄⣀⠛⡤⠖⠋  機 器 -learning-with-a-long-name  · Agents
 ─────────────────────────────────────────────────────────────────────────────────────────
 1 Hub 2 Work 3 AI 4 Svc 5 SSH 6 File 7 Sys 8 Log
 
@@ -99,8 +99,8 @@ expression: "snapshots.join(\"\\n\\n\")"
  NORMAL  j/k move · Tab pane · / search · ? help · q quit
 
 --- Services ---
- ╭─┬─╮  W A Y S T A T I O N
- ╰─┼─╯  機 器 -learning-with-a-long-name  · Services
+ ⣠⠴⠚⣤⡀⠃⣶  W A Y S T A T I O N
+ ⠿⣄⣀⠛⡤⠖⠋  機 器 -learning-with-a-long-name  · Services
 ─────────────────────────────────────────────────────────────────────────────────────────
 1 Hub 2 Work 3 AI 4 Svc 5 SSH 6 File 7 Sys 8 Log
 
@@ -131,8 +131,8 @@ expression: "snapshots.join(\"\\n\\n\")"
  NORMAL  j/k move · Tab pane · / search · ? help · q quit
 
 --- Connections ---
- ╭─┬─╮  W A Y S T A T I O N
- ╰─┼─╯  機 器 -learning-with-a-long-name  · Connections
+ ⣠⠴⠚⣤⡀⠃⣶  W A Y S T A T I O N
+ ⠿⣄⣀⠛⡤⠖⠋  機 器 -learning-with-a-long-name  · Connections
 ─────────────────────────────────────────────────────────────────────────────────────────
 1 Hub 2 Work 3 AI 4 Svc 5 SSH 6 File 7 Sys 8 Log
 
@@ -163,8 +163,8 @@ expression: "snapshots.join(\"\\n\\n\")"
  NORMAL  j/k move · Tab pane · / search · ? help · q quit
 
 --- Files ---
- ╭─┬─╮  W A Y S T A T I O N
- ╰─┼─╯  機 器 -learning-with-a-long-name  · Files
+ ⣠⠴⠚⣤⡀⠃⣶  W A Y S T A T I O N
+ ⠿⣄⣀⠛⡤⠖⠋  機 器 -learning-with-a-long-name  · Files
 ─────────────────────────────────────────────────────────────────────────────────────────
 1 Hub 2 Work 3 AI 4 Svc 5 SSH 6 File 7 Sys 8 Log
 
@@ -195,8 +195,8 @@ expression: "snapshots.join(\"\\n\\n\")"
  NORMAL  j/k move · Tab pane · / search · ? help · q quit
 
 --- System ---
- ╭─┬─╮  W A Y S T A T I O N
- ╰─┼─╯  機 器 -learning-with-a-long-name  · System
+ ⣠⠴⠚⣤⡀⠃⣶  W A Y S T A T I O N
+ ⠿⣄⣀⠛⡤⠖⠋  機 器 -learning-with-a-long-name  · System
 ─────────────────────────────────────────────────────────────────────────────────────────
 1 Hub 2 Work 3 AI 4 Svc 5 SSH 6 File 7 Sys 8 Log
 
@@ -227,8 +227,8 @@ expression: "snapshots.join(\"\\n\\n\")"
  NORMAL  j/k move · Tab pane · / search · ? help · q quit
 
 --- Activity ---
- ╭─┬─╮  W A Y S T A T I O N
- ╰─┼─╯  機 器 -learning-with-a-long-name  · Activity
+ ⣠⠴⠚⣤⡀⠃⣶  W A Y S T A T I O N
+ ⠿⣄⣀⠛⡤⠖⠋  機 器 -learning-with-a-long-name  · Activity
 ─────────────────────────────────────────────────────────────────────────────────────────
 1 Hub 2 Work 3 AI 4 Svc 5 SSH 6 File 7 Sys 8 Log
 
@@ -258,8 +258,8 @@ expression: "snapshots.join(\"\\n\\n\")"
 ─────────────────────────────────────────────────────────────────────────────────────────
  NORMAL  j/k move · Tab pane · / search · ? help · q quit
 
- ╭─┬─╮  W A Y S T A T I O N
- ╰─┼─╯  機 器 -learning-with-a-long-name  · Activity
+ ⣠⠴⠚⣤⡀⠃⣶  W A Y S T A T I O N
+ ⠿⣄⣀⠛⡤⠖⠋  機 器 -learning-with-a-long-name  · Activity
 ─────────────────────────────────────────────────────────────────────────────────────────
 1 Hub 2 Work 3 AI 4 Svc 5 SSH 6 File 7 Sys 8 Log
 
@@ -289,8 +289,8 @@ expression: "snapshots.join(\"\\n\\n\")"
 ─────────────────────────────────────────────────────────────────────────────────────────
  SEARCH  j/k move · Tab pane · / search · ? help · q quit
 
- ╭─┬─╮  W A Y S T A T I O N
- ╰─┼─╯  機 器 -learning-with-a-long-name  · Activity
+ ⣠⠴⠚⣤⡀⠃⣶  W A Y S T A T I O N
+ ⠿⣄⣀⠛⡤⠖⠋  機 器 -learning-with-a-long-name  · Activity
 ─────────────────────────────────────────────────────────────────────────────────────────
 1 ╭ Keyboard shortcuts · Esc close ───────────────────────────────────────────────────╮
   │1–8 sections · j/k or arrows move · Tab focus pane                                 │
@@ -320,8 +320,8 @@ expression: "snapshots.join(\"\\n\\n\")"
 ─────────────────────────────────────────────────────────────────────────────────────────
  NORMAL  j/k move · Tab pane · / search · ? help · q quit
 
- ╭─┬─╮  W A Y S T A T I O N
- ╰─┼─╯  機 器 -learning-with-a-long-name  · Activity
+ ⣠⠴⠚⣤⡀⠃⣶  W A Y S T A T I O N
+ ⠿⣄⣀⠛⡤⠖⠋  機 器 -learning-with-a-long-name  · Activity
 ─────────────────────────────────────────────────────────────────────────────────────────
 1 Hub 2 Work 3 AI 4 Svc 5 SSH 6 File 7 Sys 8 Log
 
@@ -351,12 +351,12 @@ expression: "snapshots.join(\"\\n\\n\")"
 ─────────────────────────────────────────────────────────────────────────────────────────
  NORMAL  j/k move · Tab pane · / search · ? help · q quit
 
- ╭─┬─╮  W A Y S T A T I O N
- ╰─┼─╯  機 器 -learning-with-a-long-name  · Activity
-──╭ Tunnel run logs ──────────────────────────────────────────────────────────────────╮──
-1 │Permission denied                                                                  │
-  │ESC is sanitized: �]52;c;hidden                                                    │
-╭ │                                                                                   │─╮
+ ⣠⠴⠚⣤⡀⠃⣶  W A Y S T A T I O N
+ ⠿⣄⣀⠛⡤⠖⠋  機 器 -learning-with-a-long-name  · Activity
+─────────────────────────────────────────────────────────────────────────────────────────
+1 ╭ Tunnel run logs ──────────────────────────────────────────────────────────────────╮
+  │Permission denied                                                                  │
+╭ │ESC is sanitized: �]52;c;hidden                                                    │─╮
 │ │                                                                                   │ │
 ╰─│                                                                                   │─╯
 ╭ │                                                                                   │─╮
@@ -382,8 +382,8 @@ expression: "snapshots.join(\"\\n\\n\")"
 ─────────────────────────────────────────────────────────────────────────────────────────
  NORMAL  j/k move · Tab pane · / search · ? help · q quit
 
- ╭─┬─╮  W A Y S T A T I O N
- ╰─┼─╯  機 器 -learning-with-a-long-name  · Activity
+ ⣠⠴⠚⣤⡀⠃⣶  W A Y S T A T I O N
+ ⠿⣄⣀⠛⡤⠖⠋  機 器 -learning-with-a-long-name  · Activity
 ─────────────────────────────────────────────────────────────────────────────────────────
 1 Hub 2 Work 3 AI 4 Svc 5 SSH 6 File 7 Sys 8 Log
 

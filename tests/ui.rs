@@ -174,3 +174,21 @@ fn quit_confirmation_is_visible_below_minimum_size() {
     });
     assert!(screen(&a, 59, 17).contains("Keep running and quit"));
 }
+#[test]
+fn header_draws_the_waystation_mark() {
+    let a = App::new(Config::default(), AppState::default());
+    let wide = screen(&a, 120, 38);
+    let rows = wide.lines().take(3).collect::<Vec<_>>();
+    assert!(
+        rows[0].starts_with("   ⣠⠤⠴⠰⠶⢤⡀  W A Y S T A T I O N"),
+        "{wide}"
+    );
+    assert!(rows[1].starts_with(" ⢠⡏ ⠶⣿⠶ ⣸⠃"), "{wide}");
+    assert!(rows[2].starts_with(" ⠈⠓⠲⠤⠖⠒⠋"), "{wide}");
+    let narrow = screen(&a, 60, 18);
+    assert!(
+        narrow.starts_with(" ⣠⠴⠚⣤⡀⠃⣶  W A Y S T A T I O N"),
+        "{narrow}"
+    );
+    assert!(!wide.contains("╭─┬─╮") && !narrow.contains("╭─┬─╮"));
+}

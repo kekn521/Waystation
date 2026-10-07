@@ -25,9 +25,23 @@ fn main() -> Result<()> {
         );
         return waystation::tasks::supervisor::run(std::path::Path::new(&args[3]));
     }
+    if args.get(1).is_some_and(|s| s == "__agent-hook") {
+        // Hook output can reach the agent's context, and failures must not disturb it.
+        let mut input = vec![];
+        let _ = std::io::Read::read_to_end(
+            &mut std::io::Read::take(std::io::stdin(), 1024 * 1024),
+            &mut input,
+        );
+        let _ = waystation::agents::record_hook(&input);
+        return Ok(());
+    }
     if args.get(1).is_some_and(|s| s == "__agent-exec") {
-        anyhow::ensure!(args.len() == 3, "Invalid agent invocation");
-        return waystation::agents::exec(std::path::Path::new(&args[2]));
+        let resume = args.get(3).is_some_and(|s| s == "--resume");
+        anyhow::ensure!(
+            args.len() == 3 || (args.len() == 4 && resume),
+            "Invalid agent invocation"
+        );
+        return waystation::agents::exec(std::path::Path::new(&args[2]), resume);
     }
     let cli = Cli::parse();
     let mut paths = Paths::discover()?;

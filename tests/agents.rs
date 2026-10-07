@@ -59,7 +59,11 @@ fn sessions_survive_manager_restart_and_preserve_literal_arguments() {
         captured.contains("literal ; $(false) ' \""),
         "captured: {captured:?}"
     );
-    assert!(reloaded.attach(session.id).is_ok());
+    assert!(
+        reloaded
+            .attach(session.id, Path::new(env!("CARGO_BIN_EXE_waystation")))
+            .is_ok()
+    );
     reloaded.close(session.id).unwrap();
     assert_eq!(reloaded.list().unwrap()[0].id, other.id);
     reloaded.close(other.id).unwrap();
@@ -216,7 +220,454 @@ fn lost_server_leaves_recoverable_records_and_can_be_closed() {
         std::thread::sleep(Duration::from_millis(50));
     }
     assert_eq!(manager.list().unwrap()[0].status, AgentStatus::Unavailable);
-    assert!(manager.attach(session.id).is_err());
+    assert!(
+        manager
+            .attach(session.id, Path::new(env!("CARGO_BIN_EXE_waystation")))
+            .is_err()
+    );
     manager.close(session.id).unwrap();
     assert!(manager.list().unwrap().is_empty());
+}
+
+fn stand_in(dir: &Path, name: &str) -> String {
+    use std::os::unix::fs::PermissionsExt;
+    let bin = dir.join("bin");
+    std::fs::create_dir_all(&bin).unwrap();
+    let path = bin.join(name);
+    // Records its exact argv beside itself, replacing the previous launch's.
+    std::fs::write(
+        &path,
+        "#!/bin/sh\nprintf '%s\\n' \"$@\" > \"$0.args.tmp\" && mv \"$0.args.tmp\" \"$0.args\"\nexec sleep 60\n",
+    )
+    .unwrap();
+    std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o755)).unwrap();
+    path.to_str().unwrap().into()
+}
+
+fn wait_for_args(program: &str, expected: &[String]) -> Vec<String> {
+    let path = format!("{program}.args");
+    let mut args = vec![];
+    for _ in 0..60 {
+        args = std::fs::read_to_string(&path)
+            .map(|s| s.lines().map(String::from).collect())
+            .unwrap_or_default();
+        if args == expected {
+            break;
+        }
+        std::thread::sleep(Duration::from_millis(50));
+    }
+    let _ = std::fs::remove_file(&path);
+    args
+}
+
+fn claude_settings() -> String {
+    let command = format!(
+        "'{}' __agent-hook",
+        Path::new(env!("CARGO_BIN_EXE_waystation")).display()
+    );
+    serde_json::json!({"hooks": {"SessionStart": [
+        {"hooks": [{"type": "command", "command": command, "timeout": 10}]}
+    ]}})
+    .to_string()
+}
+
+fn strings(args: &[&str]) -> Vec<String> {
+    args.iter().map(|s| s.to_string()).collect()
+}
+
+fn kill_server(state: &Path) {
+    let key: uuid::Uuid =
+        serde_json::from_slice(&std::fs::read(state.join("agents/server.json")).unwrap()).unwrap();
+    assert!(
+        std::process::Command::new("tmux")
+            .args(["-L", &format!("station-{key}"), "kill-server"])
+            .status()
+            .unwrap()
+            .success()
+    );
+}
+
+fn wait_for_status(
+    manager: &AgentManager,
+    status: AgentStatus,
+) -> Vec<waystation::agents::AgentSession> {
+    let mut sessions = vec![];
+    for _ in 0..60 {
+        sessions = manager.list().unwrap();
+        if sessions.iter().all(|s| s.status == status) {
+            break;
+        }
+        std::thread::sleep(Duration::from_millis(50));
+    }
+    sessions
+}
+
+#[test]
+fn claude_sessions_resume_their_conversation_after_server_loss() {
+    let d = tempfile::tempdir().unwrap();
+    let claude_home = d.path().join("claude-home");
+    let manager = AgentManager::new(d.path().join("state"))
+        .with_agent_homes(claude_home.clone(), d.path().join("codex-home"));
+    let program = stand_in(d.path(), "claude");
+    let command = ToolCommand {
+        program: program.clone(),
+        args: vec!["--model".into(), "opus".into()],
+    };
+    let session = manager
+        .create(
+            "Plan",
+            "claude",
+            &command,
+            d.path(),
+            Path::new(env!("CARGO_BIN_EXE_waystation")),
+        )
+        .unwrap();
+    let conversation = session
+        .conversation
+        .clone()
+        .expect("claude conversation id");
+    let settings = claude_settings();
+    let fresh = strings(&[
+        "--model",
+        "opus",
+        "--settings",
+        &settings,
+        "--session-id",
+        &conversation,
+    ]);
+    assert_eq!(wait_for_args(&program, &fresh), fresh);
+
+    // No transcript was written yet, so reopening starts the same conversation id afresh.
+    kill_server(&d.path().join("state"));
+    let sessions = wait_for_status(&manager, AgentStatus::Saved);
+    assert_eq!(sessions[0].status, AgentStatus::Saved, "{sessions:?}");
+    assert!(
+        manager
+            .attach(session.id, Path::new(env!("CARGO_BIN_EXE_waystation")))
+            .is_ok()
+    );
+    assert_eq!(manager.list().unwrap()[0].status, AgentStatus::Running);
+    assert_eq!(wait_for_args(&program, &fresh), fresh);
+
+    let project = claude_home.join("projects/-tmp-plan");
+    std::fs::create_dir_all(&project).unwrap();
+    std::fs::write(project.join(format!("{conversation}.jsonl")), "{}\n").unwrap();
+    kill_server(&d.path().join("state"));
+    wait_for_status(&manager, AgentStatus::Saved);
+    assert!(
+        manager
+            .attach(session.id, Path::new(env!("CARGO_BIN_EXE_waystation")))
+            .is_ok()
+    );
+    let resumed = strings(&[
+        "--model",
+        "opus",
+        "--settings",
+        &settings,
+        "--resume",
+        &conversation,
+    ]);
+    let args = wait_for_args(&program, &resumed);
+    manager.close(session.id).unwrap();
+    assert_eq!(args, resumed);
+}
+
+/// Runs the hook as Claude or Codex would, with conversation homes under `homes`.
+fn run_hook(
+    homes: &Path,
+    manifest: Option<&Path>,
+    pid: Option<u32>,
+    input: &str,
+) -> std::process::Output {
+    use std::io::Write;
+    let mut command = std::process::Command::new(env!("CARGO_BIN_EXE_waystation"));
+    command
+        .arg("__agent-hook")
+        .env("CLAUDE_CONFIG_DIR", homes.join("claude-home"))
+        .env("CODEX_HOME", homes.join("codex-home"))
+        .env_remove("WAYSTATION_AGENT_MANIFEST")
+        .env_remove("WAYSTATION_AGENT_PID")
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped());
+    if let Some(manifest) = manifest {
+        command.env("WAYSTATION_AGENT_MANIFEST", manifest);
+    }
+    if let Some(pid) = pid {
+        command.env("WAYSTATION_AGENT_PID", pid.to_string());
+    }
+    let mut child = command.spawn().unwrap();
+    child
+        .stdin
+        .take()
+        .unwrap()
+        .write_all(input.as_bytes())
+        .unwrap();
+    child.wait_with_output().unwrap()
+}
+
+#[test]
+fn hook_records_conversation_only_for_its_own_agent() {
+    let d = tempfile::tempdir().unwrap();
+    let state = d.path().join("state");
+    let manager = AgentManager::new(state.clone())
+        .with_agent_homes(d.path().join("claude-home"), d.path().join("codex-home"));
+    let program = stand_in(d.path(), "claude");
+    let session = manager
+        .create(
+            "Plan",
+            "claude",
+            &ToolCommand {
+                program: program.clone(),
+                args: vec![],
+            },
+            d.path(),
+            Path::new(env!("CARGO_BIN_EXE_waystation")),
+        )
+        .unwrap();
+    let launched = strings(&[
+        "--settings",
+        &claude_settings(),
+        "--session-id",
+        session.conversation.as_deref().unwrap(),
+    ]);
+    assert_eq!(wait_for_args(&program, &launched), launched);
+
+    let manifest = state.join(format!("agents/{}.json", session.id));
+    let input = |id: &str, transcript: &Path| {
+        serde_json::json!({
+            "hook_event_name": "SessionStart",
+            "source": "clear",
+            "session_id": id,
+            "transcript_path": transcript.join(format!("{id}.jsonl")),
+        })
+        .to_string()
+    };
+    let claude_projects = d.path().join("claude-home/projects/-work");
+    let clear = input("after-clear-1", &claude_projects);
+    let conversation = || manager.list().unwrap()[0].conversation.clone();
+    let me = Some(std::process::id());
+    let mut stranger = std::process::Command::new("sleep")
+        .arg("30")
+        .spawn()
+        .unwrap();
+
+    // Outside Waystation, from another process, or from a different agent's conversation,
+    // the hook stays silent and changes nothing.
+    let before = conversation();
+    for (manifest, pid, input) in [
+        (None, me, clear.clone()),
+        (Some(manifest.as_path()), None, clear.clone()),
+        (Some(manifest.as_path()), Some(stranger.id()), clear.clone()),
+        (
+            Some(manifest.as_path()),
+            me,
+            input("bad id; rm -rf", &claude_projects),
+        ),
+        (
+            Some(manifest.as_path()),
+            me,
+            input(
+                "codex-thread",
+                &d.path().join("codex-home/sessions/2026/10/06"),
+            ),
+        ),
+        (Some(manifest.as_path()), me, "not json".into()),
+    ] {
+        let out = run_hook(d.path(), manifest, pid, &input);
+        assert!(out.status.success(), "{out:?}");
+        assert!(out.stdout.is_empty() && out.stderr.is_empty(), "{out:?}");
+        assert_eq!(conversation(), before, "{input}");
+    }
+    stranger.kill().unwrap();
+    let _ = stranger.wait();
+
+    let out = run_hook(d.path(), Some(&manifest), me, &clear);
+    assert!(out.status.success() && out.stdout.is_empty(), "{out:?}");
+    assert_eq!(conversation().as_deref(), Some("after-clear-1"));
+
+    manager.close(session.id).unwrap();
+    let out = run_hook(d.path(), Some(&manifest), me, &clear);
+    assert!(out.status.success() && out.stdout.is_empty(), "{out:?}");
+    assert!(!manifest.exists());
+}
+
+#[test]
+fn hook_ignores_a_nested_copy_of_the_same_agent() {
+    let d = tempfile::tempdir().unwrap();
+    let state = d.path().join("state");
+    let manager = AgentManager::new(state.clone())
+        .with_agent_homes(d.path().join("claude-home"), d.path().join("codex-home"));
+    let session = manager
+        .create(
+            "Plan",
+            "claude",
+            &ToolCommand {
+                program: stand_in(d.path(), "claude"),
+                args: vec![],
+            },
+            d.path(),
+            Path::new(env!("CARGO_BIN_EXE_waystation")),
+        )
+        .unwrap();
+    let manifest = state.join(format!("agents/{}.json", session.id));
+    let input = |id: &str| {
+        serde_json::json!({
+            "hook_event_name": "SessionStart",
+            "session_id": id,
+            "transcript_path": d.path().join(format!("claude-home/projects/-work/{id}.jsonl")),
+        })
+        .to_string()
+    };
+    // `sh` stands in for the agent: it reports through a hook it runs itself, or through a
+    // second `sh` (the same program, as a nested agent would be) started beneath it.
+    let run = |script: &str, id: &str| {
+        let out = std::process::Command::new("sh")
+            .arg("-c")
+            .arg(format!("export WAYSTATION_AGENT_PID=$$; {script}; true"))
+            .env("WAYSTATION_AGENT_MANIFEST", &manifest)
+            .env("CLAUDE_CONFIG_DIR", d.path().join("claude-home"))
+            .env("CODEX_HOME", d.path().join("codex-home"))
+            .env("HOOK", env!("CARGO_BIN_EXE_waystation"))
+            .env("IN", input(id))
+            .output()
+            .unwrap();
+        assert!(out.status.success() && out.stdout.is_empty(), "{out:?}");
+    };
+    run(
+        r#"sh -c 'printf %s "$IN" | "$HOOK" __agent-hook; true'"#,
+        "nested-1",
+    );
+    assert_eq!(
+        manager.list().unwrap()[0].conversation,
+        session.conversation
+    );
+    run(r#"printf %s "$IN" | "$HOOK" __agent-hook"#, "direct-1");
+    let recorded = manager.list().unwrap()[0].conversation.clone();
+    manager.close(session.id).unwrap();
+    assert_eq!(recorded.as_deref(), Some("direct-1"));
+}
+
+#[test]
+fn codex_sessions_resume_the_conversation_their_hook_reported() {
+    let d = tempfile::tempdir().unwrap();
+    let state = d.path().join("state");
+    let manager = AgentManager::new(state.clone())
+        .with_agent_homes(d.path().join("claude-home"), d.path().join("codex-home"));
+    let program = stand_in(d.path(), "codex");
+    let session = manager
+        .create(
+            "Build",
+            "codex",
+            &ToolCommand {
+                program: program.clone(),
+                args: vec!["--model".into(), "o3".into()],
+            },
+            d.path(),
+            Path::new(env!("CARGO_BIN_EXE_waystation")),
+        )
+        .unwrap();
+    assert!(session.conversation.is_none());
+    let fresh = strings(&["--model", "o3"]);
+    assert_eq!(wait_for_args(&program, &fresh), fresh);
+
+    let manifest = state.join(format!("agents/{}.json", session.id));
+    let out = run_hook(
+        d.path(),
+        Some(&manifest),
+        Some(std::process::id()),
+        &serde_json::json!({
+            "hook_event_name": "SessionStart",
+            "source": "startup",
+            "session_id": "019a0000-aaaa-7000-8000-000000000001",
+            "transcript_path": d.path().join("codex-home/sessions/2026/10/06/rollout-x.jsonl"),
+        })
+        .to_string(),
+    );
+    assert!(out.status.success(), "{out:?}");
+    kill_server(&state);
+    let sessions = wait_for_status(&manager, AgentStatus::Saved);
+    assert_eq!(sessions[0].status, AgentStatus::Saved, "{sessions:?}");
+    assert!(
+        manager
+            .attach(session.id, Path::new(env!("CARGO_BIN_EXE_waystation")))
+            .is_ok()
+    );
+    let resumed = strings(&[
+        "resume",
+        "--model",
+        "o3",
+        "019a0000-aaaa-7000-8000-000000000001",
+    ]);
+    let args = wait_for_args(&program, &resumed);
+    manager.close(session.id).unwrap();
+    assert_eq!(args, resumed);
+}
+
+#[test]
+fn codex_hook_install_appends_and_updates_only_its_own_entry() {
+    use waystation::agents::CodexHookStatus;
+    let d = tempfile::tempdir().unwrap();
+    let codex_home = d.path().join("codex-home");
+    std::fs::create_dir_all(&codex_home).unwrap();
+    let hooks = codex_home.join("hooks.json");
+    let manager = AgentManager::new(d.path().join("state"))
+        .with_agent_homes(d.path().join("claude-home"), codex_home.clone());
+    let launcher = Path::new("/opt/way station/waystation");
+    let moved = Path::new("/usr/local/bin/waystation");
+
+    // No hooks.json yet: install creates one holding only Waystation's entry.
+    assert_eq!(manager.codex_hook(launcher), CodexHookStatus::Missing);
+    manager.install_codex_hook(launcher).unwrap();
+    assert_eq!(manager.codex_hook(launcher), CodexHookStatus::Installed);
+    let created: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(&hooks).unwrap()).unwrap();
+    assert_eq!(
+        created["hooks"]["SessionStart"][0]["hooks"][0]["command"],
+        "'/opt/way station/waystation' __agent-hook"
+    );
+
+    let existing = r#"{
+  "zeta": true,
+  "hooks": {
+    "SessionStart": [
+      {"hooks": [{"command": "bash 'herdr.sh' session", "timeout": 10, "type": "command"}]}
+    ],
+    "Stop": [{"hooks": [{"command": "notify", "type": "command"}]}]
+  }
+}"#;
+    std::fs::write(&hooks, existing).unwrap();
+    assert_eq!(manager.codex_hook(launcher), CodexHookStatus::Missing);
+    manager.install_codex_hook(launcher).unwrap();
+    manager.install_codex_hook(launcher).unwrap();
+    let text = std::fs::read_to_string(&hooks).unwrap();
+    assert!(
+        text.find("zeta").unwrap() < text.find("hooks").unwrap(),
+        "{text}"
+    );
+    let value: serde_json::Value = serde_json::from_str(&text).unwrap();
+    let groups = value["hooks"]["SessionStart"].as_array().unwrap();
+    assert_eq!(groups.len(), 2, "{text}");
+    assert_eq!(groups[0]["hooks"][0]["command"], "bash 'herdr.sh' session");
+    assert_eq!(
+        groups[1]["hooks"][0]["command"],
+        "'/opt/way station/waystation' __agent-hook"
+    );
+    assert_eq!(value["hooks"]["Stop"][0]["hooks"][0]["command"], "notify");
+
+    assert_eq!(manager.codex_hook(moved), CodexHookStatus::Stale);
+    manager.install_codex_hook(moved).unwrap();
+    let value: serde_json::Value = serde_json::from_slice(&std::fs::read(&hooks).unwrap()).unwrap();
+    let groups = value["hooks"]["SessionStart"].as_array().unwrap();
+    assert_eq!(groups.len(), 2);
+    assert_eq!(groups[0]["hooks"][0]["command"], "bash 'herdr.sh' session");
+    assert_eq!(
+        groups[1]["hooks"][0]["command"],
+        "'/usr/local/bin/waystation' __agent-hook"
+    );
+    assert_eq!(manager.codex_hook(moved), CodexHookStatus::Installed);
+
+    std::fs::write(&hooks, "{ not json").unwrap();
+    assert!(manager.install_codex_hook(moved).is_err());
+    assert_eq!(std::fs::read_to_string(&hooks).unwrap(), "{ not json");
 }

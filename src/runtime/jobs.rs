@@ -47,7 +47,15 @@ impl Jobs {
                             result.message =
                                 "Session created · Enter opens · F12 returns to Waystation".into();
                         }
-                        Effect::AttachAgent(id) => result.attach = Some(agents.attach(id)?),
+                        Effect::AttachAgent(id) => {
+                            result.attach = Some(agents.attach(id, &std::env::current_exe()?)?)
+                        }
+                        Effect::InstallCodexHook => {
+                            agents.install_codex_hook(&std::env::current_exe()?)?;
+                            result.message =
+                                "Codex hook added · Codex asks you to trust it on its next start"
+                                    .into();
+                        }
                         Effect::CloseAgent(id) => {
                             agents.close(id)?;
                             result.message = "Agent session closed".into();

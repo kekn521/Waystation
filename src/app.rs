@@ -16,6 +16,8 @@ pub enum Action {
     NewAgent,
     OpenAgent(uuid::Uuid),
     CloseAgent(uuid::Uuid),
+    InstallCodexHook,
+    ConfirmInstallCodexHook,
     FormField(isize),
     FormFocus(usize),
     Paste(String),
@@ -67,6 +69,7 @@ pub enum Effect {
     },
     AttachAgent(uuid::Uuid),
     CloseAgent(uuid::Uuid),
+    InstallCodexHook,
     Foreground(Action),
     Copy(PathBuf),
     DockerLogs(String),
@@ -91,6 +94,8 @@ pub struct App {
     /// Monotonic animation time supplied by the event loop; never persisted.
     pub animation_elapsed: std::time::Duration,
     pub agents: Vec<crate::agents::AgentSession>,
+    /// `None` when Codex is not installed.
+    pub codex_hook: Option<crate::agents::CodexHookStatus>,
     pub form: Option<crate::forms::Form>,
     pinned_paths: std::collections::HashSet<PathBuf>,
     pub pending_starts: std::collections::HashSet<uuid::Uuid>,
@@ -132,6 +137,7 @@ impl App {
         Self {
             animation_elapsed: std::time::Duration::ZERO,
             agents: vec![],
+            codex_hook: None,
             form: None,
             pinned_paths,
             pending_starts: Default::default(),
@@ -178,7 +184,10 @@ impl App {
             Ok(payload) => {
                 self.provider_errors.remove(&key);
                 match payload {
-                    ProviderPayload::Agents(s) => self.agents = s,
+                    ProviderPayload::Agents(s, hook) => {
+                        self.agents = s;
+                        self.codex_hook = hook;
+                    }
                     ProviderPayload::Tasks(r) => {
                         self.pending_starts
                             .retain(|id| !r.iter().any(|run| run.id == *id));
@@ -311,6 +320,7 @@ impl App {
                 let status = match s.status {
                     crate::agents::AgentStatus::Running => "● running".into(),
                     crate::agents::AgentStatus::Exited(code) => format!("○ exited {code}"),
+                    crate::agents::AgentStatus::Saved => "◌ saved · Enter resumes".into(),
                     crate::agents::AgentStatus::Unavailable => "○ unavailable".into(),
                 };
                 (
@@ -325,6 +335,19 @@ impl App {
             "Codex or Claude · choose a project · F12 returns here".into(),
             Action::NewAgent,
         ));
+        match self.codex_hook {
+            Some(crate::agents::CodexHookStatus::Missing) => items.push((
+                "Let Codex sessions resume after a reboot".into(),
+                "Adds Waystation's hook to ~/.codex/hooks.json · Enter to review".into(),
+                Action::InstallCodexHook,
+            )),
+            Some(crate::agents::CodexHookStatus::Stale) => items.push((
+                "Update Waystation's Codex hook".into(),
+                "It points at an older Waystation path · Enter to review".into(),
+                Action::InstallCodexHook,
+            )),
+            Some(crate::agents::CodexHookStatus::Installed) | None => {}
+        }
         if let Some(error) = self.provider_errors.get("Agents") {
             items.push((
                 "Agent status unavailable · F5 retries".into(),

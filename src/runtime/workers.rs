@@ -39,7 +39,10 @@ pub struct ProviderRequest {
 }
 #[derive(Debug)]
 pub enum ProviderPayload {
-    Agents(Vec<crate::agents::AgentSession>),
+    Agents(
+        Vec<crate::agents::AgentSession>,
+        Option<crate::agents::CodexHookStatus>,
+    ),
     Tasks(Vec<crate::tasks::RunRecord>),
     Services(crate::providers::services::ServicesState),
     Projects(Vec<Workspace>),
@@ -99,9 +102,19 @@ impl WorkerPool {
                 .ok_or_else(|| "Select a workspace".to_string());
             let result: anyhow::Result<ProviderPayload> = (|| {
                 Ok(match r.id {
-                    ProviderId::Agents => ProviderPayload::Agents(
-                        crate::agents::AgentManager::new(state.clone()).list()?,
-                    ),
+                    ProviderId::Agents => {
+                        let manager = crate::agents::AgentManager::new(state.clone());
+                        let codex = config
+                            .tools
+                            .get("codex")
+                            .map_or("codex", |t| t.program.as_str());
+                        // Resuming relies on the real `codex` CLI, not a differently named wrapper.
+                        let hook = crate::runtime::command::executable(codex.as_ref())
+                            .filter(|p| p.file_name().is_some_and(|n| n == "codex"))
+                            .map(|_| anyhow::Ok(manager.codex_hook(&std::env::current_exe()?)))
+                            .transpose()?;
+                        ProviderPayload::Agents(manager.list()?, hook)
+                    }
                     ProviderId::Tasks => ProviderPayload::Tasks(
                         crate::tasks::TaskManager::new(state.clone()).list()?,
                     ),

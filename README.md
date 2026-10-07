@@ -76,9 +76,24 @@ move between them.
 Press `3`, then `n` to name a Codex or Claude session and choose its project.
 `Ctrl+S` creates and opens it. `F12` returns to Waystation; `Enter` opens the
 session again. Waystation uses its own private `tmux` server, separate from
-your regular sessions. Agents survive Waystation exiting and restarting, but
-not a computer reboot. Closing a session with `x` ends its process and
-scrollback after confirmation.
+your regular sessions. Agents survive Waystation exiting and restarting.
+After a computer reboot, Claude and Codex sessions show as "saved"; press
+`Enter` to start the agent again in the same project and resume its
+conversation. The earlier terminal scrollback is not restored. Waystation
+still never starts them on its own; it only resumes one when you open it.
+Closing a session with `x` ends its process and scrollback after
+confirmation; the Claude or Codex conversation history itself stays in place.
+
+Waystation follows the conversation an agent is actually in, including after
+`/clear` in Claude or `/new` in Codex, using the agent's SessionStart hook.
+Claude needs no setup: Waystation passes the hook with `--settings` each time
+it launches Claude, and your `~/.claude/settings.json` is left alone. Codex
+reads hooks only from `~/.codex/hooks.json`. The Agents view shows a "Let
+Codex sessions resume after a reboot" row; pressing `Enter` on it and
+confirming appends Waystation's entry to that file without changing other
+hooks. Codex asks you to trust it once. Until then, Codex sessions can't be
+resumed after a reboot. The hook does nothing outside sessions Waystation
+started.
 
 ### SSH tunnels
 

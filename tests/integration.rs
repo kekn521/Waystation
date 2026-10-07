@@ -38,17 +38,23 @@ fn relative_executable_uses_command_cwd() {
     let p = d.path().join("fixture");
     fs::write(&p, "#!/bin/sh\nprintf 'relative works'\n").unwrap();
     fs::set_permissions(p, fs::Permissions::from_mode(0o755)).unwrap();
-    let output = CommandRunner
-        .capture(
-            &CommandSpec {
-                program: "./fixture".into(),
-                args: vec![],
-                cwd: d.path().into(),
-            },
-            Duration::from_secs(2),
-            1024,
-        )
-        .unwrap();
+    let spec = CommandSpec {
+        program: "./fixture".into(),
+        args: vec![],
+        cwd: d.path().into(),
+    };
+    // A test forking in parallel can briefly hold the fixture open for writing, which makes
+    // executing it fail with "Text file busy" until that child execs.
+    let mut attempt = 0;
+    let output = loop {
+        match CommandRunner.capture(&spec, Duration::from_secs(2), 1024) {
+            Err(e) if attempt < 20 && format!("{e:#}").contains("Text file busy") => {
+                attempt += 1;
+                std::thread::sleep(Duration::from_millis(10));
+            }
+            result => break result.unwrap(),
+        }
+    };
     assert_eq!(output.stdout, b"relative works");
 }
 #[test]

@@ -59,6 +59,9 @@ fn main() -> Result<()> {
         );
         return waystation::agents::exec(std::path::Path::new(&args[2]), resume);
     }
+    if args.get(1).is_some_and(|s| s == "__host") {
+        return host_command(&args[2..]);
+    }
     let cli = Cli::parse();
     let mut paths = Paths::discover()?;
     if let Some(p) = cli.config {
@@ -77,6 +80,9 @@ fn main() -> Result<()> {
     }
     let store = Store::open(paths.state.clone())?;
     let mut app = App::new(config, store.load()?);
+    let mut overlay = waystation::ui::overlay::Live::new(waystation::agents::AgentManager::new(
+        paths.state.clone(),
+    ));
     let pool = waystation::runtime::workers::WorkerPool::new(
         app.config.clone(),
         paths.home.clone(),
@@ -110,12 +116,17 @@ fn main() -> Result<()> {
                     }
                     if let Some(spec) = r.attach {
                         app.section = waystation::model::Section::Agents;
-                        app.message = Some(match term.run_foreground_stderr(&spec) {
-                            Ok((status, stderr)) => {
-                                waystation::agents::attach_message(status, &stderr)
-                            }
-                            Err(e) => format!("Could not open agent: {e:#}"),
-                        });
+                        app.message = Some(
+                            match term.host(&spec, &mut app.overlay_visible, &mut |buf| {
+                                overlay.draw(buf)
+                            }) {
+                                Ok(outcome) => waystation::agents::attach_message(
+                                    outcome.status,
+                                    &outcome.last_lines,
+                                ),
+                                Err(e) => format!("Could not open agent: {e:#}"),
+                            },
+                        );
                     }
                     if let Some(id) = r.started {
                         app.pending_starts.insert(id);
@@ -200,9 +211,13 @@ fn main() -> Result<()> {
                         .unwrap_or(paths.home.clone());
                         let result =
                             waystation::runtime::actions::resolve(&action, &app.config, &cwd)
-                                .and_then(|s| term.run_foreground(&s));
+                                .and_then(|s| {
+                                    term.host(&s, &mut app.overlay_visible, &mut |buf| {
+                                        overlay.draw(buf)
+                                    })
+                                });
                         let outcome = match result {
-                            Ok(status) => format!("Returned · {status}"),
+                            Ok(outcome) => format!("Returned · {}", outcome.status),
                             Err(e) => format!("{e:#}"),
                         };
                         app.state.activity.push(waystation::model::ActivityEntry {
@@ -264,4 +279,36 @@ fn refresh(app: &App, pool: &waystation::runtime::workers::WorkerPool) {
     ] {
         submit(app, pool, id)
     }
+}
+
+/// `__host [--state-dir DIR] -- PROGRAM ARGS...`: runs one program hosted, with the agent
+/// box, and exits with its status. Used to exercise the host directly.
+fn host_command(args: &[std::ffi::OsString]) -> Result<()> {
+    let split = args.iter().position(|a| a == "--");
+    let (options, program) = match split {
+        Some(i) => (&args[..i], &args[i + 1..]),
+        None => (&[][..], args),
+    };
+    anyhow::ensure!(
+        !program.is_empty(),
+        "Usage: __host [--state-dir DIR] -- PROGRAM ARGS..."
+    );
+    let state = match options {
+        [flag, dir] if flag == "--state-dir" => std::path::PathBuf::from(dir),
+        [] => Paths::discover()?.state,
+        _ => anyhow::bail!("Usage: __host [--state-dir DIR] -- PROGRAM ARGS..."),
+    };
+    let spec = waystation::runtime::command::CommandSpec {
+        program: program[0].clone(),
+        args: program[1..].to_vec(),
+        cwd: std::env::current_dir()?,
+    };
+    let mut overlay =
+        waystation::ui::overlay::Live::new(waystation::agents::AgentManager::new(state));
+    let mut visible = true;
+    let outcome = {
+        let mut term = TerminalSession::enter()?;
+        term.host(&spec, &mut visible, &mut |buf| overlay.draw(buf))?
+    };
+    std::process::exit(outcome.status.code().unwrap_or(1));
 }

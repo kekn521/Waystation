@@ -75,7 +75,7 @@ expression: "snapshots.join(\"\\n\\n\")"
 ╭ commands ─────────────────────────────────────────────────────────────────────────────╮
 │ / Jump to anything…                                                                   │
 ╰───────────────────────────────────────────────────────────────────────────────────────╯
-╭ Agents · n new · Enter open · x close ────────────────────────────────────────────────╮
+╭ Agents · n new · Enter open · r restart · x close ────────────────────────────────────╮
 │ ❯ ＋  New agent session                                                                │
 │   Codex or Claude · choose a project · F12 or Ctrl-\ returns here                     │
 │                                                                                       │
@@ -297,10 +297,10 @@ expression: "snapshots.join(\"\\n\\n\")"
 ╭ │/ search commands · Enter activate · Esc close                                     │─╮
 │ │e editor · t shell · g Git · h Herdr · f files                                     │ │
 ╰─│Connections: x stop tunnel                                                         │─╯
-╭ │Agents: n new · Enter open · F12/Ctrl-\ return · x close                           │─╮
+╭ │Agents: n new · Enter open · r restart · x close                                   │─╮
+│ │F12/Ctrl-\ back to Waystation · F9 agent status box                                │ │
 │ │. hidden files · y copy path · F5 refresh                                          │ │
 │ │q quit                                                                             │ │
-│ │                                                                                   │ │
 │ │                                                                                   │ │
 │ │                                                                                   │ │
 │ ╰───────────────────────────────────────────────────────────────────────────────────╯ │

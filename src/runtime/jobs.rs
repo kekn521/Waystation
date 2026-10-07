@@ -51,6 +51,11 @@ impl Jobs {
                             result.attach =
                                 Some(agents.attach(id, &crate::runtime::command::launcher()?)?)
                         }
+                        Effect::RestartAgent(id) => {
+                            agents.restart(id, &crate::runtime::command::launcher()?)?;
+                            result.message =
+                                "Agent restarted with status tracking · Enter opens".into();
+                        }
                         Effect::InstallStatusLine => {
                             agents.install_statusline(&crate::runtime::command::launcher()?)?;
                             result.message =

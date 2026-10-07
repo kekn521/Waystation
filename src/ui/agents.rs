@@ -22,7 +22,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) -> Vec<HitRegion> {
     ui::rows(
         frame,
         area,
-        "Agents · n new · Enter open · x close",
+        "Agents · n new · Enter open · r restart · x close",
         &app.agent_items(),
         app.selection,
         true,

@@ -18,6 +18,9 @@ pub enum Action {
     CloseAgent(uuid::Uuid),
     InstallStatusLine,
     ConfirmInstallStatusLine,
+    /// Restart the selected agent session, after confirmation.
+    RestartAgent,
+    ConfirmRestartAgent(uuid::Uuid),
     FormField(isize),
     FormFocus(usize),
     Paste(String),
@@ -70,6 +73,7 @@ pub enum Effect {
     AttachAgent(uuid::Uuid),
     CloseAgent(uuid::Uuid),
     InstallStatusLine,
+    RestartAgent(uuid::Uuid),
     Foreground(Action),
     Copy(PathBuf),
     DockerLogs(String),
@@ -96,6 +100,8 @@ pub struct App {
     pub agents: Vec<crate::agents::AgentSession>,
     /// `None` until the first usage scan finishes.
     pub usage: Option<crate::usage::Usage>,
+    /// Whether the agent box floats over hosted programs; F9 toggles it.
+    pub overlay_visible: bool,
     pub form: Option<crate::forms::Form>,
     pinned_paths: std::collections::HashSet<PathBuf>,
     pub pending_starts: std::collections::HashSet<uuid::Uuid>,
@@ -138,6 +144,7 @@ impl App {
             animation_elapsed: std::time::Duration::ZERO,
             agents: vec![],
             usage: None,
+            overlay_visible: true,
             form: None,
             pinned_paths,
             pending_starts: Default::default(),

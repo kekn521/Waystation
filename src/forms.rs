@@ -218,6 +218,33 @@ impl App {
                 Some(vec![])
             }
             Action::CloseAgent(id) => Some(vec![Effect::CloseAgent(*id)]),
+            Action::RestartAgent if self.section == Section::Agents => {
+                if let Some((_, _, Action::OpenAgent(id))) = self.agent_items().get(self.selection)
+                    && let Some(session) = self.agents.iter().find(|s| s.id == *id)
+                {
+                    let title = if session.conversation.is_some() {
+                        format!(
+                            "Restart {}? It resumes the same conversation with status tracking.",
+                            session.name
+                        )
+                    } else {
+                        format!(
+                            "Restart {}? It has no saved conversation, so it starts a fresh one with status tracking.",
+                            session.name
+                        )
+                    };
+                    self.confirmation = Some(crate::app::Confirmation {
+                        title,
+                        choices: vec![
+                            ("Cancel".into(), Action::Escape),
+                            ("Restart".into(), Action::ConfirmRestartAgent(*id)),
+                        ],
+                    });
+                    self.modal_selection = 0;
+                }
+                Some(vec![])
+            }
+            Action::ConfirmRestartAgent(id) => Some(vec![Effect::RestartAgent(*id)]),
             Action::InstallStatusLine => {
                 self.confirmation = Some(crate::app::Confirmation {
                     title: "Set Claude's status line in ~/.claude/settings.json to Waystation's? It only saves Claude's plan limits for Waystation; nothing shows in Claude.".into(),

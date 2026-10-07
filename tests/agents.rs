@@ -265,18 +265,48 @@ fn claude_settings() -> String {
         "'{}' __agent-hook",
         Path::new(env!("CARGO_BIN_EXE_waystation")).display()
     );
-    serde_json::json!({"hooks": {"SessionStart": [
-        {"hooks": [{"type": "command", "command": command, "timeout": 10}]}
-    ]}})
-    .to_string()
+    let group =
+        serde_json::json!([{"hooks": [{"type": "command", "command": command, "timeout": 10}]}]);
+    let mut hooks = serde_json::Map::new();
+    for event in [
+        "SessionStart",
+        "UserPromptSubmit",
+        "PreToolUse",
+        "PostToolUse",
+        "PostToolUseFailure",
+        "PermissionRequest",
+        "Notification",
+        "Stop",
+    ] {
+        hooks.insert(event.into(), group.clone());
+    }
+    serde_json::json!({ "hooks": hooks }).to_string()
 }
 
 /// Codex reads hooks from `-c`, which also runs it embedded so hooks see the pane's env.
-fn codex_hook_override() -> String {
-    format!(
-        r#"hooks.SessionStart=[{{hooks=[{{type="command",command="'{}' __agent-hook",timeout=10}}]}}]"#,
-        Path::new(env!("CARGO_BIN_EXE_waystation")).display()
-    )
+fn codex_hook_overrides() -> Vec<String> {
+    let exe = Path::new(env!("CARGO_BIN_EXE_waystation"))
+        .display()
+        .to_string();
+    [
+        "SessionStart",
+        "UserPromptSubmit",
+        "PreToolUse",
+        "PermissionRequest",
+        "PostToolUse",
+        "Stop",
+        "Interrupt",
+    ]
+    .iter()
+    .flat_map(|event| {
+        [
+            "-c".to_string(),
+            format!(
+                r#"hooks.{event}=[{{hooks=[{{type="command",command="'{exe}' __agent-hook",timeout=10}}]}}]"#
+            ),
+        ]
+    })
+    .collect()
 }
 
 fn strings(args: &[&str]) -> Vec<String> {
@@ -576,8 +606,8 @@ fn codex_sessions_resume_the_conversation_their_hook_reported() {
         )
         .unwrap();
     assert!(session.conversation.is_none());
-    let hook = codex_hook_override();
-    let fresh = strings(&["-c", &hook, "--model", "o3"]);
+    let hooks = codex_hook_overrides();
+    let fresh = [hooks.clone(), strings(&["--model", "o3"])].concat();
     assert_eq!(wait_for_args(&program, &fresh), fresh);
 
     let manifest = state.join(format!("agents/{}.json", session.id));
@@ -602,14 +632,12 @@ fn codex_sessions_resume_the_conversation_their_hook_reported() {
             .attach(session.id, Path::new(env!("CARGO_BIN_EXE_waystation")))
             .is_ok()
     );
-    let resumed = strings(&[
-        "resume",
-        "-c",
-        &hook,
-        "--model",
-        "o3",
-        "019a0000-aaaa-7000-8000-000000000001",
-    ]);
+    let resumed = [
+        strings(&["resume"]),
+        hooks,
+        strings(&["--model", "o3", "019a0000-aaaa-7000-8000-000000000001"]),
+    ]
+    .concat();
     let args = wait_for_args(&program, &resumed);
     manager.close(session.id).unwrap();
     assert_eq!(args, resumed);
@@ -737,4 +765,156 @@ fn attaching_binds_ctrl_backslash_for_keyboards_without_f12() {
             .any(|l| l.contains("F12") && l.contains("detach-client")),
         "{keys}"
     );
+}
+
+#[test]
+fn hook_events_record_what_the_agent_is_doing() {
+    use waystation::activity::{ActivityState, read};
+    let d = tempfile::tempdir().unwrap();
+    let state = d.path().join("state");
+    let manager = AgentManager::new(state.clone())
+        .with_agent_homes(d.path().join("claude-home"), d.path().join("codex-home"));
+    let session = manager
+        .create(
+            "Plan",
+            "claude",
+            &ToolCommand {
+                program: stand_in(d.path(), "claude"),
+                args: vec![],
+            },
+            d.path(),
+            Path::new(env!("CARGO_BIN_EXE_waystation")),
+        )
+        .unwrap();
+    let manifest = state.join(format!("agents/{}.json", session.id));
+    let me = Some(std::process::id());
+    let transcript = d.path().join("claude-home/projects/-work/s.jsonl");
+    let send = |pid: Option<u32>, event: serde_json::Value| {
+        let out = run_hook(d.path(), Some(&manifest), pid, &event.to_string());
+        assert!(
+            out.status.success() && out.stdout.is_empty() && out.stderr.is_empty(),
+            "{out:?}"
+        );
+    };
+    // Launching marks the session ready before any hook fires.
+    assert_eq!(read(&manifest).unwrap().state, ActivityState::Ready);
+
+    send(
+        me,
+        serde_json::json!({"hook_event_name": "PreToolUse", "session_id": "s",
+        "transcript_path": transcript, "tool_name": "Bash", "tool_input": {"command": "cargo test"}}),
+    );
+    let activity = read(&manifest).expect("recorded");
+    assert_eq!(
+        (activity.state, activity.detail.as_str()),
+        (ActivityState::Running, "$ cargo test")
+    );
+    // The conversation id only changes on SessionStart.
+    assert_eq!(
+        manager.list().unwrap()[0].conversation,
+        session.conversation
+    );
+
+    // Claude's notifications may carry no transcript path; the process check still applies.
+    send(
+        me,
+        serde_json::json!({"hook_event_name": "Notification", "session_id": "s",
+        "notification_type": "permission_prompt", "message": "Claude needs your permission to use Bash"}),
+    );
+    assert_eq!(read(&manifest).unwrap().state, ActivityState::NeedsInput);
+
+    let mut stranger = std::process::Command::new("sleep")
+        .arg("30")
+        .spawn()
+        .unwrap();
+    send(
+        Some(stranger.id()),
+        serde_json::json!({"hook_event_name": "Stop", "session_id": "s",
+        "transcript_path": transcript, "last_assistant_message": "not mine"}),
+    );
+    stranger.kill().unwrap();
+    let _ = stranger.wait();
+    assert_eq!(read(&manifest).unwrap().state, ActivityState::NeedsInput);
+
+    manager.close(session.id).unwrap();
+    assert!(read(&manifest).is_none(), "closing removes the activity");
+    send(
+        me,
+        serde_json::json!({"hook_event_name": "Stop", "session_id": "s",
+        "transcript_path": transcript, "last_assistant_message": "late"}),
+    );
+    assert!(
+        read(&manifest).is_none(),
+        "a closed session is never recreated"
+    );
+}
+
+#[test]
+fn launching_marks_the_agent_ready_and_restart_resumes_with_current_hooks() {
+    use waystation::activity::{ActivityState, read};
+    let d = tempfile::tempdir().unwrap();
+    let state = d.path().join("state");
+    let claude_home = d.path().join("claude-home");
+    let manager = AgentManager::new(state.clone())
+        .with_agent_homes(claude_home.clone(), d.path().join("codex-home"));
+    let launcher = Path::new(env!("CARGO_BIN_EXE_waystation"));
+    let program = stand_in(d.path(), "claude");
+    let session = manager
+        .create(
+            "Plan",
+            "claude",
+            &ToolCommand {
+                program: program.clone(),
+                args: vec![],
+            },
+            d.path(),
+            launcher,
+        )
+        .unwrap();
+    let manifest = state.join(format!("agents/{}.json", session.id));
+    let conversation = session.conversation.clone().unwrap();
+    let settings = claude_settings();
+    let fresh = strings(&["--settings", &settings, "--session-id", &conversation]);
+    assert_eq!(wait_for_args(&program, &fresh), fresh);
+    assert_eq!(read(&manifest).unwrap().state, ActivityState::Ready);
+
+    // A session that has run and has a transcript comes back on the same conversation.
+    std::fs::write(waystation::activity::path(&manifest), "{}").unwrap();
+    let project = claude_home.join("projects/-work");
+    std::fs::create_dir_all(&project).unwrap();
+    std::fs::write(project.join(format!("{conversation}.jsonl")), "{}\n").unwrap();
+    manager.restart(session.id, launcher).unwrap();
+    let resumed = strings(&["--settings", &settings, "--resume", &conversation]);
+    assert_eq!(wait_for_args(&program, &resumed), resumed);
+    assert_eq!(read(&manifest).unwrap().state, ActivityState::Ready);
+    assert_eq!(manager.list().unwrap()[0].status, AgentStatus::Running);
+    manager.close(session.id).unwrap();
+
+    // A Claude session from before conversations were recorded gets one, starting fresh.
+    let old = manager
+        .create(
+            "Old",
+            "claude",
+            &ToolCommand {
+                program: program.clone(),
+                args: vec![],
+            },
+            d.path(),
+            launcher,
+        )
+        .unwrap();
+    let old_manifest = state.join(format!("agents/{}.json", old.id));
+    let mut record: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(&old_manifest).unwrap()).unwrap();
+    record.as_object_mut().unwrap().remove("conversation");
+    std::fs::write(&old_manifest, record.to_string()).unwrap();
+    manager.restart(old.id, launcher).unwrap();
+    let assigned = manager.list().unwrap()[0]
+        .conversation
+        .clone()
+        .expect("assigned");
+    let started = strings(&["--settings", &settings, "--session-id", &assigned]);
+    let args = wait_for_args(&program, &started);
+    manager.close(old.id).unwrap();
+    assert_eq!(args, started);
 }

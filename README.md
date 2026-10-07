@@ -21,7 +21,9 @@ data. The planets move when the app is running.*
   an editor, shell, Git UI, or file browser from the selected workspace.
 - **Keep agents close.** Create named Codex or Claude sessions, switch away with
   F12 (or Ctrl-\ on keyboards without function keys), and return without losing
-  their terminal output.
+  their terminal output. While you're in any agent, editor or shell Waystation
+  opened, a small box in the top-right corner shows every agent's state
+  (running, needs input, done) and what it's doing; F9 hides or shows it.
 - **Watch your plan limits.** See how much of Claude's and Codex's 5-hour and
   weekly limits you have left, when they reset, and how many tokens you've
   spent in the last 5 hours, today, and this week.
@@ -68,6 +70,7 @@ sessions require `tmux`; other optional tools are described below.
 | `e` / `t` / `g` / `h` / `f` | Editor, shell, Git UI, Herdr, or files for the workspace |
 | `n` | Create a session in Agents |
 | `F12` or `Ctrl-\` | Return to Waystation from an agent session |
+| `F9` | Hide or show the agent status box while in an agent, editor or shell |
 | `?` | Show all shortcuts |
 | `q` | Quit |
 
@@ -98,6 +101,16 @@ first time. Because of the `-c` override, Waystation's Codex sessions run
 embedded rather than through Codex's shared background server, and Codex
 notes this with a startup warning; that is what lets the hook reach
 Waystation. The hook does nothing outside sessions Waystation started.
+
+Agents, editors, shells and other tools that Waystation opens now run inside
+Waystation's own terminal, so it can float an "Agents" box in the top-right
+corner over them. Each agent shows as ready, running, needs input or done,
+with the command it is running, the question it is asking, or the start of its
+last reply. F9 hides or shows the box. The states come from Claude's and
+Codex's own hooks, which Waystation passes when it starts them; Codex asks you
+to trust the new hooks once. Inside Waystation's terminal, Shift+PageUp or
+PageDown or the mouse wheel scroll back through a shell's output. Clickable
+links and inline images from programs are not shown.
 
 ### Usage
 

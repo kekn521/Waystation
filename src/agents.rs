@@ -298,6 +298,15 @@ impl AgentManager {
         if resume {
             args.push("--resume".into());
         }
+        // Marked before it starts, so a session without activity is one that predates tracking.
+        atomic_json(
+            &crate::activity::path(&self.manifest(session.id)),
+            &crate::activity::Activity {
+                state: crate::activity::ActivityState::Ready,
+                detail: String::new(),
+                at: crate::usage::now(),
+            },
+        )?;
         self.checked(key, args)?;
         self.checked(
             key,
@@ -349,6 +358,30 @@ impl AgentManager {
         projects
             .flatten()
             .any(|project| project.path().join(format!("{id}.jsonl")).is_file())
+    }
+    /// Starts a session again with the current hooks, resuming its conversation when it has
+    /// one. A Claude session that never recorded one is given a fresh conversation.
+    pub fn restart(&self, id: Uuid, launcher: &Path) -> Result<()> {
+        let mut session = self
+            .list()?
+            .into_iter()
+            .find(|s| s.id == id)
+            .context("Agent session not found")?;
+        {
+            let _lock = self.lock()?;
+            let key = self.key()?.context("Missing server")?;
+            if session.kind() == AgentKind::Claude && session.conversation.is_none() {
+                session.conversation = Some(Uuid::new_v4().to_string());
+                atomic_json(&self.manifest(id), &session)?;
+            }
+            if self.live(key)?.contains_key(&format!("agent-{id}")) {
+                self.checked(
+                    key,
+                    vec!["kill-session".into(), "-t".into(), session.target().into()],
+                )?;
+            }
+        }
+        self.resume(&session, launcher)
     }
     pub fn attach(&self, id: Uuid, launcher: &Path) -> Result<CommandSpec> {
         let session = self
@@ -405,8 +438,19 @@ impl AgentManager {
                 vec!["kill-session".into(), "-t".into(), session.target().into()],
             )?;
         }
+        let _ = fs::remove_file(crate::activity::path(&self.manifest(id)));
         fs::remove_file(self.manifest(id))?;
         Ok(())
+    }
+    /// What each session's hooks last reported.
+    pub fn activities(
+        &self,
+        sessions: &[AgentSession],
+    ) -> HashMap<Uuid, crate::activity::Activity> {
+        sessions
+            .iter()
+            .filter_map(|s| Some((s.id, crate::activity::read(&self.manifest(s.id))?)))
+            .collect()
     }
     pub fn capture(&self, id: Uuid) -> Result<String> {
         self.checked(
@@ -424,7 +468,7 @@ impl AgentManager {
 }
 /// The agents' tmux server config. F12 is out of reach on Mac keyboards without `fn`, so
 /// Ctrl-\ also returns to Waystation; neither Claude Code nor Codex binds it.
-const TMUX_CONF: &str = "set -g remain-on-exit on\nset -g remain-on-exit-format ''\nset -g history-limit 50000\nset -g mouse on\nset -g status-style 'bg=#1e2030,fg=#cad3f5'\nset -g status-left '#[fg=#c6a0f6,bold] WAYSTATION #[default]'\nset -g status-right '#[fg=#8bd5ca] F12 or Ctrl-\\ → Waystation  '\nset -g status-right-length 40\nset -g allow-rename off\nset -g automatic-rename off\nbind-key -n F12 detach-client\nbind-key -n 'C-\\' detach-client\n";
+const TMUX_CONF: &str = "set -g remain-on-exit on\nset -g remain-on-exit-format ''\nset -g history-limit 50000\nset -g mouse on\nset -g status-style 'bg=#1e2030,fg=#cad3f5'\nset -g status-left '#[fg=#c6a0f6,bold] WAYSTATION #[default]'\nset -g status-right '#[fg=#8bd5ca] F12 or Ctrl-\\ → Waystation  '\nset -g status-right-length 40\nset -g status-left-length 20\nset -g allow-rename off\nset -g automatic-rename off\nbind-key -n F12 detach-client\nbind-key -n 'C-\\' detach-client\n";
 /// Where ncurses looks for terminfo entries, and so where tmux will.
 pub fn terminfo_dirs() -> Vec<PathBuf> {
     let mut dirs = vec![];
@@ -476,8 +520,12 @@ pub fn exec(path: &Path, resume: bool) -> Result<()> {
     let session: AgentSession = serde_json::from_slice(&fs::read(&path)?)?;
     let configured = session.command.args.iter().map(OsString::from);
     let claude_settings = || -> Result<OsString> {
-        let hook = serde_json::json!({"hooks": {"SessionStart": [hook_group(&crate::runtime::command::launcher()?)?]}});
-        Ok(hook.to_string().into())
+        let group = serde_json::json!([hook_group(&crate::runtime::command::launcher()?)?]);
+        let hooks = CLAUDE_EVENTS
+            .iter()
+            .map(|event| (event.to_string(), group.clone()))
+            .collect::<serde_json::Map<_, _>>();
+        Ok(serde_json::json!({ "hooks": hooks }).to_string().into())
     };
     let args: Vec<OsString> = match (session.kind(), session.conversation.as_deref(), resume) {
         (AgentKind::Claude, Some(id), resume) => configured
@@ -491,7 +539,7 @@ pub fn exec(path: &Path, resume: bool) -> Result<()> {
         // `-c` hooks also make Codex run embedded rather than through its shared background
         // server, whose hooks never see this pane's environment.
         (AgentKind::Codex, conversation, resume) => {
-            let hook = ["-c".into(), codex_hook_override()?];
+            let hook = codex_hook_overrides()?;
             match conversation.filter(|_| resume) {
                 Some(id) => std::iter::once("resume".into())
                     .chain(hook)
@@ -515,6 +563,26 @@ pub fn exec(path: &Path, resume: bool) -> Result<()> {
 const MANIFEST_ENV: &str = "WAYSTATION_AGENT_MANIFEST";
 const PID_ENV: &str = "WAYSTATION_AGENT_PID";
 const HOOK_ARG: &str = "__agent-hook";
+/// Hook events that track a conversation and what the agent is doing (see `activity`).
+const CLAUDE_EVENTS: [&str; 8] = [
+    "SessionStart",
+    "UserPromptSubmit",
+    "PreToolUse",
+    "PostToolUse",
+    "PostToolUseFailure",
+    "PermissionRequest",
+    "Notification",
+    "Stop",
+];
+const CODEX_EVENTS: [&str; 7] = [
+    "SessionStart",
+    "UserPromptSubmit",
+    "PreToolUse",
+    "PermissionRequest",
+    "PostToolUse",
+    "Stop",
+    "Interrupt",
+];
 /// The SessionStart hook command for this Waystation executable, quoted for `sh -c`.
 fn hook_command(launcher: &Path) -> Result<String> {
     Ok(format!("{} {HOOK_ARG}", shell_quote(launcher)?))
@@ -544,16 +612,25 @@ fn hook_group(launcher: &Path) -> Result<serde_json::Value> {
         "hooks": [{"type": "command", "command": hook_command(launcher)?, "timeout": 10}]
     }))
 }
-/// Codex's `-c` override adding the SessionStart hook for this launch.
-fn codex_hook_override() -> Result<OsString> {
+/// Codex's `-c` overrides adding Waystation's hook to each tracked event for this launch.
+fn codex_hook_overrides() -> Result<Vec<OsString>> {
     let command = hook_command(&crate::runtime::command::launcher()?)?;
     let quoted = command.replace('\\', r"\\").replace('"', r#"\""#);
-    Ok(format!(
-        r#"hooks.SessionStart=[{{hooks=[{{type="command",command="{quoted}",timeout=10}}]}}]"#
-    )
-    .into())
+    Ok(CODEX_EVENTS
+        .iter()
+        .flat_map(|event| {
+            [
+                "-c".into(),
+                format!(
+                    r#"hooks.{event}=[{{hooks=[{{type="command",command="{quoted}",timeout=10}}]}}]"#
+                )
+                .into(),
+            ]
+        })
+        .collect())
 }
-/// Handles an agent's SessionStart hook: records the conversation id it now uses.
+/// Handles an agent's hook: records the conversation id it uses (on SessionStart) and what
+/// it is doing (see `activity`).
 ///
 /// Silent and best effort, since agents may show hook output or fail on a non-zero exit.
 /// Acts only for the agent process Waystation launched, not nested agents that inherit its env.
@@ -570,21 +647,18 @@ pub fn record_hook(input: &[u8]) -> Result<()> {
         return Ok(());
     }
     let input: serde_json::Value = serde_json::from_slice(input)?;
-    if input["hook_event_name"]
-        .as_str()
-        .is_some_and(|e| e != "SessionStart")
-    {
-        return Ok(());
-    }
-    let Some(id) = input["session_id"].as_str().filter(|id| {
+    let session_start = input["hook_event_name"] == "SessionStart";
+    let activity = crate::activity::from_event(&input, crate::usage::now());
+    let id = input["session_id"].as_str().filter(|id| {
         !id.is_empty()
             && id.len() <= 128
             && id
                 .bytes()
                 .all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_')
-    }) else {
+    });
+    if activity.is_none() && !(session_start && id.is_some()) {
         return Ok(());
-    };
+    }
     let dir = manifest.parent().context("Invalid agent manifest")?;
     ensure!(
         manifest
@@ -608,19 +682,26 @@ pub fn record_hook(input: &[u8]) -> Result<()> {
         AgentKind::Codex => manager.codex_home.join("sessions"),
         AgentKind::Other => return Ok(()),
     };
-    let Some(transcript) = input["transcript_path"].as_str().map(Path::new) else {
-        return Ok(());
-    };
-    if !(transcript.starts_with(&home)
-        || home
-            .canonicalize()
-            .is_ok_and(|home| transcript.starts_with(home)))
-    {
+    // Every event that names a transcript must name one of this agent's; some of Claude's
+    // notifications name none and rely on the process check alone.
+    let transcript = input["transcript_path"].as_str().map(Path::new);
+    let ours = transcript.is_some_and(|transcript| {
+        transcript.starts_with(&home)
+            || home
+                .canonicalize()
+                .is_ok_and(|home| transcript.starts_with(home))
+    });
+    if transcript.is_some() && !ours {
         return Ok(());
     }
-    if session.conversation.as_deref() != Some(id) {
+    if let Some(id) = id.filter(|_| session_start && ours)
+        && session.conversation.as_deref() != Some(id)
+    {
         session.conversation = Some(id.into());
         atomic_json(&manifest, &session)?;
+    }
+    if let Some(activity) = activity {
+        atomic_json(&crate::activity::path(&manifest), &activity)?;
     }
     Ok(())
 }

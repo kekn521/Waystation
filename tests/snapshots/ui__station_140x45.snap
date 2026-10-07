@@ -105,7 +105,7 @@ expression: "snapshots.join(\"\\n\\n\")"
   WORK             │ / Jump to anything…                                                                                                  │
   1 Overview       ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
                     1 workspaces  ·  local observations
-  2 Workspaces     ╭ Agents · n new · Enter open · x close ───────────────────────────────────────────────────────────────────────────────╮
+  2 Workspaces     ╭ Agents · n new · Enter open · r restart · x close ───────────────────────────────────────────────────────────────────╮
                    │ ❯ ＋  New agent session                                                                                               │
   3 Agents         │   Codex or Claude · choose a project · F12 or Ctrl-\ returns here                                                    │
                    │                                                                                                                      │
@@ -141,7 +141,7 @@ expression: "snapshots.join(\"\\n\\n\")"
   Macchiato        │                                                                                                                      │
                    ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
- NORMAL  n new agent · Enter open · F12/Ctrl-\ return from agent · x close · / switch · q quit
+ NORMAL  n new · Enter open · r restart · x close · F12/Ctrl-\ back · F9 status box · q quit
 
 --- Services ---
    ⣠⠤⠴⠰⠶⢤⡀  W A Y S T A T I O N     dispatch / your terminal, connected
@@ -432,10 +432,10 @@ expression: "snapshots.join(\"\\n\\n\")"
   │/ search commands · Enter activate · Esc close                                                                                        ││
   │e editor · t shell · g Git · h Herdr · f files                                                                                        │╯
   │Connections: x stop tunnel                                                                                                            │
-  │Agents: n new · Enter open · F12/Ctrl-\ return · x close                                                                              │╮
+  │Agents: n new · Enter open · r restart · x close                                                                                      │╮
+  │F12/Ctrl-\ back to Waystation · F9 agent status box                                                                                   ││
   │. hidden files · y copy path · F5 refresh                                                                                             ││
   │q quit                                                                                                                                ││
-  │                                                                                                                                      ││
   │                                                                                                                                      ││
   │                                                                                                                                      ││
   ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯│

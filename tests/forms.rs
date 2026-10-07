@@ -94,3 +94,50 @@ fn paste_never_triggers_navigation_or_execution() {
     assert!(a.form.as_ref().unwrap().error.is_some());
     assert_eq!(a.form.as_ref().unwrap().name, "q3 /hello");
 }
+
+#[test]
+fn r_asks_before_restarting_the_selected_agent() {
+    let mut a = app();
+    a.section = Section::Agents;
+    let mut with_conversation: waystation::agents::AgentSession =
+        serde_json::from_value(serde_json::json!({
+            "id": uuid::Uuid::new_v4(), "name": "slides", "tool": "claude", "workspace": "/tmp",
+            "command": {"program": "claude", "args": []}, "executable": "/usr/bin/claude",
+            "created": {"secs_since_epoch": 1, "nanos_since_epoch": 0}, "conversation": "c-1",
+        }))
+        .unwrap();
+    with_conversation.status = waystation::agents::AgentStatus::Running;
+    let id = with_conversation.id;
+    a.agents = vec![with_conversation];
+    a.selection = a
+        .agent_items()
+        .iter()
+        .position(|(_, _, action)| matches!(action, Action::OpenAgent(s) if *s == id))
+        .unwrap();
+    let action = input::translate(
+        Event::Key(KeyEvent::new(KeyCode::Char('r'), KeyModifiers::NONE)),
+        &a,
+    )
+    .unwrap();
+    assert!(a.update(action).is_empty());
+    let title = &a.confirmation.as_ref().expect("asks first").title;
+    assert!(
+        title.contains("slides") && title.contains("same conversation"),
+        "{title}"
+    );
+    let effects = a.update(Action::ConfirmChoice(1));
+    assert!(
+        matches!(effects[..], [Effect::RestartAgent(x)] if x == id),
+        "{effects:?}"
+    );
+
+    a.agents[0].conversation = None;
+    let action = input::translate(
+        Event::Key(KeyEvent::new(KeyCode::Char('r'), KeyModifiers::NONE)),
+        &a,
+    )
+    .unwrap();
+    a.update(action);
+    let title = &a.confirmation.as_ref().unwrap().title;
+    assert!(title.contains("fresh"), "{title}");
+}

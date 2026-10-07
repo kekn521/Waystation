@@ -5,6 +5,7 @@ pub mod files;
 pub mod forms;
 pub mod layout;
 pub mod orbit;
+pub mod overlay;
 pub mod services;
 pub mod system;
 pub mod theme;
@@ -406,7 +407,7 @@ pub fn draw(frame: &mut Frame, app: &App) -> Vec<HitRegion> {
     let footer = if narrow {
         " j/k move · Tab pane · / search · ? help · q quit"
     } else if app.section == Section::Agents {
-        " n new agent · Enter open · F12/Ctrl-\\ return from agent · x close · / switch · q quit"
+        " n new · Enter open · r restart · x close · F12/Ctrl-\\ back · F9 status box · q quit"
     } else {
         " j/k move · e editor · t shell · g Git · h Herdr · f files · / commands · ? help · q quit"
     };
@@ -480,7 +481,7 @@ pub fn draw(frame: &mut Frame, app: &App) -> Vec<HitRegion> {
             12.min(area.height - 4),
         );
         frame.render_widget(Clear, rect);
-        frame.render_widget(Paragraph::new("1–8 sections · j/k or arrows move · Tab focus pane\n/ search commands · Enter activate · Esc close\ne editor · t shell · g Git · h Herdr · f files\nConnections: x stop tunnel\nAgents: n new · Enter open · F12/Ctrl-\\ return · x close\n. hidden files · y copy path · F5 refresh\nq quit").block(panel("Keyboard shortcuts · Esc close",true)).wrap(Wrap{trim:true}),rect);
+        frame.render_widget(Paragraph::new("1–8 sections · j/k or arrows move · Tab focus pane\n/ search commands · Enter activate · Esc close\ne editor · t shell · g Git · h Herdr · f files\nConnections: x stop tunnel\nAgents: n new · Enter open · r restart · x close\nF12/Ctrl-\\ back to Waystation · F9 agent status box\n. hidden files · y copy path · F5 refresh\nq quit").block(panel("Keyboard shortcuts · Esc close",true)).wrap(Wrap{trim:true}),rect);
         hits.clear();
     }
     if app.form.is_some() {

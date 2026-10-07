@@ -1,4 +1,5 @@
 pub mod command;
+pub mod host;
 pub mod terminal;
 
 pub mod actions;

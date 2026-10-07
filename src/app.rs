@@ -332,7 +332,7 @@ impl App {
             .collect::<Vec<_>>();
         items.push((
             "＋ New agent session".into(),
-            "Codex or Claude · choose a project · F12 returns here".into(),
+            "Codex or Claude · choose a project · F12 or Ctrl-\\ returns here".into(),
             Action::NewAgent,
         ));
         match self.codex_hook {

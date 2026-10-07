@@ -1,6 +1,6 @@
 use std::{path::Path, time::Duration};
 use waystation::{
-    agents::{AgentManager, AgentStatus},
+    agents::{AgentManager, AgentStatus, attach_message, attach_term},
     config::ToolCommand,
 };
 
@@ -670,4 +670,128 @@ fn codex_hook_install_appends_and_updates_only_its_own_entry() {
     std::fs::write(&hooks, "{ not json").unwrap();
     assert!(manager.install_codex_hook(moved).is_err());
     assert_eq!(std::fs::read_to_string(&hooks).unwrap(), "{ not json");
+}
+
+/// A terminfo directory holding the named entries, laid out as ncurses reads them.
+fn terminfo(names: &[&str]) -> tempfile::TempDir {
+    let d = tempfile::tempdir().unwrap();
+    for name in names {
+        let dir = d.path().join(&name[..1]);
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(dir.join(name), b"compiled").unwrap();
+    }
+    d
+}
+
+#[test]
+fn attach_keeps_a_term_that_has_a_terminfo_entry() {
+    let d = terminfo(&["xterm-ghostty", "ghostty", "xterm-256color"]);
+    let dirs = [d.path().to_path_buf()];
+    assert_eq!(attach_term("xterm-ghostty".as_ref(), &dirs), None);
+}
+
+#[test]
+fn attach_maps_ghostty_to_the_entry_ncurses_ships() {
+    // ncurses names Ghostty's entry `ghostty`; Ghostty itself sets TERM=xterm-ghostty.
+    let d = terminfo(&["ghostty", "xterm-256color"]);
+    let dirs = [d.path().to_path_buf()];
+    assert_eq!(
+        attach_term("xterm-ghostty".as_ref(), &dirs),
+        Some("ghostty".into())
+    );
+}
+
+#[test]
+fn attach_falls_back_to_xterm_256color_for_unknown_terminals() {
+    let d = terminfo(&["xterm-256color"]);
+    let dirs = [d.path().to_path_buf()];
+    assert_eq!(
+        attach_term("xterm-ghostty".as_ref(), &dirs),
+        Some("xterm-256color".into())
+    );
+    assert_eq!(
+        attach_term("wezterm".as_ref(), &dirs),
+        Some("xterm-256color".into())
+    );
+}
+
+#[test]
+fn attach_searches_every_terminfo_directory() {
+    let user = terminfo(&["xterm-ghostty"]);
+    let system = terminfo(&["xterm-256color"]);
+    let dirs = [system.path().to_path_buf(), user.path().to_path_buf()];
+    assert_eq!(attach_term("xterm-ghostty".as_ref(), &dirs), None);
+}
+
+#[test]
+fn attach_leaves_term_alone_when_no_substitute_exists() {
+    let d = terminfo(&[]);
+    let dirs = [d.path().to_path_buf()];
+    assert_eq!(attach_term("xterm-ghostty".as_ref(), &dirs), None);
+    assert_eq!(attach_term("".as_ref(), &dirs), None);
+}
+
+#[test]
+fn attach_failure_message_names_the_tmux_error() {
+    use std::os::unix::process::ExitStatusExt;
+    let failed = std::process::ExitStatus::from_raw(1 << 8);
+    assert_eq!(
+        attach_message(failed, "missing or unsuitable terminal: xterm-ghostty\n"),
+        "Agent attachment ended: missing or unsuitable terminal: xterm-ghostty"
+    );
+    assert_eq!(
+        attach_message(failed, "  \n"),
+        "Agent attachment ended: exit status: 1"
+    );
+    assert_eq!(
+        attach_message(std::process::ExitStatus::from_raw(0), ""),
+        "Back at Waystation · agent sessions stay available"
+    );
+}
+
+#[test]
+fn attaching_binds_ctrl_backslash_for_keyboards_without_f12() {
+    let d = tempfile::tempdir().unwrap();
+    let manager = AgentManager::new(d.path().into());
+    let launcher = Path::new(env!("CARGO_BIN_EXE_waystation"));
+    let session = manager
+        .create(
+            "Mac",
+            "codex",
+            &ToolCommand {
+                program: "/bin/sleep".into(),
+                args: vec!["60".into()],
+            },
+            d.path(),
+            launcher,
+        )
+        .unwrap();
+    let key: uuid::Uuid =
+        serde_json::from_slice(&std::fs::read(d.path().join("agents/server.json")).unwrap())
+            .unwrap();
+    let socket = format!("station-{key}");
+    let tmux = |args: &[&str]| {
+        std::process::Command::new("tmux")
+            .args(["-L", &socket])
+            .args(args)
+            .output()
+            .unwrap()
+    };
+    // A server started by an older Waystation, before the binding existed.
+    assert!(tmux(&["unbind-key", "-n", "C-\\"]).status.success());
+    manager.attach(session.id, launcher).unwrap();
+    let keys = tmux(&["list-keys", "-T", "root"]);
+    manager.close(session.id).unwrap();
+    let _ = tmux(&["kill-server"]);
+    let keys = String::from_utf8_lossy(&keys.stdout);
+    assert!(
+        keys.lines()
+            .any(|l| l.contains("C-\\") && l.contains("detach-client")),
+        "{keys}"
+    );
+    assert!(
+        keys.lines()
+            .any(|l| l.contains("F12") && l.contains("detach-client")),
+        "{keys}"
+    );
 }

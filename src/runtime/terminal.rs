@@ -25,6 +25,21 @@ impl TerminalSession {
         &mut self,
         spec: &super::command::CommandSpec,
     ) -> Result<std::process::ExitStatus> {
+        self.run(spec, false).map(|(status, _)| status)
+    }
+    /// Like `run_foreground`, also returning what the child wrote to stderr, which the
+    /// alternate screen would otherwise clear before anyone reads it.
+    pub fn run_foreground_stderr(
+        &mut self,
+        spec: &super::command::CommandSpec,
+    ) -> Result<(std::process::ExitStatus, String)> {
+        self.run(spec, true)
+    }
+    fn run(
+        &mut self,
+        spec: &super::command::CommandSpec,
+        capture_stderr: bool,
+    ) -> Result<(std::process::ExitStatus, String)> {
         self.restore()?;
         use nix::sys::signal::{SaFlags, SigAction, SigHandler, SigSet, Signal, sigaction};
         use std::os::unix::process::CommandExt;
@@ -40,7 +55,24 @@ impl TerminalSession {
                 Ok(())
             });
         }
-        let result = cmd.status();
+        if capture_stderr {
+            cmd.stderr(std::process::Stdio::piped());
+        }
+        let result = cmd.spawn().and_then(|mut child| {
+            // Drained on a thread so a chatty child never blocks on a full pipe.
+            let reader = child.stderr.take().map(|mut e| {
+                std::thread::spawn(move || {
+                    use std::io::Read;
+                    let mut buf = vec![];
+                    let _ = (&mut e).take(64 * 1024).read_to_end(&mut buf);
+                    let _ = io::copy(&mut e, &mut io::sink());
+                    String::from_utf8_lossy(&buf).into_owned()
+                })
+            });
+            let status = child.wait()?;
+            let stderr = reader.and_then(|r| r.join().ok()).unwrap_or_default();
+            Ok((status, stderr))
+        });
         let signal_restored = unsafe { sigaction(Signal::SIGINT, &previous) };
         signal_restored?;
         let restored = self.resume();

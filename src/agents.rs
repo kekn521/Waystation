@@ -8,7 +8,7 @@ use anyhow::{Context, Result, ensure};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
-    ffi::OsString,
+    ffi::{OsStr, OsString},
     fs::{self, File, OpenOptions},
     io::Write,
     os::unix::{
@@ -372,14 +372,31 @@ impl AgentManager {
             AgentStatus::Saved => self.resume(&session, launcher)?,
             AgentStatus::Running | AgentStatus::Exited(_) => {}
         }
-        Ok(self.spec(
-            self.key()?.context("Missing server")?,
+        let key = self.key()?.context("Missing server")?;
+        {
+            // The server read its config when it started, perhaps from an older Waystation.
+            let _lock = self.lock()?;
+            let conf = self.dir.join("tmux.conf");
+            fs::write(&conf, TMUX_CONF)?;
+            self.checked(key, vec!["source-file".into(), conf.into_os_string()])?;
+        }
+        let mut spec = self.spec(
+            key,
             vec![
                 "attach-session".into(),
                 "-t".into(),
                 session.target().into(),
             ],
-        ))
+        );
+        // Set for the tmux client alone, after `env -u TMUX`; agents see tmux's own TERM.
+        if let Some(term) =
+            std::env::var_os("TERM").and_then(|term| attach_term(&term, &terminfo_dirs()))
+        {
+            let mut assign = OsString::from("TERM=");
+            assign.push(term);
+            spec.args.insert(2, assign);
+        }
+        Ok(spec)
     }
     pub fn close(&self, id: Uuid) -> Result<()> {
         let _lock = self.lock()?;
@@ -416,7 +433,53 @@ impl AgentManager {
 }
 /// The agents' tmux server config. F12 is out of reach on Mac keyboards without `fn`, so
 /// Ctrl-\ also returns to Waystation; neither Claude Code nor Codex binds it.
-const TMUX_CONF: &str = "set -g remain-on-exit on\nset -g remain-on-exit-format ''\nset -g history-limit 50000\nset -g mouse on\nset -g status-style 'bg=#1e2030,fg=#cad3f5'\nset -g status-left '#[fg=#c6a0f6,bold] WAYSTATION #[default]'\nset -g status-right '#[fg=#8bd5ca] F12 → Waystation  '\nset -g status-right-length 40\nset -g allow-rename off\nset -g automatic-rename off\nbind-key -n F12 detach-client\n";
+const TMUX_CONF: &str = "set -g remain-on-exit on\nset -g remain-on-exit-format ''\nset -g history-limit 50000\nset -g mouse on\nset -g status-style 'bg=#1e2030,fg=#cad3f5'\nset -g status-left '#[fg=#c6a0f6,bold] WAYSTATION #[default]'\nset -g status-right '#[fg=#8bd5ca] F12 or Ctrl-\\ → Waystation  '\nset -g status-right-length 40\nset -g allow-rename off\nset -g automatic-rename off\nbind-key -n F12 detach-client\nbind-key -n 'C-\\' detach-client\n";
+/// Where ncurses looks for terminfo entries, and so where tmux will.
+pub fn terminfo_dirs() -> Vec<PathBuf> {
+    let mut dirs = vec![];
+    dirs.extend(std::env::var_os("TERMINFO").map(PathBuf::from));
+    dirs.extend(std::env::var_os("HOME").map(|h| Path::new(&h).join(".terminfo")));
+    if let Some(list) = std::env::var_os("TERMINFO_DIRS") {
+        dirs.extend(std::env::split_paths(&list).filter(|d| !d.as_os_str().is_empty()));
+    }
+    dirs.extend(["/etc/terminfo", "/lib/terminfo", "/usr/share/terminfo"].map(PathBuf::from));
+    dirs
+}
+/// A `TERM` to attach with when tmux cannot know `term`, which it refuses with
+/// "missing or unsuitable terminal".
+///
+/// Ghostty sets `xterm-ghostty`, but ncurses ships its entry as `ghostty`, and SSH sessions
+/// from Ghostty often reach hosts with neither. `None` keeps `term`: it is known, or no
+/// substitute is installed either.
+pub fn attach_term(term: &OsStr, dirs: &[PathBuf]) -> Option<OsString> {
+    let known = |name: &OsStr| {
+        let bytes = name.as_bytes();
+        !bytes.is_empty()
+            && !bytes.contains(&b'/')
+            && dirs
+                .iter()
+                .any(|d| d.join(OsStr::from_bytes(&bytes[..1])).join(name).is_file())
+    };
+    if term.is_empty() || known(term) {
+        return None;
+    }
+    let ghostty = (term == "xterm-ghostty").then_some("ghostty");
+    ghostty
+        .into_iter()
+        .chain(["xterm-256color"])
+        .map(OsString::from)
+        .find(|t| known(t))
+}
+/// The status line after an attachment, naming tmux's own error when it failed.
+pub fn attach_message(status: std::process::ExitStatus, stderr: &str) -> String {
+    if status.success() {
+        return "Back at Waystation · agent sessions stay available".into();
+    }
+    match stderr.trim() {
+        "" => format!("Agent attachment ended: {status}"),
+        error => format!("Agent attachment ended: {error}"),
+    }
+}
 pub fn exec(path: &Path, resume: bool) -> Result<()> {
     let path = std::path::absolute(path)?;
     let session: AgentSession = serde_json::from_slice(&fs::read(&path)?)?;

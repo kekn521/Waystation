@@ -20,7 +20,8 @@ data. The planets move when the app is running.*
 - **Pick up where you left off.** Discover projects, see Git context, and open
   an editor, shell, Git UI, or file browser from the selected workspace.
 - **Keep agents close.** Create named Codex or Claude sessions, switch away with
-  F12, and return without losing their terminal output.
+  F12 (or Ctrl-\ on keyboards without function keys), and return without losing
+  their terminal output.
 - **See your machine at a glance.** Check CPU, memory, disk, network, Docker
   containers, and listening ports without leaving the dashboard.
 - **Open connections on demand.** Start configured SSH tunnels, inspect their
@@ -63,7 +64,7 @@ sessions require `tmux`; other optional tools are described below.
 | `Enter` | Open the selected item |
 | `e` / `t` / `g` / `h` / `f` | Editor, shell, Git UI, Herdr, or files for the workspace |
 | `n` | Create a session in Agents |
-| `F12` | Return to Waystation from an agent session |
+| `F12` or `Ctrl-\` | Return to Waystation from an agent session |
 | `?` | Show all shortcuts |
 | `q` | Quit |
 
@@ -74,7 +75,7 @@ move between them.
 ### Agent sessions
 
 Press `3`, then `n` to name a Codex or Claude session and choose its project.
-`Ctrl+S` creates and opens it. `F12` returns to Waystation; `Enter` opens the
+`Ctrl+S` creates and opens it. `F12` or `Ctrl-\` returns to Waystation; `Enter` opens the
 session again. Waystation uses its own private `tmux` server, separate from
 your regular sessions. Agents survive Waystation exiting and restarting.
 After a computer reboot, Claude and Codex sessions show as "saved"; press

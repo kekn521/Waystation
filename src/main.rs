@@ -94,11 +94,10 @@ fn main() -> Result<()> {
                     }
                     if let Some(spec) = r.attach {
                         app.section = waystation::model::Section::Agents;
-                        app.message = Some(match term.run_foreground(&spec) {
-                            Ok(status) if status.success() => {
-                                "Back at Waystation · agent sessions stay available".into()
+                        app.message = Some(match term.run_foreground_stderr(&spec) {
+                            Ok((status, stderr)) => {
+                                waystation::agents::attach_message(status, &stderr)
                             }
-                            Ok(status) => format!("Agent attachment ended: {status}"),
                             Err(e) => format!("Could not open agent: {e:#}"),
                         });
                     }

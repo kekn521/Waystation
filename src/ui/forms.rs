@@ -91,10 +91,9 @@ pub fn render(frame: &mut Frame, app: &App) -> Vec<HitRegion> {
         );
     }
     if inner.height > 12 {
-        let hint = form
-            .error
-            .as_deref()
-            .unwrap_or("F12 returns here. Your session keeps running when Waystation closes.");
+        let hint = form.error.as_deref().unwrap_or(
+            "F12 or Ctrl-\\ returns here. Your session keeps running when Waystation closes.",
+        );
         frame.render_widget(
             Paragraph::new(safe(hint))
                 .fg(if form.error.is_some() { RED } else { TEAL })

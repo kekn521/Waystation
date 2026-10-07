@@ -45,7 +45,7 @@ impl Jobs {
                             // Persisted before attachment: a failed terminal handoff is recoverable.
                             result.agent = Some(session);
                             result.message =
-                                "Session created · Enter opens · F12 returns to Waystation".into();
+                                "Session created · Enter opens · F12 or Ctrl-\\ returns to Waystation".into();
                         }
                         Effect::AttachAgent(id) => {
                             result.attach = Some(agents.attach(id, &std::env::current_exe()?)?)

@@ -239,7 +239,7 @@ q quit
  │ [ Create and open ]                                   │
  │ Tab next · Ctrl+S save · Ctrl+U clear · Esc cancel    │
  │                                                       │
- │ F12 returns here. Your session keeps running when     │
- │ Waystation closes.                                    │
+ │ F12 or Ctrl-\ returns here. Your session keeps        │
+ │ running when Waystation closes.                       │
  │                                                       │
  ╰───────────────────────────────────────────────────────╯

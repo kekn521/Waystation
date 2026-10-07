@@ -13,5 +13,6 @@ pub mod tasks;
 pub mod path_serde;
 
 pub mod agents;
+pub mod usage;
 
 pub mod forms;

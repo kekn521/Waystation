@@ -15,6 +15,7 @@ serde_json = { version = "1", features = ["preserve_order"] }
 toml = "0.9"
 nix = { version = "0.31.3", features = ["process", "signal", "fs", "term", "socket", "user"] }
 uuid = { version = "1", features = ["v4", "serde"] }
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
 glob = "0.3"
 unicode-width = "0.2"
 

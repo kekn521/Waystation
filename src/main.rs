@@ -25,6 +25,25 @@ fn main() -> Result<()> {
         );
         return waystation::tasks::supervisor::run(std::path::Path::new(&args[3]));
     }
+    if args.get(1).is_some_and(|s| s == "__statusline") {
+        // Claude shows stdout as its status line; it must never fail or print errors.
+        let mut input = vec![];
+        let _ = std::io::Read::read_to_end(
+            &mut std::io::Read::take(std::io::stdin(), 1024 * 1024),
+            &mut input,
+        );
+        if let Some(state) = args.get(2) {
+            let line = waystation::usage::statusline(
+                &input,
+                std::path::Path::new(state),
+                waystation::usage::now(),
+            );
+            if !line.is_empty() {
+                println!("{line}");
+            }
+        }
+        return Ok(());
+    }
     if args.get(1).is_some_and(|s| s == "__agent-hook") {
         // Hook output can reach the agent's context, and failures must not disturb it.
         let mut input = vec![];
@@ -244,6 +263,7 @@ fn refresh(app: &App, pool: &waystation::runtime::workers::WorkerPool) {
         Sessions,
         Services,
         Tasks,
+        Usage,
     ] {
         submit(app, pool, id)
     }

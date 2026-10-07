@@ -18,6 +18,8 @@ pub enum Action {
     CloseAgent(uuid::Uuid),
     InstallCodexHook,
     ConfirmInstallCodexHook,
+    InstallStatusLine,
+    ConfirmInstallStatusLine,
     FormField(isize),
     FormFocus(usize),
     Paste(String),
@@ -70,6 +72,7 @@ pub enum Effect {
     AttachAgent(uuid::Uuid),
     CloseAgent(uuid::Uuid),
     InstallCodexHook,
+    InstallStatusLine,
     Foreground(Action),
     Copy(PathBuf),
     DockerLogs(String),
@@ -96,6 +99,8 @@ pub struct App {
     pub agents: Vec<crate::agents::AgentSession>,
     /// `None` when Codex is not installed.
     pub codex_hook: Option<crate::agents::CodexHookStatus>,
+    /// `None` until the first usage scan finishes.
+    pub usage: Option<crate::usage::Usage>,
     pub form: Option<crate::forms::Form>,
     pinned_paths: std::collections::HashSet<PathBuf>,
     pub pending_starts: std::collections::HashSet<uuid::Uuid>,
@@ -138,6 +143,7 @@ impl App {
             animation_elapsed: std::time::Duration::ZERO,
             agents: vec![],
             codex_hook: None,
+            usage: None,
             form: None,
             pinned_paths,
             pending_starts: Default::default(),
@@ -184,6 +190,7 @@ impl App {
             Ok(payload) => {
                 self.provider_errors.remove(&key);
                 match payload {
+                    ProviderPayload::Usage(usage) => self.usage = Some(*usage),
                     ProviderPayload::Agents(s, hook) => {
                         self.agents = s;
                         self.codex_hook = hook;
@@ -347,6 +354,29 @@ impl App {
                 Action::InstallCodexHook,
             )),
             Some(crate::agents::CodexHookStatus::Installed) | None => {}
+        }
+        if let Some(usage) = self.usage.as_ref().filter(|u| u.claude.is_some()) {
+            use crate::usage::StatusLine;
+            match &usage.statusline {
+                StatusLine::Missing => items.push((
+                    "Show Claude's plan limits in Waystation".into(),
+                    "Sets Claude's status line in ~/.claude/settings.json · Enter to review".into(),
+                    Action::InstallStatusLine,
+                )),
+                StatusLine::Stale => items.push((
+                    "Update Waystation's Claude status line".into(),
+                    "It points at an older Waystation path · Enter to review".into(),
+                    Action::InstallStatusLine,
+                )),
+                StatusLine::Other(command) => items.push((
+                    "Claude already has a status line · Waystation won't replace it".into(),
+                    "Claude's plan limits need Waystation's status line · Enter for details".into(),
+                    Action::ShowText(format!(
+                        "Claude's plan limits reach Waystation only through Claude's status line, and yours already runs:\n\n  {command}\n\nWaystation won't replace it. Remove statusLine from ~/.claude/settings.json to let Waystation add its own; it shows a short usage line in Claude instead."
+                    )),
+                )),
+                StatusLine::Installed => {}
+            }
         }
         if let Some(error) = self.provider_errors.get("Agents") {
             items.push((

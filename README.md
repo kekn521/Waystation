@@ -22,6 +22,9 @@ data. The planets move when the app is running.*
 - **Keep agents close.** Create named Codex or Claude sessions, switch away with
   F12 (or Ctrl-\ on keyboards without function keys), and return without losing
   their terminal output.
+- **Watch your plan limits.** See how much of Claude's and Codex's 5-hour and
+  weekly limits you have left, when they reset, and how many tokens you've
+  spent in the last 5 hours, today, and this week.
 - **See your machine at a glance.** Check CPU, memory, disk, network, Docker
   containers, and listening ports without leaving the dashboard.
 - **Open connections on demand.** Start configured SSH tunnels, inspect their
@@ -95,6 +98,23 @@ confirming appends Waystation's entry to that file without changing other
 hooks. Codex asks you to trust it once. Until then, Codex sessions can't be
 resumed after a reboot. The hook does nothing outside sessions Waystation
 started.
+
+### Usage
+
+The Agents view (`3`) shows a usage panel above your sessions, and the
+Overview's Machine pulse pane adds a one-line summary. Codex's limits come
+from the session files Codex already writes, so they appear after Codex's
+next reply.
+
+Claude only shares its limits with a status line command. The Agents view
+offers "Show Claude's plan limits in Waystation"; confirming sets `statusLine`
+in `~/.claude/settings.json` to Waystation's, which saves the limits and
+shows a short line such as `5h 77% left · wk 59% left` in Claude. If you already have
+a status line, Waystation leaves it alone.
+
+Token counts cover fresh input and output; cache reads are left out because
+they would dwarf everything else. Everything is read from local files;
+Waystation makes no network requests for this.
 
 ### SSH tunnels
 

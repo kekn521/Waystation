@@ -56,6 +56,12 @@ impl Jobs {
                                 "Codex hook added · Codex asks you to trust it on its next start"
                                     .into();
                         }
+                        Effect::InstallStatusLine => {
+                            agents.install_statusline(&std::env::current_exe()?)?;
+                            result.message =
+                                "Claude status line set · limits appear after Claude's next reply"
+                                    .into();
+                        }
                         Effect::CloseAgent(id) => {
                             agents.close(id)?;
                             result.message = "Agent session closed".into();

@@ -10,12 +10,7 @@ use std::{
     collections::HashMap,
     ffi::{OsStr, OsString},
     fs::{self, File, OpenOptions},
-    io::Write,
-    os::unix::{
-        ffi::OsStrExt,
-        fs::{OpenOptionsExt, PermissionsExt},
-        process::CommandExt,
-    },
+    os::unix::{ffi::OsStrExt, fs::OpenOptionsExt, process::CommandExt},
     path::{Path, PathBuf},
     time::{Duration, SystemTime},
 };
@@ -82,17 +77,21 @@ pub struct AgentManager {
 }
 impl AgentManager {
     pub fn new(state: PathBuf) -> Self {
-        let home = PathBuf::from(std::env::var_os("HOME").unwrap_or_default());
-        let env_or = |var: &str, default: &str| {
-            std::env::var_os(var)
-                .filter(|v| !v.is_empty())
-                .map_or_else(|| home.join(default), PathBuf::from)
-        };
+        let (claude_home, codex_home) = agent_homes();
         Self {
             dir: state.join("agents"),
-            claude_home: env_or("CLAUDE_CONFIG_DIR", ".claude"),
-            codex_home: env_or("CODEX_HOME", ".codex"),
+            claude_home,
+            codex_home,
         }
+    }
+    fn state(&self) -> &Path {
+        self.dir.parent().unwrap_or(&self.dir)
+    }
+    pub fn statusline_status(&self, launcher: &Path) -> crate::usage::StatusLine {
+        crate::usage::statusline_status(&self.claude_home, launcher, self.state())
+    }
+    pub fn install_statusline(&self, launcher: &Path) -> Result<()> {
+        crate::usage::install_statusline(&self.claude_home, launcher, self.state())
     }
     /// Overrides where Claude and Codex keep their conversations.
     pub fn with_agent_homes(mut self, claude: PathBuf, codex: PathBuf) -> Self {
@@ -517,10 +516,27 @@ const PID_ENV: &str = "WAYSTATION_AGENT_PID";
 const HOOK_ARG: &str = "__agent-hook";
 /// The SessionStart hook command for this Waystation executable, quoted for `sh -c`.
 fn hook_command(launcher: &Path) -> Result<String> {
-    let launcher = launcher
+    Ok(format!("{} {HOOK_ARG}", shell_quote(launcher)?))
+}
+/// `path` quoted for `sh -c`, for commands written into agents' settings.
+pub(crate) fn shell_quote(path: &Path) -> Result<String> {
+    let path = path
         .to_str()
-        .context("Waystation's path must be UTF-8 to install agent hooks")?;
-    Ok(format!("'{}' {HOOK_ARG}", launcher.replace('\'', r"'\''")))
+        .context("Waystation's paths must be UTF-8 to install agent integrations")?;
+    Ok(format!("'{}'", path.replace('\'', r"'\''")))
+}
+/// Where Claude and Codex keep their settings and conversations.
+pub fn agent_homes() -> (PathBuf, PathBuf) {
+    let home = PathBuf::from(std::env::var_os("HOME").unwrap_or_default());
+    let env_or = |var: &str, default: &str| {
+        std::env::var_os(var)
+            .filter(|v| !v.is_empty())
+            .map_or_else(|| home.join(default), PathBuf::from)
+    };
+    (
+        env_or("CLAUDE_CONFIG_DIR", ".claude"),
+        env_or("CODEX_HOME", ".codex"),
+    )
 }
 fn hook_group(launcher: &Path) -> Result<serde_json::Value> {
     Ok(serde_json::json!({
@@ -581,28 +597,7 @@ impl AgentManager {
             Some(existing) => *existing = group,
             None => groups.push(group),
         }
-        let path = self.codex_hooks_path();
-        fs::create_dir_all(&self.codex_home)?;
-        let mode = fs::metadata(&path).map_or(0o600, |m| m.permissions().mode() & 0o777);
-        let tmp = self
-            .codex_home
-            .join(format!(".hooks.json.{}.tmp", Uuid::new_v4()));
-        let result = (|| -> Result<()> {
-            let mut f = OpenOptions::new()
-                .write(true)
-                .create_new(true)
-                .mode(mode)
-                .open(&tmp)?;
-            serde_json::to_writer_pretty(&mut f, &hooks)?;
-            f.write_all(b"\n")?;
-            f.sync_all()?;
-            fs::rename(&tmp, &path)?;
-            Ok(())
-        })();
-        if result.is_err() {
-            let _ = fs::remove_file(&tmp);
-        }
-        result
+        crate::store::replace_user_json(&self.codex_hooks_path(), &hooks)
     }
 }
 /// Handles an agent's SessionStart hook: records the conversation id it now uses.

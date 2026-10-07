@@ -28,6 +28,7 @@ pub enum ProviderId {
     Sessions,
     Services,
     Tasks,
+    Usage,
 }
 #[derive(Clone, Debug)]
 pub struct ProviderRequest {
@@ -51,6 +52,7 @@ pub enum ProviderPayload {
     System(SystemStats),
     Aliases(Vec<String>),
     Sessions(Vec<(String, String, PathBuf)>),
+    Usage(Box<crate::usage::Usage>),
 }
 #[derive(Debug)]
 pub struct ProviderEvent {
@@ -95,6 +97,10 @@ impl WorkerPool {
     }
     pub fn new(config: Config, home: PathBuf, state: PathBuf) -> Self {
         let sampler = Mutex::new(SystemSampler::default());
+        let scanner = {
+            let (claude, codex) = crate::agents::agent_homes();
+            Mutex::new(crate::usage::Scanner::new(claude, codex))
+        };
         Self::with_provider(move |r| {
             let work = r
                 .workspace
@@ -102,6 +108,26 @@ impl WorkerPool {
                 .ok_or_else(|| "Select a workspace".to_string());
             let result: anyhow::Result<ProviderPayload> = (|| {
                 Ok(match r.id {
+                    ProviderId::Usage => {
+                        // Usage only for the agents Waystation launches, by their real names.
+                        let installed = |tool: &str| {
+                            let program =
+                                config.tools.get(tool).map_or(tool, |t| t.program.as_str());
+                            crate::runtime::command::executable(program.as_ref())
+                                .is_some_and(|p| p.file_name().is_some_and(|n| n == tool))
+                        };
+                        let statusline = crate::agents::AgentManager::new(state.clone())
+                            .statusline_status(&std::env::current_exe()?);
+                        let mut scanner = scanner.lock().unwrap_or_else(|e| e.into_inner());
+                        ProviderPayload::Usage(Box::new(crate::usage::collect(
+                            &mut scanner,
+                            &state,
+                            installed("claude"),
+                            installed("codex"),
+                            statusline,
+                            crate::usage::now(),
+                        )))
+                    }
                     ProviderId::Agents => {
                         let manager = crate::agents::AgentManager::new(state.clone());
                         let codex = config

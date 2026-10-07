@@ -8,8 +8,8 @@ Show how much of their Claude and Codex plans the user has used, so they can
 tell at a glance whether they are about to hit a limit, plus how many tokens
 they have spent recently.
 
-- Plan limits for both tools: the 5-hour and weekly windows, percent used and
-  reset time.
+- Plan limits for both tools: the 5-hour and weekly windows, percent left
+  (shown as remaining, not used) and reset time.
 - Token totals for both tools: the current 5-hour window, today, and the last
   7 days.
 - A usage panel at the top of Agents (`3`) and a one-line summary on the
@@ -59,7 +59,8 @@ Waystation installs `waystation __statusline` as `statusLine` in
 - if `rate_limits` is present, atomically writes
   `{ "saved_at": <epoch secs>, "rate_limits": <as received> }` to
   `<state>/usage/claude.json`;
-- prints `5h 23% · wk 41%` (with a trailing `!` once any window reaches 90%),
+- prints `5h 77% left · wk 59% left` (with a trailing `!` once any window is
+  at 10% or less),
   or nothing when there are no limits;
 - always exits 0 and never writes to stderr.
 
@@ -95,10 +96,13 @@ output_tokens`, timed by the line's `timestamp`.
     only the `statusLine` key and preserving key order; refuses to touch an
     unparseable file.
 - `ProviderId::Usage` / `ProviderPayload::Usage`: owns a `Mutex<Scanner>`,
-  refreshed every 30 s. The first scan runs on a worker thread.
-- UI: panel above the Agents list (3 lines per tool at 16+ rows, 1 line per
-  tool when shorter, hidden when very short; bars teal / peach from 70% / red
-  from 90%); a status line install row with confirmation in the Agents list;
+  refreshed with the other providers (every 5 s); rescans read only appended
+  bytes (about 2 ms on a week of real transcripts; the first scan about
+  0.25 s, on a worker thread).
+- UI: panel above the Agents list, hidden until the first scan finishes
+  (3 lines per tool when 8 rows remain for the list, 1 line per tool when 4
+  remain, otherwise hidden; bars teal / peach from 70% / red from 90%; a
+  window that has reset shows `reset` without a reset time); a status line install row with confirmation in the Agents list;
   an `AI` line at the bottom of the Overview's Machine pulse pane when a row
   is free. Tools that are not installed are omitted.
 - `main.rs`: `__statusline` private subcommand.

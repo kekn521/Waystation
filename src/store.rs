@@ -73,6 +73,31 @@ impl Store {
         })
     }
 }
+/// Atomically replaces a JSON file the user owns (an agent's settings), pretty-printed and
+/// keeping its permissions.
+pub fn replace_user_json(path: &Path, value: &impl serde::Serialize) -> Result<()> {
+    use std::os::unix::fs::PermissionsExt;
+    let parent = path.parent().context("Settings path has no parent")?;
+    fs::create_dir_all(parent)?;
+    let mode = fs::metadata(path).map_or(0o600, |m| m.permissions().mode() & 0o777);
+    let tmp = parent.join(format!(".waystation.{}.tmp", uuid::Uuid::new_v4()));
+    let result = (|| {
+        let mut f = OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .mode(mode)
+            .open(&tmp)?;
+        serde_json::to_writer_pretty(&mut f, value)?;
+        f.write_all(b"\n")?;
+        f.sync_all()?;
+        fs::rename(&tmp, path)?;
+        Ok(())
+    })();
+    if result.is_err() {
+        let _ = fs::remove_file(&tmp);
+    }
+    result
+}
 pub fn atomic_json(path: &Path, value: &impl serde::Serialize) -> Result<()> {
     let parent = path.parent().context("State path has no parent")?;
     fs::create_dir_all(parent)?;

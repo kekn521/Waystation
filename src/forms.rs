@@ -230,6 +230,18 @@ impl App {
                 Some(vec![])
             }
             Action::ConfirmInstallCodexHook => Some(vec![Effect::InstallCodexHook]),
+            Action::InstallStatusLine => {
+                self.confirmation = Some(crate::app::Confirmation {
+                    title: "Set Claude's status line in ~/.claude/settings.json to Waystation's? It saves Claude's plan limits for Waystation and shows them in Claude, like 5h 23% · wk 41%.".into(),
+                    choices: vec![
+                        ("Cancel".into(), Action::Escape),
+                        ("Set the status line".into(), Action::ConfirmInstallStatusLine),
+                    ],
+                });
+                self.modal_selection = 0;
+                Some(vec![])
+            }
+            Action::ConfirmInstallStatusLine => Some(vec![Effect::InstallStatusLine]),
             _ => None,
         }
     }

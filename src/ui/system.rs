@@ -22,8 +22,50 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) -> Vec<HitRegion> {
         app.section == crate::model::Section::System
             || (app.section == crate::model::Section::Overview && app.pane == 2),
     );
-    let inner = block.inner(area);
+    let mut inner = block.inner(area);
     frame.render_widget(block, area);
+    let summary = app
+        .usage
+        .as_ref()
+        .map(crate::usage::summary)
+        .unwrap_or_default();
+    if !summary.is_empty() && inner.height >= 4 {
+        const PREFIX: &str = " Left  ";
+        let one_line = summary
+            .iter()
+            .map(|(name, text)| format!("{name} {text}"))
+            .collect::<Vec<_>>()
+            .join(" · ");
+        // One tool per row when a single line would be cut off and there is room to stack.
+        let rows = if PREFIX.len() + one_line.chars().count() <= inner.width as usize
+            || inner.height < 4 + summary.len() as u16
+        {
+            vec![one_line]
+        } else {
+            summary
+                .iter()
+                .map(|(name, text)| format!("{name:<6} {text}"))
+                .collect()
+        };
+        inner.height -= rows.len() as u16;
+        let lines = rows
+            .iter()
+            .enumerate()
+            .map(|(i, row)| {
+                Line::from(vec![
+                    Span::styled(
+                        if i == 0 { PREFIX } else { "       " },
+                        Style::default().fg(MUTED),
+                    ),
+                    Span::styled(ui::safe(row), Style::default().fg(TEXT)),
+                ])
+            })
+            .collect::<Vec<_>>();
+        frame.render_widget(
+            Paragraph::new(lines),
+            Rect::new(inner.x, inner.bottom(), inner.width, rows.len() as u16),
+        );
+    }
     let Some(s) = &app.system.value else {
         frame.render_widget(
             Paragraph::new(ui::safe(

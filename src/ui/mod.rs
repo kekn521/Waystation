@@ -8,6 +8,7 @@ pub mod orbit;
 pub mod services;
 pub mod system;
 pub mod theme;
+pub mod usage;
 pub mod workspaces;
 use crate::{
     app::{Action, App, HitRegion},

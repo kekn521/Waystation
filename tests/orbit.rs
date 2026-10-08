@@ -181,72 +181,49 @@ fn orbit_render_never_touches_cells_outside_its_area() {
     }
 }
 #[test]
-fn overview_shows_four_panels_with_orbit_upper_left() {
+fn overview_shows_the_orbit_above_system_and_services() {
     for (w, h) in [(120, 38), (100, 32)] {
         let a = app();
         let text = screen(&a, w, h);
-        // Row-major pane order: 0 Orbit upper-left, 1 Workspaces upper-right,
-        // 2 System lower-left, 3 Services lower-right.
-        for want in [
-            "✦",
-            "Orbit",
-            "Continue working",
-            "Machine pulse",
-            "Services & ports",
-        ] {
+        // Pane order: 0 Orbit across the top, 1 System lower-left, 2 Services lower-right.
+        for want in ["✦", "Orbit", "Machine pulse", "Services & ports"] {
             assert!(text.contains(want), "missing {want:?} at {w}x{h}");
         }
-        assert!(
-            !text.contains("Tasks"),
-            "Tasks must not be mentioned at {w}x{h}"
-        );
+        for gone in ["Tasks", "Continue working"] {
+            assert!(!text.contains(gone), "{gone:?} must not show at {w}x{h}");
+        }
         let rows = rows_of(&a, w, h);
         let orbit = label_pos(&rows, "Orbit");
-        let workspaces = label_pos(&rows, "Continue working");
         let system = label_pos(&rows, "Machine pulse");
         let services = label_pos(&rows, "Services & ports");
-        // Left column: orbit above system. Right column: workspaces above services.
-        assert!(
-            orbit.0 < workspaces.0,
-            "orbit {orbit:?} must sit left of workspaces {workspaces:?} at {w}x{h}"
-        );
         assert!(
             system.0 < services.0,
             "system {system:?} must sit left of services {services:?} at {w}x{h}"
         );
         assert!(
-            workspaces.1 < system.1,
-            "workspaces {workspaces:?} must sit above system {system:?} at {w}x{h}"
-        );
-        assert!(
-            orbit.1 < services.1,
-            "orbit {orbit:?} must sit above services {services:?} at {w}x{h}"
+            orbit.1 < system.1 && orbit.1 < services.1,
+            "orbit {orbit:?} must sit above the others at {w}x{h}"
         );
     }
 }
 #[test]
-fn narrow_default_hides_orbit_but_pane_zero_shows_it() {
+fn narrow_overview_starts_on_the_orbit() {
     let a = app();
-    // Default focus is pane 1 (Workspaces), so the single-pane view shows no sun.
-    let single = screen(&a, 80, 24);
-    assert!(!single.contains("✦"), "orbit leaked into default 80x24");
-    assert!(single.contains("Continue working"));
-    // Focusing pane 0 in a narrow layout renders the orbit itself.
-    let mut orbit_pane = app();
-    orbit_pane.pane = 0;
     for (w, h) in [(80, 24), (60, 18)] {
-        let text = screen(&orbit_pane, w, h);
-        assert!(text.contains("✦"), "pane 0 must show the sun at {w}x{h}");
+        let text = screen(&a, w, h);
         assert!(
-            !text.contains("Continue working"),
-            "pane 0 must display the orbit, not another pane, at {w}x{h}"
+            text.contains("✦"),
+            "the default pane is the orbit at {w}x{h}"
+        );
+        assert!(
+            !text.contains("Machine pulse"),
+            "one pane at a time at {w}x{h}"
         );
     }
-    // Pane 2 is the System pulse in the new row-major order.
     let mut focused = app();
-    focused.pane = 2;
+    focused.pane = 1;
     let narrow = screen(&focused, 60, 18);
-    assert!(!narrow.contains("✦"), "orbit leaked into pane 2 at 60x18");
+    assert!(!narrow.contains("✦"), "orbit leaked into pane 1 at 60x18");
     assert!(
         narrow.contains("Machine pulse"),
         "focused pane missing at 60x18"
@@ -424,10 +401,6 @@ fn zoomed(level: Level) -> App {
 fn a_zoomed_orbit_takes_the_top_row() {
     let a = zoomed(Level::Workspace(path("w1")));
     let text = screen(&a, 120, 38);
-    assert!(
-        !text.contains("Continue working"),
-        "the Workspaces pane gives way"
-    );
     for want in [
         "Machine pulse",
         "Services & ports",

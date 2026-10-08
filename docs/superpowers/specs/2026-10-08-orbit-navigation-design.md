@@ -9,6 +9,10 @@ a moon only labels it; Enter or a click opens that agent full screen, and return
 the zoomed system with the same moon highlighted. Sections below that describe the preview
 are superseded.
 
+Revised again 2026-10-08: the Overview's Workspaces pane ("Continue working") is gone, since
+the orbit covers it. The orbit always takes the top row with System and Services below, panes
+are 0 Orbit, 1 System, 2 Services, and the Overview opens with the orbit focused.
+
 ## Goal
 
 The Overview's decorative orbit becomes a way to move around Waystation:

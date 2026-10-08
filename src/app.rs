@@ -169,7 +169,7 @@ impl App {
             config,
             state,
             section: Section::Overview,
-            pane: 1,
+            pane: 0,
             selection: 0,
             query: String::new(),
             searching: false,
@@ -587,11 +587,7 @@ impl App {
             }
             Action::Help => self.help = !self.help,
             Action::FocusNext => {
-                self.pane = (self.pane + 1) % 4;
-                // The Workspaces pane gives way to the zoomed orbit.
-                if self.pane == 1 && self.orbit.zoomed() {
-                    self.pane = 2;
-                }
+                self.pane = (self.pane + 1) % 3;
                 self.selection = 0;
             }
             Action::Move(n) => {

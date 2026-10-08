@@ -375,8 +375,8 @@ pub fn draw(frame: &mut Frame, app: &App) -> Vec<HitRegion> {
     } else if app.section == Section::Overview {
         if narrow {
             hits.extend(render_pane(frame, parts[2], app, app.pane));
-        } else if app.orbit.zoomed() {
-            // The zoomed orbit takes the top row; the Workspaces pane gives way to it.
+        } else {
+            // The orbit takes the top row, with the machine and its services below.
             let rows = Layout::vertical([Constraint::Percentage(50), Constraint::Percentage(50)])
                 .spacing(1)
                 .split(parts[2]);
@@ -384,21 +384,8 @@ pub fn draw(frame: &mut Frame, app: &App) -> Vec<HitRegion> {
             let cols = Layout::horizontal([Constraint::Percentage(50), Constraint::Percentage(50)])
                 .spacing(1)
                 .split(rows[1]);
-            hits.extend(render_pane(frame, cols[0], app, 2));
-            hits.extend(render_pane(frame, cols[1], app, 3));
-        } else {
-            let cols = Layout::horizontal([Constraint::Percentage(50), Constraint::Percentage(50)])
-                .spacing(1)
-                .split(parts[2]);
-            for (c, col) in cols.iter().enumerate() {
-                let panes =
-                    Layout::vertical([Constraint::Percentage(50), Constraint::Percentage(50)])
-                        .spacing(1)
-                        .split(*col);
-                for (r, pane) in panes.iter().enumerate() {
-                    hits.extend(render_pane(frame, *pane, app, r * 2 + c));
-                }
-            }
+            hits.extend(render_pane(frame, cols[0], app, 1));
+            hits.extend(render_pane(frame, cols[1], app, 2));
         }
     } else {
         hits.extend(match app.section {
@@ -528,8 +515,7 @@ fn render_pane(frame: &mut Frame, area: Rect, app: &App, index: usize) -> Vec<Hi
             frame.render_widget(block, area);
             orbit::render(frame, inner, app)
         }
-        1 => workspaces::render(frame, area, app),
-        2 => system::render(frame, area, app),
+        1 => system::render(frame, area, app),
         _ => services::render(frame, area, app),
     }
 }

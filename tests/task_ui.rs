@@ -38,16 +38,16 @@ fn tunnel_action_uses_selected_workspace_and_lands_on_connections() {
 #[test]
 fn overview_focus_activates_matching_panel_and_an_empty_orbit_is_inert() {
     let mut a = App::new(Config::default(), AppState::default());
-    assert_eq!(a.pane, 1, "default pane is Workspaces");
+    assert_eq!(a.pane, 0, "default pane is the orbit");
     a.update(Action::FocusNext);
-    assert_eq!(a.pane, 2, "Tab moves to System");
+    assert_eq!(a.pane, 1, "Tab moves to System");
     assert!(
         matches!(a.update(Action::Activate).first(),Some(Effect::Foreground(Action::Tool(t)))if t=="htop")
     );
-    // Tab cycles all four panes; the orbit pane has no section items, and with no
+    // Tab cycles all three panes; the orbit pane has no section items, and with no
     // planets Enter has nothing to land on.
     a.update(Action::FocusNext);
-    assert_eq!(a.pane, 3);
+    assert_eq!(a.pane, 2);
     a.update(Action::FocusNext);
     assert_eq!(a.pane, 0);
     assert_eq!(a.selection, 0);

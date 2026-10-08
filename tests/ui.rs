@@ -107,7 +107,7 @@ fn screen(app: &App, w: u16, h: u16) -> String {
 #[test]
 fn narrow_overview_uses_focused_pane() {
     let mut a = App::new(Config::default(), AppState::default());
-    a.pane = 2;
+    a.pane = 1;
     assert!(screen(&a, 60, 18).contains("Machine pulse"));
 }
 #[test]

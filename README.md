@@ -75,9 +75,10 @@ sessions require `tmux`; other optional tools are described below.
 | `?` | Show all shortcuts |
 | `q` | Quit |
 
-The overview shows orbiting planets, workspaces, machine status, and services
-in four panes. On smaller terminals it shows the focused pane; use `Tab` to
-move between them.
+The overview shows the orbit across the top, with machine status and services
+below it. It opens with the orbit focused. On smaller terminals it shows the
+focused pane; use `Tab` to move between them. The full workspace list lives in
+Workspaces (`2`).
 
 ### The orbit
 

@@ -20,7 +20,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) -> Vec<HitRegion> {
     let block = ui::panel(
         "Machine pulse · live",
         app.section == crate::model::Section::System
-            || (app.section == crate::model::Section::Overview && app.pane == 2),
+            || (app.section == crate::model::Section::Overview && app.pane == 1),
     );
     let mut inner = block.inner(area);
     frame.render_widget(block, area);

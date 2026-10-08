@@ -11,22 +11,22 @@ expression: "snapshots.join(\"\\n\\n\")"
 ╭ commands ────────────────────────────────────────────────────────────────────╮
 │ / Jump to anything…                                                          │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-╭ Continue working ────────────────────────────────────────────────────────────╮
-│ ❯ 機 器 -learning-with-a-long-name · unavailable                               │
-│   /projects/機 器 -learning-with-a-long-name                                   │
-│                                                                              │
-│                                                                              │
-│                                                                              │
-│                                                                              │
-│                                                                              │
-│                                                                              │
-│ e editor · t shell · g Git · h Herdr · f files                               │
-│ Git context loads for the selected workspace                                 │
-│                                                                              │
-│                                                                              │
+╭ Orbit · ↑↓ planets · Enter land ─────────────────────────────────────────────╮
+│                   ·     ⢀⣀⢀⡠⠄⠤⠄⠤⠒⠐⠒⠐⠒⠐⠂⠒⠂⠒⠂⠒⠤⠠⠤⠠⢄⡀⣀⡀                         │
+│   ·              ⣀⠠⠤⠒⠒·⠁⠁◉ 機 器 -learning-with-a-long-name · 0 agents         │
+│             ⢀⡤⠔⠊⠉ ·                                        ⠉⠑⠢⢤⡀         ·   │
+│          ⢀⡤⠒⠁                                                  ⠈⠒⢤⡀          │
+│         ⣠⋆                                                        ·⣄         │
+│        ⢰⠃                                                          ⠘⡆        │
+│        ⠸⡄                             ✦                            ⢠⠇        │
+│         ⠙⣄                                                        ⣠⠋         │
+│          ⠈⠓⠤⡀                                                  ⢀⠤⠚⠁          │
+│             ⠈⠓⠢⢄⣀                                          ⣀⡠⠔⠚⠁             │
+│                  ⠉⠐⠒⠤⠤⣀⡀⡀                          ⢀⢀⣀⠤⠤⠒⠂⠉                  │
+│                         ⠈⠉⠈⠑⠂⠒⠂⠒⠤⠠⠤⠠⠤⠠⠄⠤⠄⠤⠄⠤⠒⠐⠒⠐⠊⠁⠉⠁                         │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ────────────────────────────────────────────────────────────────────────────────
- NORMAL  j/k move · Tab pane · / search · ? help · q quit
+ NORMAL  ↑↓ planets · Enter land · Tab pane · / search · ? help · q quit
 
 --- Workspaces ---
  ⣠⠴⠚⣤⡀⠃⣶  W A Y S T A T I O N

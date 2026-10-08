@@ -167,7 +167,7 @@ fn keys_reach_the_orbit_only_when_it_has_focus() {
     assert_eq!(
         app.orbit.level,
         Level::Galaxy,
-        "the Workspaces pane keeps Enter"
+        "the System pane keeps Enter"
     );
 
     app.pane = 0;
@@ -200,7 +200,7 @@ fn clicks_focus_the_orbit_and_jump_levels() {
     assert_eq!(app.workspace(), Some(path("w2").as_path()));
 
     let c = moon(&app, "c");
-    app.pane = 3;
+    app.pane = 2;
     let effects = app.update(Action::OrbitAttach(c));
     assert!(matches!(effects[..], [Effect::AttachAgent(id)] if id == c));
     assert_eq!(app.pane, 0, "returning lands on the orbit");
@@ -213,14 +213,20 @@ fn clicks_focus_the_orbit_and_jump_levels() {
 }
 
 #[test]
-fn tab_skips_the_hidden_workspaces_pane_while_zoomed() {
+fn tab_cycles_the_orbit_system_and_services() {
     let mut app = app();
-    app.update(Action::OrbitEnter(Level::Workspace(path("w1"))));
-    app.update(Action::FocusNext);
-    assert_eq!(app.pane, 2);
-    app.update(Action::FocusNext);
-    app.update(Action::FocusNext);
-    assert_eq!(app.pane, 0);
+    for zoom in [false, true] {
+        if zoom {
+            app.update(Action::OrbitEnter(Level::Workspace(path("w1"))));
+        }
+        assert_eq!(app.pane, 0);
+        app.update(Action::FocusNext);
+        assert_eq!(app.pane, 1);
+        app.update(Action::FocusNext);
+        assert_eq!(app.pane, 2);
+        app.update(Action::FocusNext);
+        assert_eq!(app.pane, 0);
+    }
 }
 
 #[test]

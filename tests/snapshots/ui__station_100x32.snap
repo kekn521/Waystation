@@ -13,16 +13,16 @@ expression: "snapshots.join(\"\\n\\n\")"
  │ / Jump to anything…                                                                            │
  ╰────────────────────────────────────────────────────────────────────────────────────────────────╯
   1 workspaces  ·  local observations
- ╭ Orbit ────────────────────────────────────────╮ ╭ Continue working ────────────────────────────╮
- │           ·⣀⣀⠠⠤⠄⠤⠄⠒⠂⠒⠂⠒⠐⠒⠐⠒⠠⠤⠠⠤⠄⣀⣀            │ │ ❯ 機 器 -learning-with-a-long-name · unavailabl│
- │  ·   ⣠⠤⠒·⠉⠈·  ◉ 機 器 -learning-with-a-long-na… │ │   /projects/機 器 -learning-with-a-long-name   │
- │   ⡠⠖⠉                                   ⠉⠲⢄·  │ │                                              │
- │  ⡜                                         ⢣  │ │                                              │
- │  ⢣   ⋆                ✦                ·   ⡜  │ │ e editor · t shell · g Git · h Herdr · f file│
- │   ⠑⠦⣀                                   ⣀⠴⠊   │ │ Git context loads for the selected workspace │
- │      ⠙⠒⠤⢄⣀⢀                       ⡀⣀⡠⠤⠒⠋      │ │                                              │
- │            ⠉⠉⠐⠒⠂⠒⠂⠤⠄⠤⠄⠤⠠⠤⠠⠤⠐⠒⠐⠒⠂⠉⠉            │ │                                              │
- ╰───────────────────────────────────────────────╯ ╰──────────────────────────────────────────────╯
+ ╭ Orbit · ↑↓ planets · Enter land ───────────────────────────────────────────────────────────────╮
+ │                        ·      ⢀⣀⣀⢀⠤⠠⠤⠠⠤⠠⠒⠐⠂⠒⠐⠒⠐⠂⠒⠂⠒⠐⠂⠒⠄⠤⠄⠤⠄⠤⡀⣀⣀⡀                               │
+ │    ·                 ⢀⣀⡠⠤⠔⠒·⠉⠉ ·  ◉ 機 器 -learning-with-a-long-name · 0 agents                  │
+ │                   ⣠⠴⠊⠉                                                  ⠉⠑⠦⣄              ·    │
+ │                 ⢠⠎                                                          ⠱⡄                 │
+ │            ⋆    ⠘⢆                             ✦                            ⡰⠃    ·            │
+ │                   ⠙⠲⢄⣀                                                  ⣀⡠⠖⠋                   │
+ │                      ⠈⠉⠑⠒⠢⠤⢄⣀⣀                                  ⣀⣀⡠⠤⠔⠒⠊⠉⠁                      │
+ │                               ⠈⠉⠉⠈⠒⠐⠒⠐⠒⠐⠤⠠⠄⠤⠠⠤⠠⠄⠤⠄⠤⠠⠄⠤⠂⠒⠂⠒⠂⠒⠁⠉⠉⠁                               │
+ ╰────────────────────────────────────────────────────────────────────────────────────────────────╯
 
  ╭ Machine pulse · live ─────────────────────────╮ ╭ Services & ports · read only ────────────────╮
  │permission denied                              │ │                                              │
@@ -34,7 +34,7 @@ expression: "snapshots.join(\"\\n\\n\")"
  │                                               │ │                                              │
  ╰───────────────────────────────────────────────╯ ╰──────────────────────────────────────────────╯
 ────────────────────────────────────────────────────────────────────────────────────────────────────
- NORMAL  j/k move · e editor · t shell · g Git · h Herdr · f files · / commands · ? help · q quit
+ NORMAL  ↑↓ planets · Enter land · Tab pane · / search · ? help · q quit
 
 --- Workspaces ---
    ⣠⠤⠴⠰⠶⢤⡀  W A Y S T A T I O N     dispatch / your terminal, connected

@@ -31,12 +31,7 @@ impl App {
     }
     pub fn section_items(&self) -> Vec<(String, String, Action)> {
         let section = if self.section == Section::Overview {
-            [
-                Section::Overview,
-                Section::Workspaces,
-                Section::System,
-                Section::Services,
-            ][self.pane]
+            [Section::Overview, Section::System, Section::Services][self.pane]
         } else {
             self.section
         };

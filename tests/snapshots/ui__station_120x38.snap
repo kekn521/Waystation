@@ -11,20 +11,20 @@ expression: "snapshots.join(\"\\n\\n\")"
   WORK             │ / Jump to anything…                                                                              │
   1 Overview       ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                     1 workspaces  ·  local observations
-  2 Workspaces     ╭ Orbit ─────────────────────────────────────────╮ ╭ Continue working ─────────────────────────────╮
-                   │            · ⡀⣀⡠⠄⠤⠔⠐⠒⠂⠒⠒⠐⠒⠂⠢⠤⠠⢄⣀⢀              │ │ ❯ 機 器 -learning-with-a-long-name · unavailable│
-  3 Agents         │  ·      ⣀⠤⠒·⠉ ◉ 機 器 -learning-with-a-long-nam… │ │   /projects/機 器 -learning-with-a-long-name    │
-                   │     ⢀⡠⠊⠉·                             ⠉⠑⢄⡀  ·  │ │                                               │
-                   │   ⢀⡔⠉                                    ⠉⢢⡀   │ │                                               │
-  OPERATE          │  ⢠⠏  ⋆                                  ·  ⠹⡄  │ │                                               │
-  4 Services       │  ⡎                                          ⢱  │ │                                               │
-                   │  ⢇                     ✦                    ⡸  │ │                                               │
-  5 Connections    │  ⠘⣆                                        ⣰⠃  │ │                                               │
-                   │   ⠈⠣⣀                                    ⣀⠜⠁   │ │ e editor · t shell · g Git · h Herdr · f files│
-                   │     ⠈⠑⢄⣀                              ⣀⡠⠊⠁     │ │ Git context loads for the selected workspace  │
-  EXPLORE          │         ⠉⠒⠤⢄⣀                    ⣀⡠⠤⠒⠉         │ │                                               │
-  6 Files          │              ⠁⠉⠑⠂⠒⠢⠠⠤⠄⠤⠤⠠⠤⠄⠔⠒⠐⠊⠉⠈              │ │                                               │
-                   ╰────────────────────────────────────────────────╯ ╰───────────────────────────────────────────────╯
+  2 Workspaces     ╭ Orbit · ↑↓ planets · Enter land ─────────────────────────────────────────────────────────────────╮
+                   │                        ·          ⢀⣀⢀⡠⠄⠤⠄⠤⠒⠐⠒⠐⠒⠐⠂⠒⠂⠒⠂⠒⠤⠠⠤⠠⢄⡀⣀⡀                                   │
+  3 Agents         │    ·                       ⣀⡠⠤⠒⠒·⠈⠁◉ 機 器 -learning-with-a-long-name · 0 agents                   │
+                   │                       ⢀⡠⠔⠊⠉ ·                                        ⠉⠑⠢⢄⡀                  ·    │
+                   │                    ⢀⡠⠒⠁                                                  ⠈⠒⢄⡀                    │
+  OPERATE          │            ⋆      ⣠⠊                                                        ⠑⣄      ·            │
+  4 Services       │                  ⢠⠃                                                          ⠘⡄                  │
+                   │                  ⠘⡄                             ✦                            ⢠⠃                  │
+  5 Connections    │                   ⠙⢄                                                        ⡠⠋                   │
+                   │                    ⠈⠑⠤⡀                                                  ⢀⠤⠊⠁                    │
+                   │                       ⠈⠑⠢⢄⣀                                          ⣀⡠⠔⠊⠁                       │
+  EXPLORE          │                            ⠉⠑⠒⠤⠤⣀⢀⡀                          ⢀⡀⣀⠤⠤⠒⠊⠉                            │
+  6 Files          │                                   ⠈⠉⠈⠑⠂⠒⠂⠒⠤⠠⠤⠠⠤⠠⠄⠤⠄⠤⠄⠤⠒⠐⠒⠐⠊⠁⠉⠁                                   │
+                   ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
   7 System
                    ╭ Machine pulse · live ──────────────────────────╮ ╭ Services & ports · read only ─────────────────╮
   8 Activity       │permission denied                               │ │                                               │
@@ -40,7 +40,7 @@ expression: "snapshots.join(\"\\n\\n\")"
   Macchiato        │                                                │ │                                               │
                    ╰────────────────────────────────────────────────╯ ╰───────────────────────────────────────────────╯
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
- NORMAL  j/k move · e editor · t shell · g Git · h Herdr · f files · / commands · ? help · q quit
+ NORMAL  ↑↓ planets · Enter land · Tab pane · / search · ? help · q quit
 
 --- Workspaces ---
    ⣠⠤⠴⠰⠶⢤⡀  W A Y S T A T I O N     dispatch / your terminal, connected

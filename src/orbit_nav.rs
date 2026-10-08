@@ -266,11 +266,26 @@ impl App {
             }
             _ => None,
         };
+        let fell_back = fallback.is_some();
         if let Some(level) = fallback {
             self.orbit.level = level;
             self.orbit.transition = None;
             self.agent_preview = None;
         }
-        self.orbit.focus = self.orbit.focus.min(self.orbit_count().saturating_sub(1));
+        // Focus is an index, so re-find it from identities whenever they are known: the
+        // open moon, or the selected planet after a fall back to the galaxy.
+        let found = match &self.orbit.level {
+            Level::Moon(p, id) => self.moons(p).iter().position(|s| s.id == *id),
+            Level::Galaxy if fell_back => {
+                let selected = self.workspace();
+                self.planets()
+                    .iter()
+                    .position(|w| Some(w.id.as_path()) == selected)
+            }
+            _ => None,
+        };
+        self.orbit.focus = found
+            .unwrap_or(self.orbit.focus)
+            .min(self.orbit_count().saturating_sub(1));
     }
 }

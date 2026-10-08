@@ -366,3 +366,70 @@ fn previews_only_land_on_the_open_moon() {
         "the last screen stays, marked stale"
     );
 }
+
+#[test]
+fn a_new_moon_keeps_the_previewed_one_focused() {
+    let mut app = app();
+    let b = moon(&app, "b");
+    app.update(Action::OrbitEnter(Level::Workspace(path("w1"))));
+    app.update(Action::OrbitEnter(Level::Moon(path("w1"), b)));
+    assert_eq!(app.orbit.focus, 1);
+    let mut agents = app.agents.clone();
+    agents.push(agent("0first", "w1"));
+    app.apply_provider(event(
+        ProviderId::Agents,
+        &app,
+        None,
+        Ok(ProviderPayload::Agents(agents)),
+    ));
+    assert_eq!(app.orbit.level, Level::Moon(path("w1"), b));
+    assert_eq!(
+        app.moons(&path("w1"))[app.orbit.focus].id,
+        b,
+        "highlight and preview agree"
+    );
+}
+
+#[test]
+fn falling_back_focuses_the_newly_selected_planet() {
+    let mut app = app();
+    app.update(Action::OrbitEnter(Level::Workspace(path("w1"))));
+    app.update(Action::SelectWorkspace(path("w2")));
+    assert_eq!(app.orbit.level, Level::Galaxy);
+    assert_eq!(app.planets()[app.orbit.focus].id, path("w2"));
+}
+
+#[test]
+fn an_agent_started_from_the_orbit_opens_as_its_moon() {
+    let mut app = app();
+    app.update(Action::OrbitEnter(Level::Workspace(path("w1"))));
+    let created = agent("new", "w1");
+    let id = created.id;
+    let effects = app.adopt_new_agent(created);
+    assert_eq!(
+        app.section,
+        Section::Overview,
+        "returning lands on the orbit"
+    );
+    assert_eq!(app.orbit.level, Level::Moon(path("w1"), id));
+    assert!(
+        effects
+            .iter()
+            .any(|e| matches!(e, Effect::AttachAgent(x) if *x == id))
+    );
+
+    // Started anywhere else, it lands in Agents as before.
+    let mut app = app_in_agents();
+    let created = agent("other", "w2");
+    let id = created.id;
+    let effects = app.adopt_new_agent(created);
+    assert_eq!(app.section, Section::Agents);
+    assert_eq!(app.workspace(), Some(path("w2").as_path()));
+    assert!(matches!(effects[..], [Effect::AttachAgent(x)] if x == id));
+    assert!(matches!(&app.agent_items()[app.selection].2, Action::OpenAgent(x) if *x == id));
+}
+fn app_in_agents() -> App {
+    let mut app = app();
+    app.section = Section::Agents;
+    app
+}

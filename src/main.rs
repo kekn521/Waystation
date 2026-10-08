@@ -103,16 +103,18 @@ fn main() -> Result<()> {
             match result {
                 Ok(r) => {
                     if let Some(agent) = r.agent {
-                        app.form = None;
-                        app.update(waystation::app::Action::SelectWorkspace(
-                            agent.workspace.clone(),
-                        ));
-                        app.section = waystation::model::Section::Agents;
-                        let id = agent.id;
-                        app.agents.retain(|s| s.id != id);
-                        app.agents.push(agent);
-                        app.selection = app.agent_items().iter().position(|(_,_,a)| matches!(a, waystation::app::Action::OpenAgent(s) if *s == id)).unwrap_or(0);
-                        jobs.submit(Effect::AttachAgent(id));
+                        for effect in app.adopt_new_agent(agent) {
+                            match effect {
+                                Effect::Preview => submit(
+                                    &app,
+                                    &pool,
+                                    waystation::runtime::workers::ProviderId::AgentPreview,
+                                ),
+                                effect => {
+                                    jobs.submit(effect);
+                                }
+                            }
+                        }
                     }
                     // Every path to an attach has already chosen where to land afterwards;
                     // the orbit's moons return to the orbit.

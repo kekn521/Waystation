@@ -548,3 +548,25 @@ fn a_long_label_never_hides_its_planet() {
         );
     }
 }
+fn footer(app: &App, width: u16, height: u16) -> String {
+    rows_of(app, width, height).pop().unwrap()
+}
+#[test]
+fn the_footer_only_offers_what_the_orbit_level_does() {
+    let mut a = planets();
+    a.pane = 0;
+    let galaxy = footer(&a, 120, 38);
+    assert!(galaxy.contains("Enter land"), "{galaxy}");
+    assert!(
+        !galaxy.contains("Esc") && !galaxy.contains(" n "),
+        "{galaxy}"
+    );
+    let z = zoomed(Level::Workspace(path("w1")));
+    for (w, h) in [(120, 38), (80, 24)] {
+        let text = footer(&z, w, h);
+        assert!(
+            text.contains("Esc out") && text.contains("n new"),
+            "{w}x{h}: {text}"
+        );
+    }
+}

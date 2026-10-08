@@ -416,10 +416,20 @@ pub fn draw(frame: &mut Frame, app: &App) -> Vec<HitRegion> {
     if let Some(message) = &app.message {
         frame.render_widget(Paragraph::new(safe(message)).fg(TEAL), parts[3]);
     }
-    let footer = if narrow {
+    let footer = if app.orbit_focused() {
+        match app.orbit.level {
+            crate::orbit_nav::Level::Galaxy => {
+                " ↑↓ planets · Enter land · Tab pane · / search · ? help · q quit"
+            }
+            crate::orbit_nav::Level::Workspace(_) => {
+                " ↑↓ moons · Enter preview · n new · Esc out · ? help · q quit"
+            }
+            crate::orbit_nav::Level::Moon(..) => {
+                " ↑↓ moons · Enter attach · n new · Esc out · ? help · q quit"
+            }
+        }
+    } else if narrow {
         " j/k move · Tab pane · / search · ? help · q quit"
-    } else if app.orbit_focused() {
-        " ↑↓ choose · Enter zoom in · Esc zoom out · n new agent · Tab pane · q quit"
     } else if app.section == Section::Agents {
         " n new · Enter open · r restart · x close · F12/Ctrl-\\ back · F9 status box · q quit"
     } else {

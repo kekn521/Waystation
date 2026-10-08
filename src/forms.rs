@@ -261,3 +261,35 @@ impl App {
         }
     }
 }
+impl App {
+    /// Take in an agent the New agent form just created and say how to open it. Started
+    /// from a zoomed orbit on its workspace, it opens as that system's moon, so returning
+    /// from it lands back on the orbit; otherwise it is selected in Agents.
+    pub fn adopt_new_agent(&mut self, agent: crate::agents::AgentSession) -> Vec<Effect> {
+        let id = agent.id;
+        let workspace = agent.workspace.clone();
+        let from_orbit =
+            self.orbit_focused() && self.orbit.level.workspace() == Some(workspace.as_path());
+        self.form = None;
+        self.agents.retain(|s| s.id != id);
+        self.agents.push(agent);
+        let mut effects = vec![];
+        if from_orbit {
+            effects.extend(
+                self.update(Action::OrbitEnter(crate::orbit_nav::Level::Moon(
+                    workspace, id,
+                ))),
+            );
+        } else {
+            self.update(Action::SelectWorkspace(workspace));
+            self.section = Section::Agents;
+            self.selection = self
+                .agent_items()
+                .iter()
+                .position(|(_, _, a)| matches!(a, Action::OpenAgent(s) if *s == id))
+                .unwrap_or(0);
+        }
+        effects.push(Effect::AttachAgent(id));
+        effects
+    }
+}

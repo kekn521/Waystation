@@ -7,27 +7,87 @@ use ratatui::{
     widgets::Block,
 };
 use std::time::Duration;
+use std::path::PathBuf;
+use uuid::Uuid;
 use waystation::{
-    app::App,
-    config::Config,
+    agents::{AgentSession, AgentStatus},
+    app::{Action, App, HitRegion},
+    config::{Config, ToolCommand},
     model::{AppState, Section},
+    orbit_nav::{Level, TRANSITION},
+    providers::projects::Workspace,
     ui::{draw, orbit},
 };
 fn app() -> App {
     App::new(Config::default(), AppState::default())
 }
+fn path(name: &str) -> PathBuf {
+    format!("/orbit-fixture/{name}").into()
+}
+/// Planets w0..w2 (w1 selected), with agents "a" and "b" circling w1.
+fn planets() -> App {
+    let mut a = App::new(
+        Config::default(),
+        AppState {
+            selected_workspace: Some(path("w1")),
+            recent_workspaces: vec![path("w1"), path("w0"), path("w2")],
+            ..AppState::default()
+        },
+    );
+    a.set_workspaces(
+        ["w0", "w1", "w2"]
+            .map(|n| Workspace {
+                id: path(n),
+                name: n.into(),
+            })
+            .to_vec(),
+    );
+    a.agents = ["a", "b"]
+        .map(|n| AgentSession {
+            id: Uuid::new_v4(),
+            name: n.into(),
+            tool: "claude".into(),
+            workspace: path("w1"),
+            command: ToolCommand {
+                program: "claude".into(),
+                args: vec![],
+            },
+            executable: "/usr/bin/claude".into(),
+            created: std::time::SystemTime::UNIX_EPOCH,
+            conversation: None,
+            status: AgentStatus::Running,
+        })
+        .to_vec();
+    a
+}
+fn moon(app: &App, name: &str) -> Uuid {
+    app.agents.iter().find(|s| s.name == name).unwrap().id
+}
 /// Renders the orbit into `area` over a uniform DarkGray backdrop so that any
 /// cell touched by the renderer is detectable against the baseline.
 fn orbit_buffer(width: u16, height: u16, area: Rect, elapsed: Duration) -> Buffer {
+    let mut a = planets();
+    a.animation_elapsed = elapsed;
+    orbit_hits(&a, width, height, area).0
+}
+fn orbit_hits(app: &App, width: u16, height: u16, area: Rect) -> (Buffer, Vec<HitRegion>) {
     let mut terminal = Terminal::new(TestBackend::new(width, height)).unwrap();
+    let mut hits = vec![];
     terminal
         .draw(|f| {
             let full = f.area();
             f.render_widget(Block::default().bg(Color::DarkGray), full);
-            orbit::render(f, area, elapsed);
+            hits = orbit::render(f, area, app);
         })
         .unwrap();
-    terminal.backend().buffer().clone()
+    (terminal.backend().buffer().clone(), hits)
+}
+fn text_of(buffer: &Buffer) -> Vec<String> {
+    buffer
+        .content
+        .chunks(buffer.area.width as usize)
+        .map(|row| row.iter().map(|c| c.symbol()).collect())
+        .collect()
 }
 fn buffer_of(app: &App, width: u16, height: u16) -> Buffer {
     let mut terminal = Terminal::new(TestBackend::new(width, height)).unwrap();
@@ -214,7 +274,7 @@ fn no_orbit_outside_the_wide_overview() {
 }
 #[test]
 fn only_the_overview_moves_with_the_clock() {
-    let mut a = app();
+    let mut a = planets();
     let early = buffer_of(&a, 120, 38);
     // Two draws at the same elapsed time must not advance the scene.
     let mut terminal = Terminal::new(TestBackend::new(120, 38)).unwrap();
@@ -238,7 +298,7 @@ fn only_the_overview_moves_with_the_clock() {
     a.animation_elapsed = Duration::from_secs(3);
     let late = buffer_of(&a, 120, 38);
     assert_ne!(early, late, "overview must follow the animation clock");
-    let mut workspaces = app();
+    let mut workspaces = planets();
     workspaces.section = Section::Workspaces;
     let before = buffer_of(&workspaces, 120, 38);
     workspaces.animation_elapsed = Duration::from_secs(3);
@@ -247,4 +307,96 @@ fn only_the_overview_moves_with_the_clock() {
         buffer_of(&workspaces, 120, 38),
         "Workspaces must ignore the animation clock"
     );
+}
+
+#[test]
+fn every_planet_is_a_clickable_body() {
+    let a = planets();
+    let area = Rect::new(0, 0, 60, 14);
+    let (buffer, hits) = orbit_hits(&a, 60, 14, area);
+    for name in ["w0", "w1", "w2"] {
+        let hit = hits
+            .iter()
+            .find(|h| matches!(&h.action, Action::OrbitEnter(Level::Workspace(p)) if *p == path(name)))
+            .unwrap_or_else(|| panic!("no hit for {name}"));
+        let symbols = (hit.area.x..hit.area.right())
+            .map(|x| buffer[(x, hit.area.y)].symbol().to_string())
+            .collect::<String>();
+        assert!(
+            symbols.contains('●') || symbols.contains('◉'),
+            "{name}'s hit {:?} misses its planet: {symbols:?}",
+            hit.area
+        );
+    }
+}
+#[test]
+fn the_focused_label_is_never_clipped() {
+    let mut a = planets();
+    a.orbit.focus = 2;
+    for second in 0..32 {
+        a.animation_elapsed = Duration::from_secs(second);
+        let (buffer, _) = orbit_hits(&a, 40, 10, Rect::new(0, 0, 40, 10));
+        assert!(
+            text_of(&buffer).iter().any(|row| row.contains("w2 · 0 agents")),
+            "label clipped at {second}s:\n{}",
+            text_of(&buffer).join("\n")
+        );
+    }
+}
+#[test]
+fn an_empty_galaxy_explains_itself() {
+    let (buffer, hits) = orbit_hits(&app(), 60, 12, Rect::new(0, 0, 60, 12));
+    assert!(text_of(&buffer).join("").contains("Pin or open a workspace"));
+    assert!(text_of(&buffer).join("").contains('✦'));
+    assert!(hits.is_empty());
+}
+#[test]
+fn zooming_starts_from_the_galaxy_and_ends_on_the_system() {
+    let area = Rect::new(0, 0, 70, 14);
+    let mut a = planets();
+    a.animation_elapsed = Duration::from_secs(10);
+    a.update(Action::OrbitEnter(Level::Workspace(path("w1"))));
+    let start = orbit_hits(&a, 70, 14, area);
+    assert!(text_of(&start.0).join("").contains('✦'), "the zoom starts at the star");
+    assert!(start.1.is_empty(), "no click targets while bodies fly");
+
+    a.animation_elapsed += TRANSITION;
+    let end = orbit_hits(&a, 70, 14, area).0;
+    a.orbit.transition = None;
+    assert_eq!(end, orbit_hits(&a, 70, 14, area).0);
+    assert_ne!(start.0, end);
+    assert!(!text_of(&end).join("").contains('✦'), "the star is out of sight");
+}
+#[test]
+fn a_system_offers_its_moons_and_a_way_out() {
+    let area = Rect::new(0, 0, 70, 14);
+    let mut a = planets();
+    let (ma, mb) = (moon(&a, "a"), moon(&a, "b"));
+    a.update(Action::OrbitEnter(Level::Workspace(path("w1"))));
+    a.orbit.transition = None;
+    let (_, hits) = orbit_hits(&a, 70, 14, area);
+    let has = |hits: &[HitRegion], f: &dyn Fn(&Action) -> bool| hits.iter().any(|h| f(&h.action));
+    assert!(has(&hits, &|x| matches!(x, Action::OrbitEnter(Level::Moon(_, id)) if *id == ma)));
+    assert!(has(&hits, &|x| matches!(x, Action::OrbitEnter(Level::Moon(_, id)) if *id == mb)));
+    assert!(has(&hits, &|x| matches!(x, Action::OrbitOut)));
+
+    a.update(Action::OrbitEnter(Level::Moon(path("w1"), ma)));
+    a.orbit.transition = None;
+    let (_, hits) = orbit_hits(&a, 70, 14, area);
+    assert!(has(&hits, &|x| matches!(x, Action::OrbitAttach(id) if *id == ma)));
+    assert!(has(&hits, &|x| matches!(x, Action::OrbitEnter(Level::Moon(_, id)) if *id == mb)));
+
+    let mut empty = planets();
+    empty.update(Action::OrbitEnter(Level::Workspace(path("w0"))));
+    empty.orbit.transition = None;
+    let (buffer, _) = orbit_hits(&empty, 70, 14, area);
+    assert!(text_of(&buffer).join("").contains("No moons yet"));
+}
+#[test]
+fn bodies_share_rings_evenly() {
+    let placed = orbit::place(5, 3);
+    assert_eq!(placed.iter().map(|p| p.0).collect::<Vec<_>>(), [0, 1, 2, 0, 1]);
+    assert_eq!(placed[0].1, 0.0);
+    assert!((placed[3].1 - std::f64::consts::PI).abs() < 1e-9);
+    assert_eq!(placed[2].1, 0.0, "a body alone on its ring");
 }

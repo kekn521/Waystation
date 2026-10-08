@@ -505,7 +505,7 @@ fn render_pane(frame: &mut Frame, area: Rect, app: &App, index: usize) -> Vec<Hi
             let block = panel("Orbit", app.pane == 0);
             let inner = block.inner(area);
             frame.render_widget(block, area);
-            orbit::render(frame, inner, app.animation_elapsed);
+            orbit::render(frame, inner, app);
             vec![]
         }
         1 => workspaces::render(frame, area, app),

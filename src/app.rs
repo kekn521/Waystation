@@ -89,8 +89,6 @@ pub enum Effect {
     StopAllAndQuit(Vec<uuid::Uuid>),
     Quit,
     Refresh,
-    /// Capture the previewed agent's screen now.
-    Preview,
 }
 #[derive(Clone, Debug)]
 pub struct HitRegion {
@@ -116,8 +114,6 @@ pub struct App {
     pub(crate) pinned: Vec<PathBuf>,
     /// Where the Overview's orbit is looking.
     pub orbit: crate::orbit_nav::OrbitView,
-    /// The open moon's latest screen, keyed by agent so late captures can be told apart.
-    pub agent_preview: Option<(uuid::Uuid, Snapshot<String>)>,
     pub pending_starts: std::collections::HashSet<uuid::Uuid>,
     pub runs: Vec<crate::tasks::RunRecord>,
     pub confirmation: Option<Confirmation>,
@@ -164,7 +160,6 @@ impl App {
             pinned_paths,
             pinned,
             orbit: Default::default(),
-            agent_preview: None,
             pending_starts: Default::default(),
             runs: vec![],
             confirmation: None,
@@ -264,13 +259,6 @@ impl App {
                     }
                     ProviderPayload::Aliases(a) => self.aliases = a,
                     ProviderPayload::Sessions(s) => self.sessions = s,
-                    ProviderPayload::AgentPreview(id, text) => {
-                        if let Some((current, snapshot)) = &mut self.agent_preview
-                            && *current == id
-                        {
-                            *snapshot = Snapshot::ready(text, self.generation);
-                        }
-                    }
                 }
             }
             Err(e) => {
@@ -279,12 +267,6 @@ impl App {
                 }
                 if event.request.id == ProviderId::System {
                     self.system.availability = crate::model::Availability::Failed(e.clone())
-                }
-                if event.request.id == ProviderId::AgentPreview
-                    && let Some((current, snapshot)) = &mut self.agent_preview
-                    && Some(*current) == event.request.agent
-                {
-                    snapshot.availability = crate::model::Availability::Failed(e.clone());
                 }
                 self.provider_errors.insert(key, e);
             }

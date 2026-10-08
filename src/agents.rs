@@ -452,18 +452,6 @@ impl AgentManager {
             .filter_map(|s| Some((s.id, crate::activity::read(&self.manifest(s.id))?)))
             .collect()
     }
-    /// The agent's visible screen as plain text, for the orbit's preview.
-    pub fn capture_screen(&self, id: Uuid) -> Result<String> {
-        self.checked(
-            self.key()?.context("Missing server")?,
-            vec![
-                "capture-pane".into(),
-                "-p".into(),
-                "-t".into(),
-                format!("=agent-{id}:0.0").into(),
-            ],
-        )
-    }
     pub fn capture(&self, id: Uuid) -> Result<String> {
         self.checked(
             self.key()?.context("Missing server")?,

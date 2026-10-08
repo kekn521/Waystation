@@ -5,7 +5,7 @@ use waystation::{
     agents::{AgentSession, AgentStatus},
     app::{Action, App, Effect},
     config::{Config, ToolCommand},
-    model::{AppState, Availability, Section},
+    model::{AppState, Section},
     orbit_nav::{Level, OrbitView, TRANSITION},
     providers::projects::Workspace,
     runtime::workers::{ProviderEvent, ProviderId, ProviderPayload, ProviderRequest},
@@ -54,12 +54,7 @@ fn app() -> App {
 fn moon(app: &App, name: &str) -> Uuid {
     app.agents.iter().find(|s| s.name == name).unwrap().id
 }
-fn event(
-    id: ProviderId,
-    app: &App,
-    agent: Option<Uuid>,
-    payload: Result<ProviderPayload, String>,
-) -> ProviderEvent {
+fn event(id: ProviderId, app: &App, payload: Result<ProviderPayload, String>) -> ProviderEvent {
     ProviderEvent {
         request: ProviderRequest {
             id,
@@ -67,7 +62,6 @@ fn event(
             workspace: None,
             directory: None,
             hidden: false,
-            agent,
         },
         payload,
     }
@@ -116,7 +110,7 @@ fn moons_are_the_workspace_agents_in_name_order() {
 }
 
 #[test]
-fn keyboard_zooms_from_galaxy_to_moon_and_back() {
+fn keyboard_lands_on_a_planet_and_opens_its_moons() {
     let mut app = app();
     app.update(Action::Move(1));
     assert_eq!(app.orbit.focus, 1);
@@ -127,34 +121,23 @@ fn keyboard_zooms_from_galaxy_to_moon_and_back() {
 
     app.update(Action::Move(-1));
     assert_eq!(app.orbit.focus, 1, "moon focus wraps around");
-    app.update(Action::Move(1));
-    let effects = app.update(Action::Activate);
-    let a = moon(&app, "a");
-    assert_eq!(app.orbit.level, Level::Moon(path("w1"), a));
-    assert!(matches!(effects[..], [Effect::Preview]), "{effects:?}");
-    assert_eq!(app.previewed_agent(), Some(a));
-    assert_eq!(app.agent_preview.as_ref().map(|(id, _)| *id), Some(a));
-
-    let effects = app.update(Action::Move(1));
     let b = moon(&app, "b");
-    assert_eq!(
-        app.orbit.level,
-        Level::Moon(path("w1"), b),
-        "the preview follows"
-    );
-    assert!(matches!(effects[..], [Effect::Preview]));
-
+    assert_eq!(app.orbit.moon, Some(b), "the highlight remembers its moon");
+    app.update(Action::Move(1));
+    let a = moon(&app, "a");
     let effects = app.update(Action::Activate);
     assert!(
-        matches!(effects[..], [Effect::AttachAgent(id)] if id == b),
-        "{effects:?}"
+        matches!(effects[..], [Effect::AttachAgent(id)] if id == a),
+        "Enter opens the highlighted agent full screen: {effects:?}"
+    );
+    assert_eq!(
+        app.orbit.level,
+        Level::Workspace(path("w1")),
+        "no preview level"
     );
     assert_eq!(app.section, Section::Overview, "attaching keeps the orbit");
+    assert_eq!(app.orbit.focus, 0, "the moon we opened stays focused");
 
-    app.update(Action::Escape);
-    assert_eq!(app.orbit.level, Level::Workspace(path("w1")));
-    assert_eq!(app.orbit.focus, 1, "the moon we left stays focused");
-    assert!(app.agent_preview.is_none());
     app.update(Action::Escape);
     assert_eq!(app.orbit.level, Level::Galaxy);
     assert_eq!(app.orbit.focus, 1, "the planet we left stays focused");
@@ -218,16 +201,12 @@ fn clicks_focus_the_orbit_and_jump_levels() {
 
     let c = moon(&app, "c");
     app.pane = 3;
-    let effects = app.update(Action::OrbitEnter(Level::Moon(path("w2"), c)));
-    assert!(matches!(effects[..], [Effect::Preview]));
-    assert_eq!(app.pane, 0);
-
     let effects = app.update(Action::OrbitAttach(c));
     assert!(matches!(effects[..], [Effect::AttachAgent(id)] if id == c));
+    assert_eq!(app.pane, 0, "returning lands on the orbit");
+    assert_eq!(app.orbit.moon, Some(c));
     assert_eq!(app.section, Section::Overview);
 
-    app.update(Action::OrbitOut);
-    assert_eq!(app.orbit.level, Level::Workspace(path("w2")));
     app.update(Action::OrbitOut);
     assert_eq!(app.orbit.level, Level::Galaxy);
     assert_eq!(app.orbit.focus, 2);
@@ -249,21 +228,25 @@ fn the_orbit_falls_back_when_bodies_disappear() {
     let mut app = app();
     let a = moon(&app, "a");
     app.update(Action::OrbitEnter(Level::Workspace(path("w1"))));
-    app.update(Action::OrbitEnter(Level::Moon(path("w1"), a)));
-    let others = app.agents.iter().filter(|s| s.id != a).cloned().collect();
+    app.update(Action::Move(1));
+    let others = app
+        .agents
+        .iter()
+        .filter(|s| s.id != moon(&app, "b"))
+        .cloned()
+        .collect();
     app.apply_provider(event(
         ProviderId::Agents,
         &app,
-        None,
         Ok(ProviderPayload::Agents(others)),
     ));
     assert_eq!(app.orbit.level, Level::Workspace(path("w1")));
-    assert!(app.agent_preview.is_none());
+    assert_eq!(app.orbit.focus, 0, "the highlight stays in range");
+    assert_eq!(app.orbit.moon, Some(a), "and names the moon it now sits on");
 
     app.apply_provider(event(
         ProviderId::Projects,
         &app,
-        None,
         Ok(ProviderPayload::Projects(vec![
             workspace("w0"),
             workspace("w2"),
@@ -296,9 +279,8 @@ fn n_starts_an_agent_from_a_zoomed_orbit() {
 }
 
 #[test]
-fn transitions_ease_and_split_the_pane() {
+fn transitions_ease() {
     let mut app = app();
-    let a = moon(&app, "a");
     app.animation_elapsed = Duration::from_secs(10);
     app.update(Action::OrbitEnter(Level::Workspace(path("w1"))));
     let start = app.animation_elapsed;
@@ -306,88 +288,32 @@ fn transitions_ease_and_split_the_pane() {
     assert!(app.orbit.animating(start));
     assert_eq!(app.orbit.progress(start + TRANSITION), 1.0);
     assert!(!app.orbit.animating(start + TRANSITION));
-    assert_eq!(
-        app.orbit.split(start),
-        1.0,
-        "galaxy to workspace uses the whole pane"
-    );
-
-    app.update(Action::OrbitEnter(Level::Moon(path("w1"), a)));
-    assert_eq!(app.orbit.split(start), 1.0);
-    let middle = app.orbit.split(start + TRANSITION / 2);
-    assert!(middle < 1.0 && middle > 0.4, "{middle}");
-    assert_eq!(app.orbit.split(start + TRANSITION), 0.4);
 
     // Switching moons is not a zoom.
     app.animation_elapsed += TRANSITION;
     app.update(Action::Move(1));
-    assert!(app.orbit.transition.is_none() || !app.orbit.animating(app.animation_elapsed));
+    assert!(!app.orbit.animating(app.animation_elapsed));
     assert_eq!(OrbitView::default().progress(Duration::ZERO), 1.0);
 }
 
 #[test]
-fn previews_only_land_on_the_open_moon() {
-    let mut app = app();
-    let (a, b) = (moon(&app, "a"), moon(&app, "b"));
-    app.update(Action::OrbitEnter(Level::Workspace(path("w1"))));
-    app.update(Action::OrbitEnter(Level::Moon(path("w1"), a)));
-    let preview = |app: &App| app.agent_preview.as_ref().unwrap().1.clone();
-
-    app.apply_provider(event(
-        ProviderId::AgentPreview,
-        &app,
-        Some(b),
-        Ok(ProviderPayload::AgentPreview(b, "late".into())),
-    ));
-    assert!(
-        preview(&app).value.is_none(),
-        "a capture for a moon we left is ignored"
-    );
-
-    app.apply_provider(event(
-        ProviderId::AgentPreview,
-        &app,
-        Some(a),
-        Ok(ProviderPayload::AgentPreview(a, "hi".into())),
-    ));
-    assert_eq!(preview(&app).value.as_deref(), Some("hi"));
-
-    app.apply_provider(event(
-        ProviderId::AgentPreview,
-        &app,
-        Some(a),
-        Err("tmux went away".into()),
-    ));
-    let snapshot = preview(&app);
-    assert!(matches!(snapshot.availability, Availability::Failed(ref e) if e == "tmux went away"));
-    assert_eq!(
-        snapshot.value.as_deref(),
-        Some("hi"),
-        "the last screen stays, marked stale"
-    );
-}
-
-#[test]
-fn a_new_moon_keeps_the_previewed_one_focused() {
+fn a_new_moon_keeps_the_highlighted_one_focused() {
     let mut app = app();
     let b = moon(&app, "b");
     app.update(Action::OrbitEnter(Level::Workspace(path("w1"))));
-    app.update(Action::OrbitEnter(Level::Moon(path("w1"), b)));
+    app.update(Action::Move(1));
     assert_eq!(app.orbit.focus, 1);
     let mut agents = app.agents.clone();
     agents.push(agent("0first", "w1"));
     app.apply_provider(event(
         ProviderId::Agents,
         &app,
-        None,
         Ok(ProviderPayload::Agents(agents)),
     ));
-    assert_eq!(app.orbit.level, Level::Moon(path("w1"), b));
-    assert_eq!(
-        app.moons(&path("w1"))[app.orbit.focus].id,
-        b,
-        "highlight and preview agree"
-    );
+    assert_eq!(app.orbit.moon, Some(b));
+    assert_eq!(app.moons(&path("w1"))[app.orbit.focus].id, b);
+    let effects = app.update(Action::Activate);
+    assert!(matches!(effects[..], [Effect::AttachAgent(id)] if id == b));
 }
 
 #[test]
@@ -403,20 +329,20 @@ fn falling_back_focuses_the_newly_selected_planet() {
 fn an_agent_started_from_the_orbit_opens_as_its_moon() {
     let mut app = app();
     app.update(Action::OrbitEnter(Level::Workspace(path("w1"))));
+    app.update(Action::NewAgent);
+    assert!(app.form.is_some(), "n opens the New agent form");
     let created = agent("new", "w1");
     let id = created.id;
     let effects = app.adopt_new_agent(created);
+    assert!(app.form.is_none());
     assert_eq!(
         app.section,
         Section::Overview,
         "returning lands on the orbit"
     );
-    assert_eq!(app.orbit.level, Level::Moon(path("w1"), id));
-    assert!(
-        effects
-            .iter()
-            .any(|e| matches!(e, Effect::AttachAgent(x) if *x == id))
-    );
+    assert_eq!(app.orbit.level, Level::Workspace(path("w1")));
+    assert_eq!(app.orbit.moon, Some(id), "its moon is highlighted");
+    assert!(matches!(effects[..], [Effect::AttachAgent(x)] if x == id));
 
     // Started anywhere else, it lands in Agents as before.
     let mut app = app_in_agents();

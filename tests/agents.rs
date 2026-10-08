@@ -59,11 +59,6 @@ fn sessions_survive_manager_restart_and_preserve_literal_arguments() {
         captured.contains("literal ; $(false) ' \""),
         "captured: {captured:?}"
     );
-    let screen = reloaded.capture_screen(session.id).unwrap();
-    assert!(
-        screen.contains("literal ; $(false) ' \""),
-        "screen: {screen:?}"
-    );
     assert!(
         reloaded
             .attach(session.id, Path::new(env!("CARGO_BIN_EXE_waystation")))

@@ -86,11 +86,10 @@ and each planet's moons are its agent sessions. `Tab` to the orbit, or click it:
 
 - `↑`/`↓` (or `j`/`k`) pick a planet, and `Enter` lands on it. It becomes the
   selected workspace, and the view zooms in on it and its moons.
-- Pick a moon and press `Enter` to see a live, read-only view of that agent's
-  screen beside it. `Enter` again (or a click) opens the agent; `F12` or
-  `Ctrl-\` brings you back to the same moon.
+- Pick a moon and press `Enter` to open that agent full screen. `F12` or
+  `Ctrl-\` brings you back with the same moon highlighted.
 - `n` starts a new agent in the workspace you're zoomed into, and `Esc` zooms
-  out one level.
+  back out to the planets.
 
 Clicking a planet or moon does the same as selecting it and pressing `Enter`.
 

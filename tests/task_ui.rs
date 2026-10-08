@@ -212,7 +212,6 @@ fn quit_waits_until_new_run_is_in_a_snapshot() {
             workspace: None,
             directory: None,
             hidden: false,
-            agent: None,
         },
         payload: Ok(ProviderPayload::Tasks(vec![])),
     });
@@ -224,7 +223,6 @@ fn quit_waits_until_new_run_is_in_a_snapshot() {
             workspace: None,
             directory: None,
             hidden: false,
-            agent: None,
         },
         payload: Ok(ProviderPayload::Tasks(vec![r])),
     });

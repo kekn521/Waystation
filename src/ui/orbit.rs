@@ -66,7 +66,7 @@ pub fn place(count: usize, rings: usize) -> Vec<(usize, f64)> {
         })
         .collect()
 }
-/// "● running", "◌ saved" and so on, as the moons and the preview show it.
+/// "● running", "◌ saved" and so on, as a moon's label shows it.
 pub fn status_label(status: &AgentStatus) -> String {
     let (symbol, _) = moon_look(status);
     let word = match status {
@@ -235,7 +235,6 @@ fn system(app: &App, path: &Path, w: u16, h: u16, t: Duration) -> Scene {
             color,
         });
     }
-    let previewed = app.orbit.level.agent();
     let focus = app.orbit.focus.min(moons.len().saturating_sub(1));
     for (j, (session, (ring, offset))) in moons
         .iter()
@@ -254,11 +253,7 @@ fn system(app: &App, path: &Path, w: u16, h: u16, t: Duration) -> Scene {
             focused: j == focus && app.pane == 0,
             label: (j == focus)
                 .then(|| format!("{} · {}", session.name, status_label(&session.status))),
-            action: Some(if previewed == Some(session.id) {
-                Action::OrbitAttach(session.id)
-            } else {
-                Action::OrbitEnter(Level::Moon(path.to_path_buf(), session.id))
-            }),
+            action: Some(Action::OrbitAttach(session.id)),
         });
     }
     scene.bodies.push(Body {
@@ -341,7 +336,7 @@ pub fn scene(app: &App, w: u16, h: u16) -> Scene {
     match (zoom, &app.orbit.level) {
         (Some((path, z)), _) if app.orbit.animating(t) => zooming(app, path, z, w, h, t),
         (_, Level::Galaxy) => galaxy(app, w, h, t),
-        (_, Level::Workspace(p) | Level::Moon(p, _)) => system(app, p, w, h, t),
+        (_, Level::Workspace(p)) => system(app, p, w, h, t),
     }
 }
 

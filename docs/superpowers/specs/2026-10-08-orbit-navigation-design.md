@@ -4,6 +4,11 @@ Status: direction chosen 2026-10-08 (planets are recent + pinned workspaces, moo
 agents, a moon shows a live read-only preview and Enter attaches, the orbit pane grows when
 zoomed). Section approvals waived by the user.
 
+Revised 2026-10-08 after first use: the moon preview and the Moon level are gone. Highlighting
+a moon only labels it; Enter or a click opens that agent full screen, and returning lands on
+the zoomed system with the same moon highlighted. Sections below that describe the preview
+are superseded.
+
 ## Goal
 
 The Overview's decorative orbit becomes a way to move around Waystation:

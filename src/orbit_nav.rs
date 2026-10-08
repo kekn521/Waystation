@@ -1,11 +1,11 @@
-//! Where the Overview's orbit is looking: the galaxy of workspaces, one workspace with its
-//! agents as moons, or one agent's preview. Levels hold identities, not indices, so provider
+//! Where the Overview's orbit is looking: the galaxy of workspaces, or one workspace with its
+//! agents as moons. Levels and the highlighted moon are identities, not indices, so provider
 //! refreshes cannot point them at the wrong body.
 
 use crate::{
     agents::AgentSession,
     app::{Action, App, Effect},
-    model::{Section, Snapshot},
+    model::Section,
     providers::projects::Workspace,
 };
 use std::{
@@ -23,19 +23,12 @@ pub const MAX_PLANETS: usize = 6;
 pub enum Level {
     Galaxy,
     Workspace(PathBuf),
-    Moon(PathBuf, Uuid),
 }
 impl Level {
     pub fn workspace(&self) -> Option<&Path> {
         match self {
             Self::Galaxy => None,
-            Self::Workspace(p) | Self::Moon(p, _) => Some(p),
-        }
-    }
-    pub fn agent(&self) -> Option<Uuid> {
-        match self {
-            Self::Moon(_, id) => Some(*id),
-            _ => None,
+            Self::Workspace(p) => Some(p),
         }
     }
 }
@@ -50,6 +43,8 @@ pub struct OrbitView {
     pub level: Level,
     /// The focused body at this level: a planet in the galaxy, a moon otherwise.
     pub focus: usize,
+    /// The highlighted moon, so `focus` can be found again when the agents change.
+    pub moon: Option<Uuid>,
     pub transition: Option<Transition>,
 }
 impl Default for OrbitView {
@@ -57,6 +52,7 @@ impl Default for OrbitView {
         Self {
             level: Level::Galaxy,
             focus: 0,
+            moon: None,
             transition: None,
         }
     }
@@ -79,30 +75,12 @@ impl OrbitView {
     pub fn zoomed(&self) -> bool {
         self.level != Level::Galaxy
     }
-    /// Share of the orbit pane the moon system takes: all of it, or 40% beside a preview.
-    pub fn split(&self, now: Duration) -> f64 {
-        let share = |l: &Level| {
-            if matches!(l, Level::Moon(..)) {
-                0.4
-            } else {
-                1.0
-            }
-        };
-        let to = share(&self.level);
-        match &self.transition {
-            Some(t) if t.from.workspace().is_some() => {
-                let from = share(&t.from);
-                from + (to - from) * self.progress(now)
-            }
-            _ => to,
-        }
-    }
-    /// Move to `level`, animating only when the kind of view changes.
+    /// Zoom to `level` with `focus` on its bodies.
     fn go(&mut self, level: Level, focus: usize, now: Duration) {
         let from = std::mem::replace(&mut self.level, level);
-        self.transition = (std::mem::discriminant(&from) != std::mem::discriminant(&self.level))
-            .then_some(Transition { from, started: now });
+        self.transition = Some(Transition { from, started: now });
         self.focus = focus;
+        self.moon = None;
     }
 }
 
@@ -153,9 +131,6 @@ impl App {
             && self.confirmation.is_none()
             && self.detail.is_none()
     }
-    pub fn previewed_agent(&self) -> Option<Uuid> {
-        self.orbit.level.agent()
-    }
     fn orbit_count(&self) -> usize {
         match self.orbit.level.workspace() {
             None => self.planets().len(),
@@ -169,7 +144,7 @@ impl App {
                 self.pane = 0;
                 return Some(self.orbit_out());
             }
-            Action::OrbitAttach(id) => return Some(vec![Effect::AttachAgent(*id)]),
+            Action::OrbitAttach(id) => return Some(self.orbit_attach(*id)),
             _ => {}
         }
         if !self.orbit_focused() {
@@ -188,28 +163,35 @@ impl App {
             return vec![];
         }
         self.orbit.focus = (self.orbit.focus as isize + n).rem_euclid(count as isize) as usize;
-        if let Level::Moon(p, _) = &self.orbit.level {
-            let p = p.clone();
-            let id = self.moons(&p)[self.orbit.focus].id;
-            self.orbit.level = Level::Moon(p, id);
-            self.agent_preview = Some((id, Snapshot::default()));
-            return vec![Effect::Preview];
+        if let Some(p) = self.orbit.level.workspace() {
+            self.orbit.moon = Some(self.moons(p)[self.orbit.focus].id);
         }
         vec![]
     }
     fn orbit_activate(&mut self) -> Vec<Effect> {
-        let target = match &self.orbit.level {
+        match &self.orbit.level {
             Level::Galaxy => self
                 .planets()
                 .get(self.orbit.focus)
-                .map(|w| Level::Workspace(w.id.clone())),
+                .map(|w| Level::Workspace(w.id.clone()))
+                .map(|l| self.orbit_enter(l))
+                .unwrap_or_default(),
             Level::Workspace(p) => self
                 .moons(p)
                 .get(self.orbit.focus)
-                .map(|s| Level::Moon(p.clone(), s.id)),
-            Level::Moon(_, id) => return vec![Effect::AttachAgent(*id)],
-        };
-        target.map(|l| self.orbit_enter(l)).unwrap_or_default()
+                .map(|s| s.id)
+                .map(|id| self.orbit_attach(id))
+                .unwrap_or_default(),
+        }
+    }
+    /// Open an agent full screen, highlighting its moon so returning lands on it.
+    fn orbit_attach(&mut self, id: Uuid) -> Vec<Effect> {
+        self.pane = 0;
+        if self.orbit.zoomed() {
+            self.orbit.moon = Some(id);
+            self.reconcile_orbit();
+        }
+        vec![Effect::AttachAgent(id)]
     }
     fn orbit_enter(&mut self, level: Level) -> Vec<Effect> {
         self.pane = 0;
@@ -217,75 +199,57 @@ impl App {
         match &level {
             Level::Galaxy => self.orbit_out(),
             Level::Workspace(p) => {
+                if self.orbit.level == level {
+                    return vec![];
+                }
                 let effects = if self.workspace() == Some(p.as_path()) {
                     vec![]
                 } else {
                     self.update(Action::SelectWorkspace(p.clone()))
                 };
                 self.orbit.go(level, 0, now);
-                self.agent_preview = None;
                 effects
-            }
-            Level::Moon(p, id) => {
-                let focus = self.moons(p).iter().position(|s| s.id == *id).unwrap_or(0);
-                self.agent_preview = Some((*id, Snapshot::default()));
-                self.orbit.go(level, focus, now);
-                vec![Effect::Preview]
             }
         }
     }
     fn orbit_out(&mut self) -> Vec<Effect> {
-        let now = self.animation_elapsed;
-        match self.orbit.level.clone() {
-            Level::Galaxy => {}
-            Level::Workspace(p) => {
-                let focus = self.planets().iter().position(|w| w.id == p).unwrap_or(0);
-                self.orbit.go(Level::Galaxy, focus, now);
-            }
-            Level::Moon(p, id) => {
-                let focus = self.moons(&p).iter().position(|s| s.id == id).unwrap_or(0);
-                self.orbit.go(Level::Workspace(p), focus, now);
-                self.agent_preview = None;
-            }
+        if let Level::Workspace(p) = self.orbit.level.clone() {
+            let focus = self.planets().iter().position(|w| w.id == p).unwrap_or(0);
+            self.orbit.go(Level::Galaxy, focus, self.animation_elapsed);
         }
         vec![]
     }
     /// After a refresh or a workspace change, fall back to the deepest level whose bodies
     /// still exist and still match the selected workspace.
     pub(crate) fn reconcile_orbit(&mut self) {
-        let fallback = match &self.orbit.level {
-            Level::Galaxy => None,
-            Level::Workspace(p) | Level::Moon(p, _)
-                if self.workspace() != Some(p.as_path())
-                    || !self.planets().iter().any(|w| w.id == *p) =>
-            {
-                Some(Level::Galaxy)
-            }
-            Level::Moon(p, id) if !self.moons(p).iter().any(|s| s.id == *id) => {
-                Some(Level::Workspace(p.clone()))
-            }
-            _ => None,
-        };
-        let fell_back = fallback.is_some();
-        if let Some(level) = fallback {
-            self.orbit.level = level;
+        let fell_back = matches!(&self.orbit.level, Level::Workspace(p)
+            if self.workspace() != Some(p.as_path())
+                || !self.planets().iter().any(|w| w.id == *p));
+        if fell_back {
+            self.orbit.level = Level::Galaxy;
             self.orbit.transition = None;
-            self.agent_preview = None;
+            self.orbit.moon = None;
         }
         // Focus is an index, so re-find it from identities whenever they are known: the
-        // open moon, or the selected planet after a fall back to the galaxy.
+        // highlighted moon, or the selected planet after a fall back to the galaxy.
         let found = match &self.orbit.level {
-            Level::Moon(p, id) => self.moons(p).iter().position(|s| s.id == *id),
+            Level::Workspace(p) => self
+                .orbit
+                .moon
+                .and_then(|id| self.moons(p).iter().position(|s| s.id == id)),
             Level::Galaxy if fell_back => {
                 let selected = self.workspace();
                 self.planets()
                     .iter()
                     .position(|w| Some(w.id.as_path()) == selected)
             }
-            _ => None,
+            Level::Galaxy => None,
         };
         self.orbit.focus = found
             .unwrap_or(self.orbit.focus)
             .min(self.orbit_count().saturating_sub(1));
+        if let Level::Workspace(p) = &self.orbit.level {
+            self.orbit.moon = self.moons(p).get(self.orbit.focus).map(|s| s.id);
+        }
     }
 }

@@ -244,7 +244,7 @@ expression: "snapshots.join(\"\\n\\n\")"
 │ │e editor · t shell · g Git · h Herdr · f files                            │ │
 ╰─│Connections: x stop tunnel                                                │─╯
 ╭ │Agents: n new · Enter open · r restart · x close                          │─╮
-│ │Orbit (Tab to it): ↑↓ choose · Enter zoom in or attach · Esc zoom out     │ │
+│ │Orbit (Tab to it): ↑↓ choose · Enter land or open agent · Esc zoom out    │ │
 │ │F12/Ctrl-\ back to Waystation · F9 agent status box                       │ │
 │ │. hidden files · y copy path · F5 refresh                                 │ │
 │ │q quit                                                                    │ │

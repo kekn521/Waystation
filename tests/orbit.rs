@@ -388,27 +388,13 @@ fn a_system_offers_its_moons_and_a_way_out() {
     a.orbit.transition = None;
     let (_, hits) = orbit_hits(&a, 70, 14, area);
     let has = |hits: &[HitRegion], f: &dyn Fn(&Action) -> bool| hits.iter().any(|h| f(&h.action));
-    assert!(has(
-        &hits,
-        &|x| matches!(x, Action::OrbitEnter(Level::Moon(_, id)) if *id == ma)
-    ));
-    assert!(has(
-        &hits,
-        &|x| matches!(x, Action::OrbitEnter(Level::Moon(_, id)) if *id == mb)
-    ));
+    for m in [ma, mb] {
+        assert!(
+            has(&hits, &|x| matches!(x, Action::OrbitAttach(id) if *id == m)),
+            "clicking a moon opens its agent"
+        );
+    }
     assert!(has(&hits, &|x| matches!(x, Action::OrbitOut)));
-
-    a.update(Action::OrbitEnter(Level::Moon(path("w1"), ma)));
-    a.orbit.transition = None;
-    let (_, hits) = orbit_hits(&a, 70, 14, area);
-    assert!(has(
-        &hits,
-        &|x| matches!(x, Action::OrbitAttach(id) if *id == ma)
-    ));
-    assert!(has(
-        &hits,
-        &|x| matches!(x, Action::OrbitEnter(Level::Moon(_, id)) if *id == mb)
-    ));
 
     let mut empty = planets();
     empty.update(Action::OrbitEnter(Level::Workspace(path("w0"))));
@@ -430,26 +416,9 @@ fn bodies_share_rings_evenly() {
 fn zoomed(level: Level) -> App {
     let mut a = planets();
     a.pane = 0;
-    a.update(Action::OrbitEnter(Level::Workspace(path("w1"))));
-    if let Level::Moon(..) = level {
-        a.update(Action::OrbitEnter(level));
-    }
+    a.update(Action::OrbitEnter(level));
     a.orbit.transition = None;
     a
-}
-fn hits_of(app: &App, width: u16, height: u16) -> Vec<HitRegion> {
-    let mut terminal = Terminal::new(TestBackend::new(width, height)).unwrap();
-    let mut hits = vec![];
-    terminal.draw(|f| hits = draw(f, app)).unwrap();
-    hits
-}
-#[test]
-fn preview_tail_keeps_the_last_lines_that_fit() {
-    use waystation::ui::preview::tail;
-    assert_eq!(tail("one\ntwo\nthree\n\n  \n", 10, 2), ["two", "three"]);
-    assert_eq!(tail("機器機器\nab\tc", 5, 5), ["機器", "ab c"]);
-    assert!(tail("", 10, 3).is_empty());
-    assert_eq!(tail("x\u{1b}[31my", 10, 1), ["x�[31my"]);
 }
 #[test]
 fn a_zoomed_orbit_takes_the_top_row() {
@@ -471,52 +440,15 @@ fn a_zoomed_orbit_takes_the_top_row() {
     assert!(label_pos(&rows, "Orbit · w1").1 < label_pos(&rows, "Machine pulse").1);
 }
 #[test]
-fn an_open_moon_shows_the_agents_screen_beside_the_system() {
-    use waystation::model::{Availability, Snapshot};
-    let mut a = planets();
-    let id = moon(&a, "a");
-    a = {
-        let mut z = zoomed(Level::Workspace(path("w1")));
-        z.agents = a.agents.clone();
-        z.update(Action::OrbitEnter(Level::Moon(path("w1"), id)));
-        z.orbit.transition = None;
-        z
-    };
-    a.agent_preview = Some((id, Snapshot::ready("one\ntwo".into(), 0)));
-    let text = screen(&a, 120, 38);
-    for want in ["two", "Enter attaches", "a · claude · ● running"] {
-        assert!(text.contains(want), "missing {want:?}");
-    }
-    assert!(
-        hits_of(&a, 120, 38)
-            .iter()
-            .any(|h| matches!(h.action, Action::OrbitAttach(x) if x == id))
-    );
-    let rows = rows_of(&a, 120, 38);
-    assert!(
-        label_pos(&rows, "two").0 > 120 / 3,
-        "the preview sits right of the moons"
-    );
-
-    a.agent_preview.as_mut().unwrap().1.availability = Availability::Failed("gone".into());
-    assert!(screen(&a, 120, 38).contains("stale"));
-    a.agent_preview = Some((id, Snapshot::default()));
-    assert!(screen(&a, 120, 38).contains("Connecting"));
-    a.agents
-        .iter_mut()
-        .for_each(|s| s.status = AgentStatus::Saved);
-    assert!(screen(&a, 120, 38).contains("Saved conversation"));
-}
-#[test]
-fn the_preview_waits_for_the_zoom_to_settle() {
-    use waystation::model::Snapshot;
+fn a_highlighted_moon_shows_no_preview() {
     let mut a = zoomed(Level::Workspace(path("w1")));
-    let id = moon(&a, "a");
-    a.update(Action::OrbitEnter(Level::Moon(path("w1"), id)));
-    a.agent_preview = Some((id, Snapshot::ready("one\ntwo".into(), 0)));
-    assert!(!screen(&a, 120, 38).contains("Enter attaches"));
-    a.animation_elapsed += TRANSITION;
-    assert!(screen(&a, 120, 38).contains("Enter attaches"));
+    a.update(Action::Move(1));
+    let text = screen(&a, 120, 38);
+    assert!(!text.contains("Enter attaches") && !text.contains("Connecting"));
+    assert!(
+        footer(&a, 120, 38).contains("Enter open"),
+        "Enter opens the agent full screen"
+    );
 }
 #[test]
 fn a_narrow_orbit_zooms_in_place() {

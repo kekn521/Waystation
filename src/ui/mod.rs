@@ -6,7 +6,6 @@ pub mod forms;
 pub mod layout;
 pub mod orbit;
 pub mod overlay;
-pub mod preview;
 pub mod services;
 pub mod system;
 pub mod theme;
@@ -375,18 +374,18 @@ pub fn draw(frame: &mut Frame, app: &App) -> Vec<HitRegion> {
         ));
     } else if app.section == Section::Overview {
         if narrow {
-            hits.extend(render_pane(frame, parts[2], app, app.pane, narrow));
+            hits.extend(render_pane(frame, parts[2], app, app.pane));
         } else if app.orbit.zoomed() {
             // The zoomed orbit takes the top row; the Workspaces pane gives way to it.
             let rows = Layout::vertical([Constraint::Percentage(50), Constraint::Percentage(50)])
                 .spacing(1)
                 .split(parts[2]);
-            hits.extend(render_pane(frame, rows[0], app, 0, narrow));
+            hits.extend(render_pane(frame, rows[0], app, 0));
             let cols = Layout::horizontal([Constraint::Percentage(50), Constraint::Percentage(50)])
                 .spacing(1)
                 .split(rows[1]);
-            hits.extend(render_pane(frame, cols[0], app, 2, narrow));
-            hits.extend(render_pane(frame, cols[1], app, 3, narrow));
+            hits.extend(render_pane(frame, cols[0], app, 2));
+            hits.extend(render_pane(frame, cols[1], app, 3));
         } else {
             let cols = Layout::horizontal([Constraint::Percentage(50), Constraint::Percentage(50)])
                 .spacing(1)
@@ -397,7 +396,7 @@ pub fn draw(frame: &mut Frame, app: &App) -> Vec<HitRegion> {
                         .spacing(1)
                         .split(*col);
                 for (r, pane) in panes.iter().enumerate() {
-                    hits.extend(render_pane(frame, *pane, app, r * 2 + c, narrow));
+                    hits.extend(render_pane(frame, *pane, app, r * 2 + c));
                 }
             }
         }
@@ -422,10 +421,7 @@ pub fn draw(frame: &mut Frame, app: &App) -> Vec<HitRegion> {
                 " ↑↓ planets · Enter land · Tab pane · / search · ? help · q quit"
             }
             crate::orbit_nav::Level::Workspace(_) => {
-                " ↑↓ moons · Enter preview · n new · Esc out · ? help · q quit"
-            }
-            crate::orbit_nav::Level::Moon(..) => {
-                " ↑↓ moons · Enter attach · n new · Esc out · ? help · q quit"
+                " ↑↓ moons · Enter open · n new · Esc out · ? help · q quit"
             }
         }
     } else if narrow {
@@ -505,7 +501,7 @@ pub fn draw(frame: &mut Frame, app: &App) -> Vec<HitRegion> {
             13.min(area.height - 4),
         );
         frame.render_widget(Clear, rect);
-        frame.render_widget(Paragraph::new("1–8 sections · j/k or arrows move · Tab focus pane\n/ search commands · Enter activate · Esc close\ne editor · t shell · g Git · h Herdr · f files\nConnections: x stop tunnel\nAgents: n new · Enter open · r restart · x close\nOrbit (Tab to it): ↑↓ choose · Enter zoom in or attach · Esc zoom out\nF12/Ctrl-\\ back to Waystation · F9 agent status box\n. hidden files · y copy path · F5 refresh\nq quit").block(panel("Keyboard shortcuts · Esc close",true)).wrap(Wrap{trim:true}),rect);
+        frame.render_widget(Paragraph::new("1–8 sections · j/k or arrows move · Tab focus pane\n/ search commands · Enter activate · Esc close\ne editor · t shell · g Git · h Herdr · f files\nConnections: x stop tunnel\nAgents: n new · Enter open · r restart · x close\nOrbit (Tab to it): ↑↓ choose · Enter land or open agent · Esc zoom out\nF12/Ctrl-\\ back to Waystation · F9 agent status box\n. hidden files · y copy path · F5 refresh\nq quit").block(panel("Keyboard shortcuts · Esc close",true)).wrap(Wrap{trim:true}),rect);
         hits.clear();
     }
     if app.form.is_some() {
@@ -523,42 +519,14 @@ pub fn draw(frame: &mut Frame, app: &App) -> Vec<HitRegion> {
     }
     hits
 }
-fn render_pane(
-    frame: &mut Frame,
-    area: Rect,
-    app: &App,
-    index: usize,
-    narrow: bool,
-) -> Vec<HitRegion> {
+fn render_pane(frame: &mut Frame, area: Rect, app: &App, index: usize) -> Vec<HitRegion> {
     match index {
         0 => {
             let title = orbit_title(app);
             let block = panel(&title, app.pane == 0);
             let inner = block.inner(area);
             frame.render_widget(block, area);
-            // An open moon shares the pane with its preview, side by side or stacked.
-            let share = app.orbit.split(app.animation_elapsed);
-            let (system, preview) = if share >= 1.0 {
-                (inner, None)
-            } else if narrow {
-                let height = (f64::from(inner.height) * share).round() as u16;
-                let [top, bottom] =
-                    Layout::vertical([Constraint::Length(height), Constraint::Min(0)]).areas(inner);
-                (top, Some(bottom))
-            } else {
-                let width = (f64::from(inner.width) * share).round() as u16;
-                let [left, right] =
-                    Layout::horizontal([Constraint::Length(width), Constraint::Min(0)])
-                        .areas(inner);
-                (left, Some(right))
-            };
-            let mut hits = orbit::render(frame, system, app);
-            if let Some(area) = preview
-                && !app.orbit.animating(app.animation_elapsed)
-            {
-                hits.extend(preview::render(frame, area, app));
-            }
-            hits
+            orbit::render(frame, inner, app)
         }
         1 => workspaces::render(frame, area, app),
         2 => system::render(frame, area, app),
@@ -579,12 +547,9 @@ fn orbit_title(app: &App) -> String {
         Level::Galaxy if focused => "Orbit · ↑↓ planets · Enter land".into(),
         Level::Galaxy => "Orbit".into(),
         Level::Workspace(p) if focused => format!(
-            "Orbit · {} · ↑↓ moons · Enter preview · n new · Esc out",
+            "Orbit · {} · ↑↓ moons · Enter open · n new · Esc out",
             name(p)
         ),
-        Level::Moon(p, _) if focused => {
-            format!("Orbit · {} · ↑↓ moons · Enter attach · Esc out", name(p))
-        }
-        Level::Workspace(p) | Level::Moon(p, _) => format!("Orbit · {}", name(p)),
+        Level::Workspace(p) => format!("Orbit · {}", name(p)),
     }
 }

@@ -36,7 +36,7 @@ fn tunnel_action_uses_selected_workspace_and_lands_on_connections() {
     assert!(app.runs.is_empty(), "an effect alone must not record a run");
 }
 #[test]
-fn overview_focus_activates_matching_panel_and_the_orbit_pane_is_inert() {
+fn overview_focus_activates_matching_panel_and_an_empty_orbit_is_inert() {
     let mut a = App::new(Config::default(), AppState::default());
     assert_eq!(a.pane, 1, "default pane is Workspaces");
     a.update(Action::FocusNext);
@@ -44,7 +44,8 @@ fn overview_focus_activates_matching_panel_and_the_orbit_pane_is_inert() {
     assert!(
         matches!(a.update(Action::Activate).first(),Some(Effect::Foreground(Action::Tool(t)))if t=="htop")
     );
-    // Tab cycles all four panes; the orbit pane owns no actions.
+    // Tab cycles all four panes; the orbit pane has no section items, and with no
+    // planets Enter has nothing to land on.
     a.update(Action::FocusNext);
     assert_eq!(a.pane, 3);
     a.update(Action::FocusNext);
@@ -211,6 +212,7 @@ fn quit_waits_until_new_run_is_in_a_snapshot() {
             workspace: None,
             directory: None,
             hidden: false,
+            agent: None,
         },
         payload: Ok(ProviderPayload::Tasks(vec![])),
     });
@@ -222,6 +224,7 @@ fn quit_waits_until_new_run_is_in_a_snapshot() {
             workspace: None,
             directory: None,
             hidden: false,
+            agent: None,
         },
         payload: Ok(ProviderPayload::Tasks(vec![r])),
     });

@@ -61,6 +61,12 @@ pub enum Action {
     QuitKeep,
     QuitStop,
     ConfirmChoice(usize),
+    /// Zoom the orbit to a level: a planet's system or a moon's preview.
+    OrbitEnter(crate::orbit_nav::Level),
+    /// Zoom the orbit out one level.
+    OrbitOut,
+    /// Attach the previewed agent, returning to the orbit afterwards.
+    OrbitAttach(uuid::Uuid),
 }
 #[derive(Clone, Debug)]
 pub enum Effect {
@@ -83,6 +89,8 @@ pub enum Effect {
     StopAllAndQuit(Vec<uuid::Uuid>),
     Quit,
     Refresh,
+    /// Capture the previewed agent's screen now.
+    Preview,
 }
 #[derive(Clone, Debug)]
 pub struct HitRegion {
@@ -104,6 +112,12 @@ pub struct App {
     pub overlay_visible: bool,
     pub form: Option<crate::forms::Form>,
     pinned_paths: std::collections::HashSet<PathBuf>,
+    /// Canonical pinned projects in config order.
+    pub(crate) pinned: Vec<PathBuf>,
+    /// Where the Overview's orbit is looking.
+    pub orbit: crate::orbit_nav::OrbitView,
+    /// The open moon's latest screen, keyed by agent so late captures can be told apart.
+    pub agent_preview: Option<(uuid::Uuid, Snapshot<String>)>,
     pub pending_starts: std::collections::HashSet<uuid::Uuid>,
     pub runs: Vec<crate::tasks::RunRecord>,
     pub confirmation: Option<Confirmation>,
@@ -135,11 +149,12 @@ pub struct App {
 }
 impl App {
     pub fn new(config: Config, state: AppState) -> Self {
-        let pinned_paths = config
+        let pinned = config
             .pinned_projects
             .iter()
             .map(|p| p.canonicalize().unwrap_or_else(|_| p.clone()))
-            .collect();
+            .collect::<Vec<_>>();
+        let pinned_paths = pinned.iter().cloned().collect();
         Self {
             animation_elapsed: std::time::Duration::ZERO,
             agents: vec![],
@@ -147,6 +162,9 @@ impl App {
             overlay_visible: true,
             form: None,
             pinned_paths,
+            pinned,
+            orbit: Default::default(),
+            agent_preview: None,
             pending_starts: Default::default(),
             runs: vec![],
             confirmation: None,
@@ -246,6 +264,13 @@ impl App {
                     }
                     ProviderPayload::Aliases(a) => self.aliases = a,
                     ProviderPayload::Sessions(s) => self.sessions = s,
+                    ProviderPayload::AgentPreview(id, text) => {
+                        if let Some((current, snapshot)) = &mut self.agent_preview
+                            && *current == id
+                        {
+                            *snapshot = Snapshot::ready(text, self.generation);
+                        }
+                    }
                 }
             }
             Err(e) => {
@@ -255,8 +280,17 @@ impl App {
                 if event.request.id == ProviderId::System {
                     self.system.availability = crate::model::Availability::Failed(e.clone())
                 }
+                if event.request.id == ProviderId::AgentPreview
+                    && let Some((current, snapshot)) = &mut self.agent_preview
+                    && Some(*current) == event.request.agent
+                {
+                    snapshot.availability = crate::model::Availability::Failed(e.clone());
+                }
                 self.provider_errors.insert(key, e);
             }
+        }
+        if matches!(event.request.id, ProviderId::Agents | ProviderId::Projects) {
+            self.reconcile_orbit();
         }
         if let Some(key) = selected {
             if let Some(index) = self
@@ -505,6 +539,9 @@ impl App {
         if let Some(e) = self.task_action(&action) {
             return e;
         }
+        if let Some(e) = self.orbit_action(&action) {
+            return e;
+        }
         if self.confirmation.is_some() {
             match action {
                 Action::Move(n) => {
@@ -569,6 +606,10 @@ impl App {
             Action::Help => self.help = !self.help,
             Action::FocusNext => {
                 self.pane = (self.pane + 1) % 4;
+                // The Workspaces pane gives way to the zoomed orbit.
+                if self.pane == 1 && self.orbit.zoomed() {
+                    self.pane = 2;
+                }
                 self.selection = 0;
             }
             Action::Move(n) => {
@@ -597,6 +638,7 @@ impl App {
                     .position(|w| Some(&w.id) == self.state.selected_workspace.as_ref())
                     .unwrap_or(0);
                 self.searching = false;
+                self.reconcile_orbit();
                 return vec![Effect::Refresh];
             }
             Action::Project(i) => {

@@ -29,6 +29,8 @@ pub enum ProviderId {
     Services,
     Tasks,
     Usage,
+    /// The open moon's screen; needs `ProviderRequest::agent`.
+    AgentPreview,
 }
 #[derive(Clone, Debug)]
 pub struct ProviderRequest {
@@ -37,6 +39,7 @@ pub struct ProviderRequest {
     pub workspace: Option<PathBuf>,
     pub directory: Option<PathBuf>,
     pub hidden: bool,
+    pub agent: Option<uuid::Uuid>,
 }
 #[derive(Debug)]
 pub enum ProviderPayload {
@@ -50,6 +53,7 @@ pub enum ProviderPayload {
     Aliases(Vec<String>),
     Sessions(Vec<(String, String, PathBuf)>),
     Usage(Box<crate::usage::Usage>),
+    AgentPreview(uuid::Uuid, String),
 }
 #[derive(Debug)]
 pub struct ProviderEvent {
@@ -128,6 +132,13 @@ impl WorkerPool {
                     ProviderId::Agents => ProviderPayload::Agents(
                         crate::agents::AgentManager::new(state.clone()).list()?,
                     ),
+                    ProviderId::AgentPreview => {
+                        let id = r.agent.ok_or_else(|| anyhow::anyhow!("No agent to preview"))?;
+                        ProviderPayload::AgentPreview(
+                            id,
+                            crate::agents::AgentManager::new(state.clone()).capture_screen(id)?,
+                        )
+                    }
                     ProviderId::Tasks => ProviderPayload::Tasks(
                         crate::tasks::TaskManager::new(state.clone()).list()?,
                     ),

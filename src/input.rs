@@ -92,7 +92,12 @@ pub fn translate(event: Event, app: &App) -> Option<Action> {
                 KeyCode::Char('h') => Action::Herdr,
                 KeyCode::Char('f') => Action::Files,
                 KeyCode::Char('x') => Action::Stop,
-                KeyCode::Char('n') if app.section == Section::Agents => Action::NewAgent,
+                KeyCode::Char('n')
+                    if app.section == Section::Agents
+                        || (app.orbit_focused() && app.orbit.zoomed()) =>
+                {
+                    Action::NewAgent
+                }
                 KeyCode::Char('r') if app.section == Section::Agents => Action::RestartAgent,
                 KeyCode::Char('.') => Action::Hidden,
                 KeyCode::Char('y') => Action::Copy,

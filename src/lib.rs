@@ -2,6 +2,7 @@ pub mod app;
 pub mod config;
 pub mod input;
 pub mod model;
+pub mod orbit_nav;
 pub mod providers;
 pub mod runtime;
 pub mod search;

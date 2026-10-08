@@ -50,6 +50,7 @@ fn file_refresh_keeps_selected_path() {
             workspace: None,
             directory: Some("/tmp".into()),
             hidden: false,
+            agent: None,
         },
         payload: Ok(ProviderPayload::Files(vec![f("a"), f("b"), f("c")])),
     });

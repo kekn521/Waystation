@@ -174,6 +174,13 @@ fn main() -> Result<()> {
                 &pool,
                 waystation::runtime::workers::ProviderId::Agents,
             );
+            if app.previewed_agent().is_some() {
+                submit(
+                    &app,
+                    &pool,
+                    waystation::runtime::workers::ProviderId::AgentPreview,
+                );
+            }
             last_fast = std::time::Instant::now();
         }
         if last_slow.elapsed() >= Duration::from_secs(5) {
@@ -200,6 +207,11 @@ fn main() -> Result<()> {
             for effect in effects {
                 match effect {
                     Effect::Refresh => refresh(&app, &pool),
+                    Effect::Preview => submit(
+                        &app,
+                        &pool,
+                        waystation::runtime::workers::ProviderId::AgentPreview,
+                    ),
                     Effect::Foreground(action) => {
                         let cwd = if matches!(action, waystation::app::Action::Shell)
                             && app.section == waystation::model::Section::Files
@@ -261,6 +273,7 @@ fn submit(
         workspace: app.state.selected_workspace.clone(),
         directory: app.file_dir.clone(),
         hidden: app.hidden,
+        agent: app.previewed_agent(),
     });
 }
 fn refresh(app: &App, pool: &waystation::runtime::workers::WorkerPool) {

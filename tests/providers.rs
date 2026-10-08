@@ -56,6 +56,7 @@ fn slow_provider_does_not_block_keys_and_late_result_is_discarded() {
         workspace: None,
         directory: None,
         hidden: false,
+        agent: None,
     });
     app.update(Action::SelectWorkspace("/tmp/new".into()));
     app.update(Action::Search);

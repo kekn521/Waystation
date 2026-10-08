@@ -8,7 +8,8 @@
 
 Waystation brings project workspaces, persistent AI agent sessions, system
 status, services, and SSH tunnels into one keyboard-driven Linux dashboard.
-The overview has a little orbiting solar system, too.
+The overview's orbiting solar system doubles as a map: planets are your
+workspaces and moons are the agents working in them.
 
 ![Waystation overview with orbit, workspaces, system metrics, and services](artifacts/waystation-overview.png)
 
@@ -68,7 +69,7 @@ sessions require `tmux`; other optional tools are described below.
 | `Tab` | Switch the focused overview pane |
 | `Enter` | Open the selected item |
 | `e` / `t` / `g` / `h` / `f` | Editor, shell, Git UI, Herdr, or files for the workspace |
-| `n` | Create a session in Agents |
+| `n` | Create a session in Agents, or in the workspace the orbit is zoomed into |
 | `F12` or `Ctrl-\` | Return to Waystation from an agent session |
 | `F9` | Hide or show the agent status box while in an agent, editor or shell |
 | `?` | Show all shortcuts |
@@ -77,6 +78,21 @@ sessions require `tmux`; other optional tools are described below.
 The overview shows orbiting planets, workspaces, machine status, and services
 in four panes. On smaller terminals it shows the focused pane; use `Tab` to
 move between them.
+
+### The orbit
+
+The planets circling the star are your pinned and recent workspaces (up to six),
+and each planet's moons are its agent sessions. `Tab` to the orbit, or click it:
+
+- `↑`/`↓` (or `j`/`k`) pick a planet, and `Enter` lands on it. It becomes the
+  selected workspace, and the view zooms in on it and its moons.
+- Pick a moon and press `Enter` to see a live, read-only view of that agent's
+  screen beside it. `Enter` again (or a click) opens the agent; `F12` or
+  `Ctrl-\` brings you back to the same moon.
+- `n` starts a new agent in the workspace you're zoomed into, and `Esc` zooms
+  out one level.
+
+Clicking a planet or moon does the same as selecting it and pressing `Enter`.
 
 ### Agent sessions
 

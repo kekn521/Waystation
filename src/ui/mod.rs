@@ -538,7 +538,8 @@ fn render_pane(
             } else {
                 let width = (f64::from(inner.width) * share).round() as u16;
                 let [left, right] =
-                    Layout::horizontal([Constraint::Length(width), Constraint::Min(0)]).areas(inner);
+                    Layout::horizontal([Constraint::Length(width), Constraint::Min(0)])
+                        .areas(inner);
                 (left, Some(right))
             };
             let mut hits = orbit::render(frame, system, app);

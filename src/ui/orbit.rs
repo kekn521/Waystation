@@ -99,6 +99,26 @@ fn clock(t: Duration) -> f64 {
 fn orbit_point(cx: f64, cy: f64, rx: f64, ry: f64, angle: f64) -> (f64, f64) {
     (cx + rx * angle.cos(), cy + ry * angle.sin())
 }
+/// ` label ` padded for the sky, cut with `…` to at most `room` columns.
+fn fit(label: &str, room: usize) -> String {
+    let full = format!(" {label} ");
+    if full.width() <= room {
+        return full;
+    }
+    let mut used = 0;
+    let cut = label
+        .chars()
+        .take_while(|c| {
+            used += unicode_width::UnicodeWidthChar::width(*c).unwrap_or(0);
+            used + 3 <= room
+        })
+        .collect::<String>();
+    if cut.is_empty() {
+        String::new()
+    } else {
+        format!(" {cut}… ")
+    }
+}
 fn plural(n: usize) -> String {
     if n == 1 {
         "1 agent".into()
@@ -291,10 +311,7 @@ fn zooming(app: &App, path: &Path, z: f64, w: u16, h: u16, t: Duration) -> Scene
     let scale = 1.0 + (ZOOM - 1.0) * z;
     // Where the planet is drawn, and the camera focus that puts it there.
     let screen = (px + (cx - px) * z, py + (cy - py) * z);
-    let focus = (
-        px - (screen.0 - cx) / scale,
-        py - (screen.1 - cy) / scale,
-    );
+    let focus = (px - (screen.0 - cx) / scale, py - (screen.1 - cy) / scale);
     let mut scene = through(sky, (cx, cy), focus, scale);
     let grow = ((z - 2.0 / 3.0) * 3.0).clamp(0.0, 1.0);
     if grow > 0.0 {
@@ -392,20 +409,24 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) -> Vec<HitRegion> {
         if body.focused {
             painted.set_bg(SELECT).modifier.insert(Modifier::BOLD);
         }
-        let mut target = Rect::new(at.0.saturating_sub(1).max(area.x), at.1, 3, 1).intersection(area);
+        let mut target =
+            Rect::new(at.0.saturating_sub(1).max(area.x), at.1, 3, 1).intersection(area);
         if let Some(label) = &body.label {
-            let text = format!(" {} ", super::safe(label).replace(['\n', '\t'], " "));
+            // Right of the body when it fits, else on the roomier side, shortened if need be;
+            // never over the body itself.
+            let right = i32::from(area.width) - (x + 1);
+            let text = fit(
+                &super::safe(label).replace(['\n', '\t'], " "),
+                right.max(x) as usize,
+            );
             let width = text.width() as i32;
-            // Right of the body when it fits, otherwise to its left.
-            let start = if x + 1 + width <= i32::from(area.width) {
-                x + 1
-            } else {
-                (x - width).max(0)
-            };
-            let start = area.x + start as u16;
-            let span = Rect::new(start, at.1, (width as u16).min(area.right() - start), 1);
-            target = target.union(span);
-            labels.push((span, text));
+            let start = if width <= right { x + 1 } else { x - width };
+            if width > 0 {
+                let start = area.x + start as u16;
+                let span = Rect::new(start, at.1, (width as u16).min(area.right() - start), 1);
+                target = target.union(span);
+                labels.push((span, text));
+            }
         }
         if settled && let Some(action) = &body.action {
             hits.push(HitRegion {

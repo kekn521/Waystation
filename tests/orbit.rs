@@ -6,8 +6,8 @@ use ratatui::{
     style::{Color, Stylize},
     widgets::Block,
 };
-use std::time::Duration;
 use std::path::PathBuf;
+use std::time::Duration;
 use uuid::Uuid;
 use waystation::{
     agents::{AgentSession, AgentStatus},
@@ -337,7 +337,9 @@ fn the_focused_label_is_never_clipped() {
         a.animation_elapsed = Duration::from_secs(second);
         let (buffer, _) = orbit_hits(&a, 40, 10, Rect::new(0, 0, 40, 10));
         assert!(
-            text_of(&buffer).iter().any(|row| row.contains("w2 · 0 agents")),
+            text_of(&buffer)
+                .iter()
+                .any(|row| row.contains("w2 · 0 agents")),
             "label clipped at {second}s:\n{}",
             text_of(&buffer).join("\n")
         );
@@ -346,7 +348,11 @@ fn the_focused_label_is_never_clipped() {
 #[test]
 fn an_empty_galaxy_explains_itself() {
     let (buffer, hits) = orbit_hits(&app(), 60, 12, Rect::new(0, 0, 60, 12));
-    assert!(text_of(&buffer).join("").contains("Pin or open a workspace"));
+    assert!(
+        text_of(&buffer)
+            .join("")
+            .contains("Pin or open a workspace")
+    );
     assert!(text_of(&buffer).join("").contains('✦'));
     assert!(hits.is_empty());
 }
@@ -357,7 +363,10 @@ fn zooming_starts_from_the_galaxy_and_ends_on_the_system() {
     a.animation_elapsed = Duration::from_secs(10);
     a.update(Action::OrbitEnter(Level::Workspace(path("w1"))));
     let start = orbit_hits(&a, 70, 14, area);
-    assert!(text_of(&start.0).join("").contains('✦'), "the zoom starts at the star");
+    assert!(
+        text_of(&start.0).join("").contains('✦'),
+        "the zoom starts at the star"
+    );
     assert!(start.1.is_empty(), "no click targets while bodies fly");
 
     a.animation_elapsed += TRANSITION;
@@ -365,7 +374,10 @@ fn zooming_starts_from_the_galaxy_and_ends_on_the_system() {
     a.orbit.transition = None;
     assert_eq!(end, orbit_hits(&a, 70, 14, area).0);
     assert_ne!(start.0, end);
-    assert!(!text_of(&end).join("").contains('✦'), "the star is out of sight");
+    assert!(
+        !text_of(&end).join("").contains('✦'),
+        "the star is out of sight"
+    );
 }
 #[test]
 fn a_system_offers_its_moons_and_a_way_out() {
@@ -376,15 +388,27 @@ fn a_system_offers_its_moons_and_a_way_out() {
     a.orbit.transition = None;
     let (_, hits) = orbit_hits(&a, 70, 14, area);
     let has = |hits: &[HitRegion], f: &dyn Fn(&Action) -> bool| hits.iter().any(|h| f(&h.action));
-    assert!(has(&hits, &|x| matches!(x, Action::OrbitEnter(Level::Moon(_, id)) if *id == ma)));
-    assert!(has(&hits, &|x| matches!(x, Action::OrbitEnter(Level::Moon(_, id)) if *id == mb)));
+    assert!(has(
+        &hits,
+        &|x| matches!(x, Action::OrbitEnter(Level::Moon(_, id)) if *id == ma)
+    ));
+    assert!(has(
+        &hits,
+        &|x| matches!(x, Action::OrbitEnter(Level::Moon(_, id)) if *id == mb)
+    ));
     assert!(has(&hits, &|x| matches!(x, Action::OrbitOut)));
 
     a.update(Action::OrbitEnter(Level::Moon(path("w1"), ma)));
     a.orbit.transition = None;
     let (_, hits) = orbit_hits(&a, 70, 14, area);
-    assert!(has(&hits, &|x| matches!(x, Action::OrbitAttach(id) if *id == ma)));
-    assert!(has(&hits, &|x| matches!(x, Action::OrbitEnter(Level::Moon(_, id)) if *id == mb)));
+    assert!(has(
+        &hits,
+        &|x| matches!(x, Action::OrbitAttach(id) if *id == ma)
+    ));
+    assert!(has(
+        &hits,
+        &|x| matches!(x, Action::OrbitEnter(Level::Moon(_, id)) if *id == mb)
+    ));
 
     let mut empty = planets();
     empty.update(Action::OrbitEnter(Level::Workspace(path("w0"))));
@@ -395,7 +419,10 @@ fn a_system_offers_its_moons_and_a_way_out() {
 #[test]
 fn bodies_share_rings_evenly() {
     let placed = orbit::place(5, 3);
-    assert_eq!(placed.iter().map(|p| p.0).collect::<Vec<_>>(), [0, 1, 2, 0, 1]);
+    assert_eq!(
+        placed.iter().map(|p| p.0).collect::<Vec<_>>(),
+        [0, 1, 2, 0, 1]
+    );
     assert_eq!(placed[0].1, 0.0);
     assert!((placed[3].1 - std::f64::consts::PI).abs() < 1e-9);
     assert_eq!(placed[2].1, 0.0, "a body alone on its ring");
@@ -428,8 +455,16 @@ fn preview_tail_keeps_the_last_lines_that_fit() {
 fn a_zoomed_orbit_takes_the_top_row() {
     let a = zoomed(Level::Workspace(path("w1")));
     let text = screen(&a, 120, 38);
-    assert!(!text.contains("Continue working"), "the Workspaces pane gives way");
-    for want in ["Machine pulse", "Services & ports", "Orbit · w1", "a · ● running"] {
+    assert!(
+        !text.contains("Continue working"),
+        "the Workspaces pane gives way"
+    );
+    for want in [
+        "Machine pulse",
+        "Services & ports",
+        "Orbit · w1",
+        "a · ● running",
+    ] {
         assert!(text.contains(want), "missing {want:?}");
     }
     let rows = rows_of(&a, 120, 38);
@@ -458,13 +493,18 @@ fn an_open_moon_shows_the_agents_screen_beside_the_system() {
             .any(|h| matches!(h.action, Action::OrbitAttach(x) if x == id))
     );
     let rows = rows_of(&a, 120, 38);
-    assert!(label_pos(&rows, "two").0 > 120 / 3, "the preview sits right of the moons");
+    assert!(
+        label_pos(&rows, "two").0 > 120 / 3,
+        "the preview sits right of the moons"
+    );
 
     a.agent_preview.as_mut().unwrap().1.availability = Availability::Failed("gone".into());
     assert!(screen(&a, 120, 38).contains("stale"));
     a.agent_preview = Some((id, Snapshot::default()));
     assert!(screen(&a, 120, 38).contains("Connecting"));
-    a.agents.iter_mut().for_each(|s| s.status = AgentStatus::Saved);
+    a.agents
+        .iter_mut()
+        .for_each(|s| s.status = AgentStatus::Saved);
     assert!(screen(&a, 120, 38).contains("Saved conversation"));
 }
 #[test]
@@ -483,5 +523,28 @@ fn a_narrow_orbit_zooms_in_place() {
     let a = zoomed(Level::Workspace(path("w1")));
     let text = screen(&a, 80, 24);
     assert!(text.contains("a · ● running"), "{text}");
-    assert!(text.contains("Esc"), "the footer or title says how to get out");
+    assert!(
+        text.contains("Esc"),
+        "the footer or title says how to get out"
+    );
+}
+#[test]
+fn a_long_label_never_hides_its_planet() {
+    let mut a = planets();
+    let long = "a-workspace-name-far-too-long-for-the-pane";
+    a.workspaces.iter_mut().for_each(|w| w.name = long.into());
+    a.orbit.focus = 1;
+    for second in 0..32 {
+        a.animation_elapsed = Duration::from_secs(second);
+        let (buffer, _) = orbit_hits(&a, 40, 10, Rect::new(0, 0, 40, 10));
+        let text = text_of(&buffer).join("\n");
+        assert!(
+            text.contains('◉'),
+            "the selected planet vanished at {second}s:\n{text}"
+        );
+        assert!(
+            text.contains('…'),
+            "the label is shortened, not cut, at {second}s:\n{text}"
+        );
+    }
 }

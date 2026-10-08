@@ -12,18 +12,18 @@ expression: "snapshots.join(\"\\n\\n\")"
   1 Overview       ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                     1 workspaces  ·  local observations
   2 Workspaces     ╭ Orbit ─────────────────────────────────────────╮ ╭ Continue working ─────────────────────────────╮
-                   │            · ⡀⣀⠠⠄⠤⠄⠒⠐⠂⠂⠒⠐⠂⠒⠠⠤⠠⠄⣀⢀              │ │ ❯ 機 器 -learning-with-a-long-name · unavailable│
-  3 Agents         │  ·     ⢀⡀⠤⠒·⠉─●─  ⢀⣀⣀⣀⣀⣀⣀⣀⣀⡀     ⠉⋆⠒⠤⢀⡀        │ │   /projects/機 器 -learning-with-a-long-name    │
-                   │     ⢀⠤⠊⠁·    ⣀⠤⠔⠊⠉⠁        ⠈⠉⠑⠢⠤⣀     ⠈⠑⠤⡀  ·  │ │                                               │
-                   │   ⢀⠔⠉     ⢀⡴⠊     ⣀⠤⠖⠒⠒⠒⠒⠲⠤⣀     ⠑⢦⡀     ⠉⠢⡀   │ │                                               │
-  OPERATE          │  ⢠⠊  ⋆   ⡰⠋     ⡴⠊          ⠑⢦     ⠙⢆   ·  ⠑⡄  │ │                                               │
-  4 Services       │  ⡏      ⢠⠃     ⢸⠁            ⠈⡇     ⠘⡄      ⢹  │ │                                               │
-                   │  ⣇      ⠘⡄     ⢸⡀      ✦     ●·     ⢠⠃      ⣸  │ │                                               │
-  5 Connections    │  ⠘⢄      ⠱⣄     ⠳⢄          ⡠⠞     ⣠⠎      ⡠⠃  │ │                                               │
-                   │   ⠈⠢⣀     ⠈◉⢄·    ⠉⠒⠦⠤⠤⠤⠤⠴⠒⠉     ⡠⠞⠁     ⣀⠔⠁   │ │ e editor · t shell · g Git · h Herdr · f files│
-                   │     ⠈⠒⢄⡀     ⠉·⠢⢄⣀⡀        ⢀⣀⡠⠔⠒⠉     ⢀⡠⠒⠁     │ │ Git context loads for the selected workspace  │
-  EXPLORE          │        ⠈⠁⠒⠤⡀⣀     ⠈⠉⠉⠉⠉⠉⠉⠉⠉⠁     ⣀⢀⠤⠒⠈⠁        │ │                                               │
-  6 Files          │              ⠁⠉⠐⠂⠒⠂⠤⠠⠄⠤⠠⠠⠄⠤⠐⠒⠐⠂⠉⠈              │ │                                               │
+                   │            · ⡀⣀⡠⠄⠤⠔⠐⠒⠂⠒⠒⠐⠒⠂⠢⠤⠠⢄⣀⢀              │ │ ❯ 機 器 -learning-with-a-long-name · unavailable│
+  3 Agents         │  ·      ⣀⠤⠒·⠉ ◉ 機 器 -learning-with-a-long-nam… │ │   /projects/機 器 -learning-with-a-long-name    │
+                   │     ⢀⡠⠊⠉·                             ⠉⠑⢄⡀  ·  │ │                                               │
+                   │   ⢀⡔⠉                                    ⠉⢢⡀   │ │                                               │
+  OPERATE          │  ⢠⠏  ⋆                                  ·  ⠹⡄  │ │                                               │
+  4 Services       │  ⡎                                          ⢱  │ │                                               │
+                   │  ⢇                     ✦                    ⡸  │ │                                               │
+  5 Connections    │  ⠘⣆                                        ⣰⠃  │ │                                               │
+                   │   ⠈⠣⣀                                    ⣀⠜⠁   │ │ e editor · t shell · g Git · h Herdr · f files│
+                   │     ⠈⠑⢄⣀                              ⣀⡠⠊⠁     │ │ Git context loads for the selected workspace  │
+  EXPLORE          │         ⠉⠒⠤⢄⣀                    ⣀⡠⠤⠒⠉         │ │                                               │
+  6 Files          │              ⠁⠉⠑⠂⠒⠢⠠⠤⠄⠤⠤⠠⠤⠄⠔⠒⠐⠊⠉⠈              │ │                                               │
                    ╰────────────────────────────────────────────────╯ ╰───────────────────────────────────────────────╯
   7 System
                    ╭ Machine pulse · live ──────────────────────────╮ ╭ Services & ports · read only ─────────────────╮
@@ -370,13 +370,13 @@ expression: "snapshots.join(\"\\n\\n\")"
   │e editor · t shell · g Git · h Herdr · f files                                                                    │╯
   │Connections: x stop tunnel                                                                                        │
   │Agents: n new · Enter open · r restart · x close                                                                  │╮
+  │Orbit (Tab to it): ↑↓ choose · Enter zoom in or attach · Esc zoom out                                             ││
   │F12/Ctrl-\ back to Waystation · F9 agent status box                                                               ││
   │. hidden files · y copy path · F5 refresh                                                                         ││
   │q quit                                                                                                            ││
   │                                                                                                                  ││
   │                                                                                                                  ││
   ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯│
-                   │                                                                                                  │
   5 Connections    │                                                                                                  │
                    │                                                                                                  │
                    │                                                                                                  │

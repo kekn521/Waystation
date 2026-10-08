@@ -81,7 +81,13 @@ impl OrbitView {
     }
     /// Share of the orbit pane the moon system takes: all of it, or 40% beside a preview.
     pub fn split(&self, now: Duration) -> f64 {
-        let share = |l: &Level| if matches!(l, Level::Moon(..)) { 0.4 } else { 1.0 };
+        let share = |l: &Level| {
+            if matches!(l, Level::Moon(..)) {
+                0.4
+            } else {
+                1.0
+            }
+        };
         let to = share(&self.level);
         match &self.transition {
             Some(t) if t.from.workspace().is_some() => {
@@ -94,9 +100,8 @@ impl OrbitView {
     /// Move to `level`, animating only when the kind of view changes.
     fn go(&mut self, level: Level, focus: usize, now: Duration) {
         let from = std::mem::replace(&mut self.level, level);
-        self.transition = (std::mem::discriminant(&from)
-            != std::mem::discriminant(&self.level))
-        .then_some(Transition { from, started: now });
+        self.transition = (std::mem::discriminant(&from) != std::mem::discriminant(&self.level))
+            .then_some(Transition { from, started: now });
         self.focus = focus;
     }
 }

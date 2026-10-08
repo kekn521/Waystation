@@ -54,7 +54,12 @@ fn app() -> App {
 fn moon(app: &App, name: &str) -> Uuid {
     app.agents.iter().find(|s| s.name == name).unwrap().id
 }
-fn event(id: ProviderId, app: &App, agent: Option<Uuid>, payload: Result<ProviderPayload, String>) -> ProviderEvent {
+fn event(
+    id: ProviderId,
+    app: &App,
+    agent: Option<Uuid>,
+    payload: Result<ProviderPayload, String>,
+) -> ProviderEvent {
     ProviderEvent {
         request: ProviderRequest {
             id,
@@ -83,7 +88,12 @@ fn planets_follow_selection_pins_and_recents_in_a_stable_order() {
         },
     );
     app.set_workspaces(names.map(workspace).to_vec());
-    let planets = |app: &App| app.planets().iter().map(|w| w.name.clone()).collect::<Vec<_>>();
+    let planets = |app: &App| {
+        app.planets()
+            .iter()
+            .map(|w| w.name.clone())
+            .collect::<Vec<_>>()
+    };
     // Selected, pinned, then the most recent fill the six places; pinned lead, then by path.
     assert_eq!(planets(&app), ["w7", "w5", "w0", "w1", "w3", "w6"]);
     // Landing on a planet makes it the most recent but never reshuffles the system.
@@ -98,7 +108,10 @@ fn planets_follow_selection_pins_and_recents_in_a_stable_order() {
 fn moons_are_the_workspace_agents_in_name_order() {
     let app = app();
     let moons = app.moons(&path("w1"));
-    assert_eq!(moons.iter().map(|s| s.name.as_str()).collect::<Vec<_>>(), ["a", "b"]);
+    assert_eq!(
+        moons.iter().map(|s| s.name.as_str()).collect::<Vec<_>>(),
+        ["a", "b"]
+    );
     assert!(app.moons(&path("w0")).is_empty());
 }
 
@@ -124,11 +137,18 @@ fn keyboard_zooms_from_galaxy_to_moon_and_back() {
 
     let effects = app.update(Action::Move(1));
     let b = moon(&app, "b");
-    assert_eq!(app.orbit.level, Level::Moon(path("w1"), b), "the preview follows");
+    assert_eq!(
+        app.orbit.level,
+        Level::Moon(path("w1"), b),
+        "the preview follows"
+    );
     assert!(matches!(effects[..], [Effect::Preview]));
 
     let effects = app.update(Action::Activate);
-    assert!(matches!(effects[..], [Effect::AttachAgent(id)] if id == b), "{effects:?}");
+    assert!(
+        matches!(effects[..], [Effect::AttachAgent(id)] if id == b),
+        "{effects:?}"
+    );
     assert_eq!(app.section, Section::Overview, "attaching keeps the orbit");
 
     app.update(Action::Escape);
@@ -141,7 +161,10 @@ fn keyboard_zooms_from_galaxy_to_moon_and_back() {
     app.message = Some("hello".into());
     app.update(Action::Escape);
     assert_eq!(app.orbit.level, Level::Galaxy);
-    assert!(app.message.is_none(), "Esc in the galaxy keeps its old meaning");
+    assert!(
+        app.message.is_none(),
+        "Esc in the galaxy keeps its old meaning"
+    );
 }
 
 #[test]
@@ -158,18 +181,30 @@ fn keys_reach_the_orbit_only_when_it_has_focus() {
     let mut app = app();
     app.pane = 1;
     app.update(Action::Activate);
-    assert_eq!(app.orbit.level, Level::Galaxy, "the Workspaces pane keeps Enter");
+    assert_eq!(
+        app.orbit.level,
+        Level::Galaxy,
+        "the Workspaces pane keeps Enter"
+    );
 
     app.pane = 0;
     app.update(Action::OrbitEnter(Level::Workspace(path("w1"))));
     app.update(Action::Search);
     app.update(Action::Escape);
     assert!(!app.searching);
-    assert_eq!(app.orbit.level, Level::Workspace(path("w1")), "Esc closed search first");
+    assert_eq!(
+        app.orbit.level,
+        Level::Workspace(path("w1")),
+        "Esc closed search first"
+    );
 
     app.section = Section::Agents;
     app.update(Action::Escape);
-    assert_eq!(app.orbit.level, Level::Workspace(path("w1")), "other sections keep Esc");
+    assert_eq!(
+        app.orbit.level,
+        Level::Workspace(path("w1")),
+        "other sections keep Esc"
+    );
 }
 
 #[test]
@@ -216,7 +251,12 @@ fn the_orbit_falls_back_when_bodies_disappear() {
     app.update(Action::OrbitEnter(Level::Workspace(path("w1"))));
     app.update(Action::OrbitEnter(Level::Moon(path("w1"), a)));
     let others = app.agents.iter().filter(|s| s.id != a).cloned().collect();
-    app.apply_provider(event(ProviderId::Agents, &app, None, Ok(ProviderPayload::Agents(others))));
+    app.apply_provider(event(
+        ProviderId::Agents,
+        &app,
+        None,
+        Ok(ProviderPayload::Agents(others)),
+    ));
     assert_eq!(app.orbit.level, Level::Workspace(path("w1")));
     assert!(app.agent_preview.is_none());
 
@@ -224,7 +264,10 @@ fn the_orbit_falls_back_when_bodies_disappear() {
         ProviderId::Projects,
         &app,
         None,
-        Ok(ProviderPayload::Projects(vec![workspace("w0"), workspace("w2")])),
+        Ok(ProviderPayload::Projects(vec![
+            workspace("w0"),
+            workspace("w2"),
+        ])),
     ));
     assert_eq!(app.orbit.level, Level::Galaxy);
     assert!(app.orbit.focus < app.planets().len().max(1));
@@ -263,7 +306,11 @@ fn transitions_ease_and_split_the_pane() {
     assert!(app.orbit.animating(start));
     assert_eq!(app.orbit.progress(start + TRANSITION), 1.0);
     assert!(!app.orbit.animating(start + TRANSITION));
-    assert_eq!(app.orbit.split(start), 1.0, "galaxy to workspace uses the whole pane");
+    assert_eq!(
+        app.orbit.split(start),
+        1.0,
+        "galaxy to workspace uses the whole pane"
+    );
 
     app.update(Action::OrbitEnter(Level::Moon(path("w1"), a)));
     assert_eq!(app.orbit.split(start), 1.0);
@@ -292,7 +339,10 @@ fn previews_only_land_on_the_open_moon() {
         Some(b),
         Ok(ProviderPayload::AgentPreview(b, "late".into())),
     ));
-    assert!(preview(&app).value.is_none(), "a capture for a moon we left is ignored");
+    assert!(
+        preview(&app).value.is_none(),
+        "a capture for a moon we left is ignored"
+    );
 
     app.apply_provider(event(
         ProviderId::AgentPreview,
@@ -302,8 +352,17 @@ fn previews_only_land_on_the_open_moon() {
     ));
     assert_eq!(preview(&app).value.as_deref(), Some("hi"));
 
-    app.apply_provider(event(ProviderId::AgentPreview, &app, Some(a), Err("tmux went away".into())));
+    app.apply_provider(event(
+        ProviderId::AgentPreview,
+        &app,
+        Some(a),
+        Err("tmux went away".into()),
+    ));
     let snapshot = preview(&app);
     assert!(matches!(snapshot.availability, Availability::Failed(ref e) if e == "tmux went away"));
-    assert_eq!(snapshot.value.as_deref(), Some("hi"), "the last screen stays, marked stale");
+    assert_eq!(
+        snapshot.value.as_deref(),
+        Some("hi"),
+        "the last screen stays, marked stale"
+    );
 }

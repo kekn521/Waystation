@@ -14,14 +14,14 @@ expression: "snapshots.join(\"\\n\\n\")"
  ╰────────────────────────────────────────────────────────────────────────────────────────────────╯
   1 workspaces  ·  local observations
  ╭ Orbit ────────────────────────────────────────╮ ╭ Continue working ────────────────────────────╮
- │           ·⣀⢀⡠⠠⠤⠠⠄⠒⠐⠂⠒⠐⠒⠐⠂⠒⠠⠄⠤⠄⢄⡀⣀            │ │ ❯ 機 器 -learning-with-a-long-name · unavailabl│
- │  ·  ⢀⣀⠤⠔·⠁⠉· ─●─⠤⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠤⠤⣀⣀ ⋆⠉⠈⠑⠢⠤⣀⡀     │ │   /projects/機 器 -learning-with-a-long-name   │
- │   ⣠⠖⠁    ⢀⡤⠒⠉   ⢀⡠⠤⠒⠒⠒⠒⠒⠒⠒⠤⢄⡀   ⠉⠒⢤⡀    ⠈⠲⣄·  │ │                                              │
- │  ⡞⠁     ⢠⠋     ⡴⠉           ⠉⢦     ⠙⡄     ⠈⢳  │ │                                              │
- │  ⢧⡀  ⋆  ⠘⣄     ⠳⣀     ✦     ⣀●     ⣠⠃  ·  ⢀⡼  │ │ e editor · t shell · g Git · h Herdr · f file│
- │   ⠙⠦⡀    ⠈⠓◉· · ⠈⠑⠒⠤⠤⠤⠤⠤⠤⠤⠒⠊⠁   ⣀⠤⠚⠁    ⢀⠴⠋   │ │ Git context loads for the selected workspace │
- │     ⠈⠉⠒⠢⢄⡀⣀  ⠉⠉⠒⠒⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠒⠒⠉⠉  ⣀⢀⡠⠔⠒⠉⠁     │ │                                              │
- │            ⠉⠈⠑⠐⠒⠐⠂⠤⠠⠄⠤⠄⠤⠠⠄⠤⠐⠂⠒⠂⠊⠁⠉            │ │                                              │
+ │           ·⣀⣀⠠⠤⠄⠤⠄⠒⠂⠒⠂⠒⠐⠒⠐⠒⠠⠤⠠⠤⠄⣀⣀            │ │ ❯ 機 器 -learning-with-a-long-name · unavailabl│
+ │  ·   ⣠⠤⠒·⠉⠈·  ◉ 機 器 -learning-with-a-long-na… │ │   /projects/機 器 -learning-with-a-long-name   │
+ │   ⡠⠖⠉                                   ⠉⠲⢄·  │ │                                              │
+ │  ⡜                                         ⢣  │ │                                              │
+ │  ⢣   ⋆                ✦                ·   ⡜  │ │ e editor · t shell · g Git · h Herdr · f file│
+ │   ⠑⠦⣀                                   ⣀⠴⠊   │ │ Git context loads for the selected workspace │
+ │      ⠙⠒⠤⢄⣀⢀                       ⡀⣀⡠⠤⠒⠋      │ │                                              │
+ │            ⠉⠉⠐⠒⠂⠒⠂⠤⠄⠤⠄⠤⠠⠤⠠⠤⠐⠒⠐⠒⠂⠉⠉            │ │                                              │
  ╰───────────────────────────────────────────────╯ ╰──────────────────────────────────────────────╯
 
  ╭ Machine pulse · live ─────────────────────────╮ ╭ Services & ports · read only ────────────────╮
@@ -316,13 +316,13 @@ expression: "snapshots.join(\"\\n\\n\")"
  ╭│e editor · t shell · g Git · h Herdr · f files                                                │╮
  ││Connections: x stop tunnel                                                                    ││
  ╰│Agents: n new · Enter open · r restart · x close                                              │╯
-  │F12/Ctrl-\ back to Waystation · F9 agent status box                                           │
- ╭│. hidden files · y copy path · F5 refresh                                                     │╮
+  │Orbit (Tab to it): ↑↓ choose · Enter zoom in or attach · Esc zoom out                         │
+ ╭│F12/Ctrl-\ back to Waystation · F9 agent status box                                           │╮
+ ││. hidden files · y copy path · F5 refresh                                                     ││
  ││q quit                                                                                        ││
  ││                                                                                              ││
  ││                                                                                              ││
  │╰──────────────────────────────────────────────────────────────────────────────────────────────╯│
- │                                                                                                │
  │                                                                                                │
  │                                                                                                │
  │                                                                                                │

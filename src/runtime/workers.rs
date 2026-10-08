@@ -133,7 +133,9 @@ impl WorkerPool {
                         crate::agents::AgentManager::new(state.clone()).list()?,
                     ),
                     ProviderId::AgentPreview => {
-                        let id = r.agent.ok_or_else(|| anyhow::anyhow!("No agent to preview"))?;
+                        let id = r
+                            .agent
+                            .ok_or_else(|| anyhow::anyhow!("No agent to preview"))?;
                         ProviderPayload::AgentPreview(
                             id,
                             crate::agents::AgentManager::new(state.clone()).capture_screen(id)?,

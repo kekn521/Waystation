@@ -114,8 +114,9 @@ fn main() -> Result<()> {
                         app.selection = app.agent_items().iter().position(|(_,_,a)| matches!(a, waystation::app::Action::OpenAgent(s) if *s == id)).unwrap_or(0);
                         jobs.submit(Effect::AttachAgent(id));
                     }
+                    // Every path to an attach has already chosen where to land afterwards;
+                    // the orbit's moons return to the orbit.
                     if let Some(spec) = r.attach {
-                        app.section = waystation::model::Section::Agents;
                         app.message = Some(
                             match term.host(&spec, &mut app.overlay_visible, &mut |buf| {
                                 overlay.draw(buf)
@@ -192,7 +193,13 @@ fn main() -> Result<()> {
         term.terminal
             .draw(|f| hits = waystation::ui::draw(f, &app))?;
         app.hits = hits;
-        if crossterm::event::poll(Duration::from_millis(100))?
+        // Zooms get about 25 frames per second; otherwise 10 is plenty.
+        let wait = if app.orbit.animating(app.animation_elapsed) {
+            40
+        } else {
+            100
+        };
+        if crossterm::event::poll(Duration::from_millis(wait))?
             && let Some(action) = input::translate(crossterm::event::read()?, &app)
         {
             if matches!(action, waystation::app::Action::Quit) && (!tasks_ready || jobs.busy) {

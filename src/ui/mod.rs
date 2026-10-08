@@ -7,6 +7,7 @@ pub mod layout;
 pub mod orbit;
 pub mod overlay;
 pub mod services;
+pub mod sky;
 pub mod system;
 pub mod theme;
 pub mod usage;

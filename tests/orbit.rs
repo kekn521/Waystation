@@ -286,6 +286,23 @@ fn only_the_overview_moves_with_the_clock() {
     );
 }
 
+/// Whether `area` shows part of a disc: a dense braille cell in a colour no orbit line uses.
+fn disc_in(buffer: &Buffer, area: Rect) -> bool {
+    use waystation::ui::{
+        sky::mix,
+        theme::{LINE, MANTLE},
+    };
+    area.positions().any(|p| {
+        let cell = &buffer[(p.x, p.y)];
+        let dots = cell
+            .symbol()
+            .chars()
+            .next()
+            .filter(|c| ('\u{2801}'..='\u{28ff}').contains(c))
+            .map_or(0, |c| (c as u32 - 0x2800).count_ones());
+        dots >= 4 && cell.fg != LINE && cell.fg != mix(MANTLE, LINE, 0.6)
+    })
+}
 #[test]
 fn every_planet_is_a_clickable_body() {
     let a = planets();
@@ -296,13 +313,11 @@ fn every_planet_is_a_clickable_body() {
             .iter()
             .find(|h| matches!(&h.action, Action::OrbitEnter(Level::Workspace(p)) if *p == path(name)))
             .unwrap_or_else(|| panic!("no hit for {name}"));
-        let symbols = (hit.area.x..hit.area.right())
-            .map(|x| buffer[(x, hit.area.y)].symbol().to_string())
-            .collect::<String>();
         assert!(
-            symbols.contains('●') || symbols.contains('◉'),
-            "{name}'s hit {:?} misses its planet: {symbols:?}",
-            hit.area
+            disc_in(&buffer, hit.area),
+            "{name}'s hit {:?} misses its planet:\n{}",
+            hit.area,
+            text_of(&buffer).join("\n")
         );
     }
 }
@@ -441,10 +456,14 @@ fn a_long_label_never_hides_its_planet() {
     a.orbit.focus = 1;
     for second in 0..32 {
         a.animation_elapsed = Duration::from_secs(second);
-        let (buffer, _) = orbit_hits(&a, 40, 10, Rect::new(0, 0, 40, 10));
+        let (buffer, hits) = orbit_hits(&a, 40, 10, Rect::new(0, 0, 40, 10));
         let text = text_of(&buffer).join("\n");
+        let w1 = hits
+            .iter()
+            .find(|h| matches!(&h.action, Action::OrbitEnter(Level::Workspace(p)) if *p == path("w1")))
+            .unwrap();
         assert!(
-            text.contains('◉'),
+            disc_in(&buffer, w1.area),
             "the selected planet vanished at {second}s:\n{text}"
         );
         assert!(
@@ -474,4 +493,52 @@ fn the_footer_only_offers_what_the_orbit_level_does() {
             "{w}x{h}: {text}"
         );
     }
+}
+fn planet_bodies(app: &App, w: u16, h: u16) -> Vec<(PathBuf, f64, Color)> {
+    orbit::scene(app, w, h)
+        .bodies
+        .into_iter()
+        .filter_map(|b| match (b.action, b.look) {
+            (Some(Action::OrbitEnter(Level::Workspace(p))), orbit::Look::Planet { color, .. }) => {
+                Some((p, b.radius, color))
+            }
+            _ => None,
+        })
+        .collect()
+}
+#[test]
+fn orbits_use_the_whole_width_of_a_wide_pane() {
+    let (w, h) = (118, 17);
+    let (buffer, _) = orbit_hits(&planets(), w, h, Rect::new(0, 0, w, h));
+    let column = |x: u16| {
+        (0..h).any(|y| {
+            buffer[(x, y)]
+                .symbol()
+                .chars()
+                .any(|c| ('\u{2801}'..='\u{28ff}').contains(&c))
+        })
+    };
+    assert!(
+        column(5) && column(w - 6),
+        "{}",
+        text_of(&buffer).join("\n")
+    );
+}
+#[test]
+fn planets_wear_distinct_stable_looks_and_grow_with_their_agents() {
+    let a = planets();
+    let bodies = planet_bodies(&a, 80, 16);
+    assert_eq!(bodies.len(), 3);
+    for (i, x) in bodies.iter().enumerate() {
+        for y in &bodies[i + 1..] {
+            assert_ne!(x.2, y.2, "{:?} and {:?} share a colour", x.0, y.0);
+        }
+    }
+    let mut later = a;
+    later.animation_elapsed = Duration::from_secs(7);
+    let colors =
+        |b: &[(PathBuf, f64, Color)]| b.iter().map(|x| (x.0.clone(), x.2)).collect::<Vec<_>>();
+    assert_eq!(colors(&bodies), colors(&planet_bodies(&later, 80, 16)));
+    let radius = |name: &str| bodies.iter().find(|b| b.0 == path(name)).unwrap().1;
+    assert!(radius("w1") > radius("w0"), "w1 has two agents, w0 none");
 }

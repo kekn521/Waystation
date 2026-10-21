@@ -11,7 +11,7 @@ status, services, and SSH tunnels into one keyboard-driven Linux dashboard.
 The overview's orbiting solar system doubles as a map: planets are your
 workspaces and moons are the agents working in them.
 
-![Waystation overview with orbit, workspaces, system metrics, and services](artifacts/waystation-overview.png)
+![Waystation overview with orbit, workspaces, system metrics, and services](artifacts/waystation-overview-orbit.png)
 
 *The real Waystation interface, rendered with illustrative project and service
 data. The planets move when the app is running.*

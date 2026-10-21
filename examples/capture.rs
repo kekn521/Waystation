@@ -38,6 +38,10 @@ fn demo_app(root: &Path) -> anyhow::Result<App> {
         services::{Container, Listener},
         system::SystemStats,
     };
+    use waystation::{
+        agents::{AgentSession, AgentStatus},
+        config::ToolCommand,
+    };
 
     let mut a = App::new(Config::default(), AppState::default());
     let workspaces = ["atlas", "relay", "waystation"]
@@ -52,6 +56,31 @@ fn demo_app(root: &Path) -> anyhow::Result<App> {
         })
         .collect::<anyhow::Result<Vec<_>>>()?;
     let selected = workspaces[0].id.clone();
+    // Recent workspaces become the orbit's planets, and agents its moons.
+    a.state.recent_workspaces = workspaces.iter().map(|w| w.id.clone()).collect();
+    a.agents = [
+        ("api", 0, "claude", AgentStatus::Running),
+        ("docs", 0, "codex", AgentStatus::Running),
+        ("tests", 0, "claude", AgentStatus::Saved),
+        ("proxy", 1, "codex", AgentStatus::Running),
+        ("release", 2, "claude", AgentStatus::Exited(0)),
+    ]
+    .into_iter()
+    .map(|(name, w, tool, status)| AgentSession {
+        id: uuid::Uuid::new_v4(),
+        name: name.into(),
+        tool: tool.into(),
+        workspace: workspaces[w].id.clone(),
+        command: ToolCommand {
+            program: tool.into(),
+            args: vec![],
+        },
+        executable: format!("/usr/bin/{tool}").into(),
+        created: std::time::SystemTime::UNIX_EPOCH,
+        conversation: None,
+        status,
+    })
+    .collect();
     a.set_workspaces(workspaces);
     a.git = Snapshot::ready(
         GitState {

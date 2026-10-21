@@ -73,6 +73,7 @@ impl Default for ThemeConfig {
 struct RawConfig {
     project_roots: Option<Vec<PathBuf>>,
     pinned_projects: Vec<PathBuf>,
+    hidden_projects: Vec<PathBuf>,
     editor: Option<ToolCommand>,
     tools: BTreeMap<String, ToolCommand>,
     // Accept legacy task configuration without exposing or loading removed recipes.
@@ -87,6 +88,8 @@ struct RawConfig {
 pub struct Config {
     pub project_roots: Vec<PathBuf>,
     pub pinned_projects: Vec<PathBuf>,
+    /// Workspaces removed from Waystation; the scan leaves them out.
+    pub hidden_projects: Vec<PathBuf>,
     pub editor: Option<ToolCommand>,
     pub tools: BTreeMap<String, ToolCommand>,
     pub tunnels: Vec<TunnelRecipe>,
@@ -108,6 +111,7 @@ impl Default for Config {
         Config {
             project_roots: Vec::new(),
             pinned_projects: Vec::new(),
+            hidden_projects: Vec::new(),
             editor: None,
             tools: BTreeMap::new(),
             tunnels: Vec::new(),
@@ -120,7 +124,7 @@ impl Default for Config {
 }
 
 /// Expand a leading `~/` (or bare `~`) against `home`.
-fn expand_tilde(p: &Path, home: &Path) -> PathBuf {
+pub fn expand_tilde(p: &Path, home: &Path) -> PathBuf {
     match p.to_str() {
         Some("~/") | Some("~") => home.to_path_buf(),
         Some(s) if s.starts_with("~/") => home.join(&s[2..]),
@@ -206,6 +210,7 @@ impl Config {
         let mut cfg = Config {
             project_roots: parsed.project_roots.unwrap_or(defaults.project_roots),
             pinned_projects: parsed.pinned_projects,
+            hidden_projects: parsed.hidden_projects,
             editor: parsed.editor,
             tools: parsed.tools,
             tunnels: parsed.tunnels,
@@ -220,6 +225,11 @@ impl Config {
             .collect();
         cfg.pinned_projects = cfg
             .pinned_projects
+            .into_iter()
+            .map(|p| expand_path_field(p, home, base))
+            .collect();
+        cfg.hidden_projects = cfg
+            .hidden_projects
             .into_iter()
             .map(|p| expand_path_field(p, home, base))
             .collect();
@@ -255,6 +265,108 @@ impl Config {
         }
         Ok(())
     }
+}
+
+/// Add `dir` to `pinned_projects` in the config file at `path` (and take it out of
+/// `hidden_projects`), creating the file when it is missing.
+pub fn pin_project(path: &Path, dir: &Path) -> Result<()> {
+    edit_config(path, |doc| {
+        path_list(doc, "hidden_projects")?.retain(|e| !names(e, dir));
+        let pins = path_list(doc, "pinned_projects")?;
+        if !pins.iter().any(|e| names(e, dir)) {
+            pins.push(utf8(dir)?);
+        }
+        Ok(())
+    })
+}
+
+/// Take `dir` out of `pinned_projects` in the config file at `path`, and with `hide` add it
+/// to `hidden_projects` so the scan leaves it out too.
+pub fn forget_project(path: &Path, dir: &Path, hide: bool) -> Result<()> {
+    edit_config(path, |doc| {
+        path_list(doc, "pinned_projects")?.retain(|e| !names(e, dir));
+        if hide {
+            let hidden = path_list(doc, "hidden_projects")?;
+            if !hidden.iter().any(|e| names(e, dir)) {
+                hidden.push(utf8(dir)?);
+            }
+        }
+        Ok(())
+    })
+}
+
+/// Take `dir` out of `hidden_projects` in the config file at `path`.
+pub fn unhide_project(path: &Path, dir: &Path) -> Result<()> {
+    edit_config(path, |doc| {
+        path_list(doc, "hidden_projects")?.retain(|e| !names(e, dir));
+        Ok(())
+    })
+}
+
+/// Apply `edit` to the config file at `path`, keeping everything else in it, comments
+/// included, as written. A file the edit leaves unchanged is not rewritten.
+fn edit_config(
+    path: &Path,
+    edit: impl FnOnce(&mut toml_edit::DocumentMut) -> Result<()>,
+) -> Result<()> {
+    // A symlinked config (say, from dotfiles) is edited where it points.
+    let path = fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
+    let raw = match fs::read_to_string(&path) {
+        Ok(s) => s,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => String::new(),
+        Err(e) => return Err(e).with_context(|| format!("reading config {}", path.display())),
+    };
+    let mut doc: toml_edit::DocumentMut = raw
+        .parse()
+        .with_context(|| format!("parsing {}", path.display()))?;
+    edit(&mut doc).with_context(|| format!("editing {}", path.display()))?;
+    // Lists the edit only looked into are not added to the file.
+    for key in ["pinned_projects", "hidden_projects"] {
+        if doc
+            .get(key)
+            .and_then(|v| v.as_array())
+            .is_some_and(|a| a.is_empty())
+            && !raw.contains(key)
+        {
+            doc.remove(key);
+        }
+    }
+    let text = doc.to_string();
+    if text == raw {
+        return Ok(());
+    }
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).with_context(|| format!("creating {}", parent.display()))?;
+    }
+    let tmp = path.with_extension("toml.tmp");
+    fs::write(&tmp, text).with_context(|| format!("writing {}", tmp.display()))?;
+    fs::rename(&tmp, &path).with_context(|| format!("writing {}", path.display()))
+}
+
+/// The top-level list of paths at `key`, made empty when missing.
+fn path_list<'a>(
+    doc: &'a mut toml_edit::DocumentMut,
+    key: &str,
+) -> Result<&'a mut toml_edit::Array> {
+    doc.entry(key)
+        .or_insert(toml_edit::value(toml_edit::Array::new()))
+        .as_array_mut()
+        .with_context(|| format!("{key} is not a list"))
+}
+
+/// Whether a config list entry, as written (`~/` and symlinks included), names `dir`.
+fn names(entry: &toml_edit::Value, dir: &Path) -> bool {
+    let Some(entry) = entry.as_str() else {
+        return false;
+    };
+    let home = std::env::home_dir().unwrap_or_default();
+    let path = expand_tilde(Path::new(entry), &home);
+    path == dir || fs::canonicalize(&path).is_ok_and(|p| p == dir)
+}
+
+fn utf8(dir: &Path) -> Result<&str> {
+    dir.to_str()
+        .with_context(|| format!("{} is not valid UTF-8", dir.display()))
 }
 
 /// Where Waystation keeps its files.

@@ -341,3 +341,92 @@ fn config_directory_is_an_error() {
     let d = tempfile::tempdir().unwrap();
     assert!(waystation::config::Config::load(d.path(), d.path()).is_err());
 }
+
+#[test]
+fn pin_project_creates_a_missing_config() {
+    let tmp = tempfile::tempdir().unwrap();
+    let path = tmp.path().join("sub/config.toml");
+
+    waystation::config::pin_project(&path, Path::new("/somewhere/proj")).unwrap();
+
+    let cfg = Config::load(&path, tmp.path()).unwrap();
+    assert_eq!(cfg.pinned_projects, vec![PathBuf::from("/somewhere/proj")]);
+}
+
+#[test]
+fn pin_project_keeps_comments_and_tables_and_skips_duplicates() {
+    let tmp = tempfile::tempdir().unwrap();
+    let path = tmp.path().join("config.toml");
+    fs::write(
+        &path,
+        "# my settings\nproject_roots = [\"/r\"]\n\n[tools.claude]\nprogram = \"claude\"\n",
+    )
+    .unwrap();
+
+    waystation::config::pin_project(&path, Path::new("/p/one")).unwrap();
+    waystation::config::pin_project(&path, Path::new("/p/one")).unwrap();
+
+    let text = fs::read_to_string(&path).unwrap();
+    assert!(text.contains("# my settings"), "comment lost: {text}");
+    assert!(text.contains("[tools.claude]"), "table lost: {text}");
+    assert_eq!(
+        text.matches("/p/one").count(),
+        1,
+        "entry must appear exactly once: {text}"
+    );
+
+    let cfg = Config::load(&path, tmp.path()).unwrap();
+    assert_eq!(cfg.pinned_projects, vec![PathBuf::from("/p/one")]);
+    assert_eq!(cfg.project_roots, vec![PathBuf::from("/r")]);
+}
+
+#[test]
+fn forget_project_unpins_and_hides() {
+    let tmp = tempfile::tempdir().unwrap();
+    let path = tmp.path().join("config.toml");
+    fs::write(
+        &path,
+        "# keep me\npinned_projects = [\"/p/one\", \"/p/two\"]\n",
+    )
+    .unwrap();
+
+    waystation::config::forget_project(&path, Path::new("/p/one"), true).unwrap();
+
+    let text = fs::read_to_string(&path).unwrap();
+    assert!(text.contains("# keep me"), "comment lost: {text}");
+
+    let cfg = Config::load(&path, tmp.path()).unwrap();
+    assert_eq!(cfg.pinned_projects, vec![PathBuf::from("/p/two")]);
+    assert_eq!(cfg.hidden_projects, vec![PathBuf::from("/p/one")]);
+
+    // A repeat forget must not hide the same directory twice.
+    waystation::config::forget_project(&path, Path::new("/p/one"), true).unwrap();
+    let cfg = Config::load(&path, tmp.path()).unwrap();
+    assert_eq!(cfg.hidden_projects, vec![PathBuf::from("/p/one")]);
+}
+
+#[test]
+fn pinning_again_unhides() {
+    let tmp = tempfile::tempdir().unwrap();
+    let path = tmp.path().join("config.toml");
+
+    waystation::config::forget_project(&path, Path::new("/p/x"), true).unwrap();
+    waystation::config::pin_project(&path, Path::new("/p/x")).unwrap();
+
+    let cfg = Config::load(&path, tmp.path()).unwrap();
+    assert_eq!(cfg.pinned_projects, vec![PathBuf::from("/p/x")]);
+    assert!(
+        cfg.hidden_projects.is_empty(),
+        "still hidden: {:?}",
+        cfg.hidden_projects
+    );
+}
+
+#[test]
+fn forgetting_nothing_creates_no_file() {
+    let tmp = tempfile::tempdir().unwrap();
+    let path = tmp.path().join("config.toml");
+
+    waystation::config::forget_project(&path, Path::new("/p/x"), false).unwrap();
+    assert!(!path.exists(), "an unchanged config must stay absent");
+}

@@ -482,7 +482,7 @@ fn the_footer_only_offers_what_the_orbit_level_does() {
     let galaxy = footer(&a, 120, 38);
     assert!(galaxy.contains("Enter land"), "{galaxy}");
     assert!(
-        !galaxy.contains("Esc") && !galaxy.contains(" n "),
+        !galaxy.contains("Esc") && galaxy.contains("n new workspace"),
         "{galaxy}"
     );
     let z = zoomed(Level::Workspace(path("w1")));

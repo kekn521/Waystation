@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 
 use waystation::config::Config;
 use waystation::providers::git::{parse_status, parse_worktrees};
-use waystation::providers::projects::discover;
+use waystation::providers::projects::{discover, is_listed};
 
 /// Create `dir` and drop an empty marker file `name` inside it.
 fn marker(dir: &Path, name: &str) {
@@ -129,6 +129,52 @@ fn unicode_workspace_name_survives() {
 }
 
 #[test]
+fn is_listed_only_for_directories_a_scan_finds() {
+    let tmp = tempfile::tempdir().unwrap();
+    let root = fs::canonicalize(tmp.path()).unwrap();
+    fs::create_dir_all(root.join("a/.git")).unwrap();
+    let outside = tempfile::tempdir().unwrap();
+    let other = fs::canonicalize(outside.path()).unwrap();
+    fs::create_dir_all(other.join(".git")).unwrap();
+
+    let mut cfg = config_with(vec![root.clone()], vec![]);
+    assert!(is_listed(&cfg, &root.join("a")));
+    assert!(!is_listed(&cfg, &other));
+
+    cfg.pinned_projects.push(other.clone());
+    assert!(is_listed(&cfg, &other));
+}
+
+#[test]
+fn hidden_projects_drop_scanned_workspaces_but_not_pins() {
+    let tmp = tempfile::tempdir().unwrap();
+    let root = fs::canonicalize(tmp.path()).unwrap();
+    fs::create_dir_all(root.join("a/.git")).unwrap();
+    fs::create_dir_all(root.join("b/.git")).unwrap();
+
+    let ids = |cfg: &Config| -> Vec<PathBuf> {
+        discover(cfg)
+            .unwrap()
+            .iter()
+            .map(|w| w.id.clone())
+            .collect()
+    };
+
+    let mut cfg = config_with(vec![root.clone()], vec![]);
+    cfg.hidden_projects = vec![root.join("a")];
+    let found = ids(&cfg);
+    assert!(found.contains(&root.join("b")), "scanned {found:?}");
+    assert!(
+        !found.contains(&root.join("a")),
+        "hidden a leaked: {found:?}"
+    );
+
+    // A pin overrides the hide: the directory is always listed.
+    cfg.pinned_projects = vec![root.join("a")];
+    assert!(ids(&cfg).contains(&root.join("a")));
+}
+
+#[test]
 fn mixed_porcelain_status_counts_each_entry_once() {
     // Real git 2.53 `status --porcelain=v2 --branch -z` shape: headers are
     // `# ...`; the rename entry `2` carries the new path in its own field and
@@ -200,4 +246,71 @@ fn worktree_list_preserves_non_utf8_paths() {
         PathBuf::from(OsString::from_vec(b"/repo/bad\xffpath".to_vec()))
     );
     assert!(parse_worktrees(b"").is_empty());
+}
+
+mod create {
+    use super::*;
+    use waystation::providers::projects::{create, validate_name};
+
+    fn git() -> PathBuf {
+        waystation::runtime::command::executable("git".as_ref()).expect("git is installed")
+    }
+
+    #[test]
+    fn makes_a_discoverable_git_workspace() {
+        let root = tempfile::tempdir().unwrap();
+        let made = create(root.path(), "fresh", &git()).unwrap();
+        assert_eq!(made, fs::canonicalize(root.path()).unwrap().join("fresh"));
+        assert!(made.join(".git").is_dir());
+        let found = discover(&config_with(vec![root.path().to_path_buf()], vec![])).unwrap();
+        assert_eq!(names(&found), vec!["fresh"]);
+        assert_eq!(found[0].id, made);
+    }
+
+    #[test]
+    fn refuses_an_existing_directory_and_leaves_it_alone() {
+        let root = tempfile::tempdir().unwrap();
+        marker(&root.path().join("taken"), "notes.txt");
+        let err = create(root.path(), "taken", &git()).unwrap_err();
+        assert!(format!("{err:#}").contains("already exists"), "{err:#}");
+        assert!(root.path().join("taken/notes.txt").exists());
+        assert!(!root.path().join("taken/.git").exists());
+    }
+
+    #[test]
+    fn removes_the_directory_when_git_init_fails() {
+        let root = tempfile::tempdir().unwrap();
+        let fails = waystation::runtime::command::executable("false".as_ref()).unwrap();
+        assert!(create(root.path(), "doomed", &fails).is_err());
+        assert!(!root.path().join("doomed").exists());
+    }
+
+    #[test]
+    fn needs_an_existing_root() {
+        let root = tempfile::tempdir().unwrap();
+        let missing = root.path().join("nowhere");
+        assert!(create(&missing, "fresh", &git()).is_err());
+        assert!(!missing.exists());
+    }
+
+    #[test]
+    fn names_must_be_one_directory_that_discovery_would_find() {
+        for bad in [
+            "",
+            "  ",
+            "a/b",
+            ".",
+            "..",
+            ".hidden",
+            "node_modules",
+            "target",
+            "x\0y",
+        ] {
+            assert!(validate_name(bad).is_err(), "{bad:?} should be refused");
+        }
+        for good in ["my-app", "機器", "a b"] {
+            assert!(validate_name(good).is_ok(), "{good:?} should be allowed");
+        }
+        assert!(validate_name(&"x".repeat(256)).is_err());
+    }
 }

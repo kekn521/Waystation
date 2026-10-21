@@ -8,7 +8,7 @@ use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use anyhow::Result;
+use anyhow::{Context, Result, bail, ensure};
 
 use crate::config::Config;
 
@@ -19,6 +19,13 @@ use crate::config::Config;
 pub struct Workspace {
     pub id: PathBuf,
     pub name: String,
+}
+impl Workspace {
+    /// A workspace named after its directory.
+    pub fn new(id: PathBuf) -> Self {
+        let name = workspace_name(&id);
+        Self { id, name }
+    }
 }
 
 /// Descend at most this many levels below an explicit root.
@@ -83,8 +90,7 @@ impl Scanner {
             return;
         }
         if self.seen.insert(id.clone()) {
-            let name = workspace_name(&id);
-            self.out.push(Workspace { id, name });
+            self.out.push(Workspace::new(id));
         }
     }
 
@@ -162,7 +168,14 @@ pub fn discover(config: &Config) -> Result<Vec<Workspace>> {
         scanner.scan(root, 0);
     }
 
+    // Hiding only drops what the scan found; a pin always shows.
+    let hidden: HashSet<PathBuf> = config
+        .hidden_projects
+        .iter()
+        .map(|p| fs::canonicalize(p).unwrap_or_else(|_| p.clone()))
+        .collect();
     let mut found = scanner.out;
+    found.retain(|w| pinned.contains(&w.id) || !hidden.contains(&w.id));
     found.sort_by(|a, b| {
         pinned
             .contains(&b.id)
@@ -172,4 +185,77 @@ pub fn discover(config: &Config) -> Result<Vec<Workspace>> {
     });
     found.truncate(MAX_WORKSPACES);
     Ok(found)
+}
+
+/// Whether a scan with `config` lists the canonical directory `dir`.
+pub fn is_listed(config: &Config, dir: &Path) -> bool {
+    discover(config).is_ok_and(|found| found.iter().any(|w| w.id == dir))
+}
+
+/// Whether `name` can be a new workspace directory directly under a root: one plain path
+/// component that the scan would not skip.
+pub fn validate_name(name: &str) -> Result<(), &'static str> {
+    if name.trim().is_empty() {
+        return Err("Enter a directory name");
+    }
+    if name.len() > 255 {
+        return Err("Directory names are limited to 255 bytes");
+    }
+    if name.contains(['/', '\0']) || name == "." || name == ".." {
+        return Err("Use a single directory name, without /");
+    }
+    if is_skipped(name) {
+        return Err("Waystation skips directories with that name; choose another");
+    }
+    Ok(())
+}
+
+/// Create `name` under `root` and run `git init` in it with `git`, so discovery finds it.
+/// Returns the new workspace's canonical path. Never touches an existing directory, and
+/// removes the new one again when `git init` fails.
+pub fn create(root: &Path, name: &str, git: &Path) -> Result<PathBuf> {
+    validate_name(name).map_err(anyhow::Error::msg)?;
+    let root = fs::canonicalize(root)
+        .with_context(|| format!("Location not found: {}", root.display()))?;
+    ensure!(root.is_dir(), "{} is not a directory", root.display());
+    let dir = root.join(name);
+    match fs::create_dir(&dir) {
+        Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
+            bail!("{} already exists", dir.display())
+        }
+        r => r.with_context(|| format!("Creating {}", dir.display()))?,
+    }
+    let init = crate::runtime::command::CommandRunner
+        .capture(
+            &crate::runtime::command::CommandSpec {
+                program: git.into(),
+                args: vec!["init".into(), "--quiet".into(), dir.clone().into()],
+                cwd: root,
+            },
+            std::time::Duration::from_secs(15),
+            16 * 1024,
+        )
+        .and_then(|out| {
+            ensure!(
+                out.status.success(),
+                "git init failed: {}",
+                String::from_utf8_lossy(&out.stderr).trim()
+            );
+            Ok(())
+        });
+    if let Err(e) = init {
+        remove_new(&dir);
+        return Err(e);
+    }
+    Ok(dir)
+}
+
+/// Undo a half-made workspace, but only while it holds nothing beyond what `git init` adds.
+fn remove_new(dir: &Path) {
+    let only_git = fs::read_dir(dir)
+        .map(|entries| entries.flatten().all(|e| e.file_name() == ".git"))
+        .unwrap_or(false);
+    if only_git {
+        let _ = fs::remove_dir_all(dir);
+    }
 }

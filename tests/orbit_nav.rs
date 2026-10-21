@@ -271,10 +271,13 @@ fn selecting_another_workspace_elsewhere_returns_to_the_galaxy() {
 }
 
 #[test]
-fn n_starts_an_agent_from_a_zoomed_orbit() {
+fn n_starts_a_workspace_from_the_galaxy_and_an_agent_from_a_zoomed_orbit() {
     let key = Event::Key(KeyEvent::new(KeyCode::Char('n'), KeyModifiers::NONE));
     let mut app = app();
-    assert!(waystation::input::translate(key.clone(), &app).is_none());
+    assert!(matches!(
+        waystation::input::translate(key.clone(), &app),
+        Some(Action::NewWorkspace)
+    ));
     app.update(Action::OrbitEnter(Level::Workspace(path("w1"))));
     assert!(matches!(
         waystation::input::translate(key.clone(), &app),
@@ -364,4 +367,113 @@ fn app_in_agents() -> App {
     let mut app = app();
     app.section = Section::Agents;
     app
+}
+
+#[test]
+fn a_workspace_created_from_the_orbit_is_landed_on() {
+    let mut app = app();
+    app.update(Action::NewWorkspace);
+    assert!(app.form.is_some());
+    app.adopt_new_workspace(path("fresh"), false);
+    assert!(app.form.is_none());
+    assert_eq!(app.section, Section::Overview);
+    assert_eq!(app.workspace(), Some(path("fresh").as_path()));
+    assert_eq!(app.orbit.level, Level::Workspace(path("fresh")));
+    assert!(app.planets().iter().any(|w| w.id == path("fresh")));
+}
+
+fn press(app: &mut App, code: KeyCode) -> Vec<Effect> {
+    let action =
+        waystation::input::translate(Event::Key(KeyEvent::new(code, KeyModifiers::NONE)), app)
+            .unwrap();
+    app.update(action)
+}
+/// Pick the confirmation's choice labelled `label`.
+fn choose(app: &mut App, label: &str) -> Vec<Effect> {
+    let i = app
+        .confirmation
+        .as_ref()
+        .unwrap()
+        .choices
+        .iter()
+        .position(|(l, _)| l == label)
+        .unwrap();
+    app.update(Action::ConfirmChoice(i))
+}
+
+#[test]
+fn x_on_a_planet_offers_to_remove_or_trash_it() {
+    let mut app = app();
+    app.orbit.focus = 1;
+    press(&mut app, KeyCode::Char('x'));
+    let confirmation = app.confirmation.as_ref().unwrap();
+    assert!(confirmation.title.contains("w1"), "{}", confirmation.title);
+    assert!(
+        confirmation.title.contains("2 agent sessions"),
+        "{}",
+        confirmation.title
+    );
+    let effects = choose(&mut app, "Move folder to trash");
+    assert!(app.confirmation.is_none());
+    assert!(
+        matches!(&effects[..], [Effect::RemoveWorkspace { dir, trash: true }] if *dir == path("w1")),
+        "{effects:?}"
+    );
+}
+
+#[test]
+fn x_in_workspaces_removes_the_highlighted_one() {
+    let mut app = app();
+    app.section = Section::Workspaces;
+    app.selection = 2;
+    press(&mut app, KeyCode::Char('x'));
+    let effects = choose(&mut app, "Remove from Waystation");
+    assert!(
+        matches!(&effects[..], [Effect::RemoveWorkspace { dir, trash: false }] if *dir == path("w2")),
+        "{effects:?}"
+    );
+}
+
+#[test]
+fn x_in_a_zoomed_orbit_does_not_remove_its_workspace() {
+    let mut app = app();
+    app.update(Action::OrbitEnter(Level::Workspace(path("w1"))));
+    press(&mut app, KeyCode::Char('x'));
+    assert!(app.confirmation.is_none());
+}
+
+#[test]
+fn a_removed_workspace_leaves_every_list_and_stays_gone() {
+    let mut app = app();
+    app.update(Action::OrbitEnter(Level::Workspace(path("w1"))));
+    app.forget_workspace(path("w1"));
+    assert!(app.workspaces.iter().all(|w| w.id != path("w1")));
+    assert!(!app.state.recent_workspaces.contains(&path("w1")));
+    assert!(app.planets().iter().all(|w| w.id != path("w1")));
+    assert_eq!(
+        app.workspace(),
+        Some(path("w0").as_path()),
+        "another is selected"
+    );
+    assert_eq!(app.orbit.level, Level::Galaxy);
+    // This run's scans still find it until config.toml is read again.
+    app.set_workspaces(vec![workspace("w0"), workspace("w1"), workspace("w2")]);
+    assert!(app.workspaces.iter().all(|w| w.id != path("w1")));
+}
+
+#[test]
+fn a_on_the_planets_adds_a_folder_but_not_when_zoomed() {
+    let mut app = app();
+    press(&mut app, KeyCode::Char('a'));
+    assert_eq!(
+        app.form.as_ref().map(|f| f.kind),
+        Some(waystation::forms::FormKind::AddFolder)
+    );
+    let mut app = self::app();
+    app.update(Action::OrbitEnter(Level::Workspace(path("w1"))));
+    let action = waystation::input::translate(
+        Event::Key(KeyEvent::new(KeyCode::Char('a'), KeyModifiers::NONE)),
+        &app,
+    );
+    assert!(action.is_none(), "{action:?}");
 }

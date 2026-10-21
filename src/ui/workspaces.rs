@@ -80,7 +80,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) -> Vec<HitRegion> {
     };
     frame.render_widget(
         Paragraph::new(format!(
-            " e editor · t shell · g Git · h Herdr · f files\n {}",
+            " e editor · t shell · g Git · h Herdr · f files · n new\n {}",
             ui::safe(&context)
         ))
         .fg(MUTED),
@@ -93,6 +93,8 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) -> Vec<HitRegion> {
         (" · g Git", Action::Git),
         (" · h Herdr", Action::Herdr),
         (" · f files", Action::Files),
+        (" · n new", Action::NewWorkspace),
+        (" · a add", Action::AddFolder),
     ] {
         let width = (label.len() as u16).min(parts[1].right().saturating_sub(x));
         if width > 0 {

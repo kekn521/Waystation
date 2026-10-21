@@ -69,7 +69,9 @@ sessions require `tmux`; other optional tools are described below.
 | `Tab` | Switch the focused overview pane |
 | `Enter` | Open the selected item |
 | `e` / `t` / `g` / `h` / `f` | Editor, shell, Git UI, Herdr, or files for the workspace |
-| `n` | Create a session in Agents, or in the workspace the orbit is zoomed into |
+| `n` | New workspace in Workspaces or on the orbit's planets; new agent session in Agents or a zoomed-in orbit |
+| `a` | Add an existing folder as a workspace, in Workspaces or on the orbit's planets |
+| `x` | Remove or trash a workspace in Workspaces or on the orbit's planets; close an agent session in Agents |
 | `F12` or `Ctrl-\` | Return to Waystation from an agent session |
 | `F9` | Hide or show the agent status box while in an agent, editor or shell |
 | `?` | Show all shortcuts |
@@ -89,10 +91,44 @@ and each planet's moons are its agent sessions. `Tab` to the orbit, or click it:
   selected workspace, and the view zooms in on it and its moons.
 - Pick a moon and press `Enter` to open that agent full screen. `F12` or
   `Ctrl-\` brings you back with the same moon highlighted.
-- `n` starts a new agent in the workspace you're zoomed into, and `Esc` zooms
-  back out to the planets.
+- `n` creates a new workspace while you see all the planets, and starts a new
+  agent in the workspace you're zoomed into. `Esc` zooms back out to the
+  planets.
 
 Clicking a planet or moon does the same as selecting it and pressing `Enter`.
+
+### New projects
+
+Press `n` in Workspaces (`2`), or on the orbit's planets, to start a project
+from scratch. Name the directory and type the location it goes in, which starts
+as your first `project_roots` entry (`Ctrl+←/→` steps through the others; `~/`
+works). `Ctrl+S` creates it and runs `git init` there, so it shows up as a
+workspace right away and becomes the selected one. A location the workspace scan
+would not reach is added to `pinned_projects` in your config.toml, so the new
+workspace stays listed. Started from the orbit, the
+view lands on its new planet, ready for `n` to start an agent. Waystation never
+touches a directory that already exists, and removes the new one again if
+`git init` fails. Creating a workspace needs `git`.
+
+### Adding a folder you already have
+
+The scan lists folders with a project marker (`.git`, `Cargo.toml`,
+`package.json`, `pyproject.toml` or `Makefile`) up to two levels below a
+`project_roots` entry. For any other folder, press `a` in Workspaces or on the
+orbit's planets and type its path (it starts at your first root; `~/` works).
+Waystation adds it to `pinned_projects` in your config.toml, or, if the scan
+already finds it and you had removed it, takes it out of `hidden_projects`.
+
+### Removing workspaces
+
+Press `x` on a workspace in Workspaces, or on a planet in the orbit, and choose:
+
+- **Remove from Waystation** keeps the folder. Waystation takes it out of
+  `pinned_projects`, and when the scan would still find it, adds it to
+  `hidden_projects` in your config.toml. Delete that entry to bring it back.
+- **Move folder to trash** moves the folder to your desktop trash, where your
+  file manager can restore it, and unpins it. Waystation won't trash your home
+  folder or one of your `project_roots`.
 
 ### Agent sessions
 

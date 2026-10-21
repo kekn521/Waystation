@@ -95,6 +95,8 @@ fn main() -> Result<()> {
     let mut jobs = waystation::runtime::jobs::Jobs::new(
         waystation::tasks::TaskManager::new(paths.state.clone()),
         waystation::agents::AgentManager::new(paths.state.clone()),
+        app.config.clone(),
+        paths.config.clone(),
     );
     let mut term = TerminalSession::enter()?;
     let animation_started = std::time::Instant::now();
@@ -102,6 +104,13 @@ fn main() -> Result<()> {
         if let Some(result) = jobs.try_recv() {
             match result {
                 Ok(r) => {
+                    // Its only effect is a refresh, which every job result gets below.
+                    if let Some(dir) = r.removed {
+                        app.forget_workspace(dir);
+                    }
+                    if let Some(dir) = r.workspace {
+                        app.adopt_new_workspace(dir, r.pinned);
+                    }
                     if let Some(agent) = r.agent {
                         for effect in app.adopt_new_agent(agent) {
                             jobs.submit(effect);

@@ -17,6 +17,12 @@ pub fn translate(event: Event, app: &App) -> Option<Action> {
                     KeyCode::Esc => Some(Action::Escape),
                     KeyCode::Tab | KeyCode::Down => Some(Action::FormField(1)),
                     KeyCode::BackTab | KeyCode::Up => Some(Action::FormField(-1)),
+                    KeyCode::Left if k.modifiers.contains(KeyModifiers::CONTROL) => {
+                        Some(Action::FormChoice(-1))
+                    }
+                    KeyCode::Right if k.modifiers.contains(KeyModifiers::CONTROL) => {
+                        Some(Action::FormChoice(1))
+                    }
                     KeyCode::Left => Some(Action::FormCursor(-1)),
                     KeyCode::Right => Some(Action::FormCursor(1)),
                     KeyCode::Enter => Some(Action::Activate),
@@ -97,6 +103,18 @@ pub fn translate(event: Event, app: &App) -> Option<Action> {
                         || (app.orbit_focused() && app.orbit.zoomed()) =>
                 {
                     Action::NewAgent
+                }
+                KeyCode::Char('n')
+                    if app.section == Section::Workspaces
+                        || (app.orbit_focused() && !app.orbit.zoomed()) =>
+                {
+                    Action::NewWorkspace
+                }
+                KeyCode::Char('a')
+                    if app.section == Section::Workspaces
+                        || (app.orbit_focused() && !app.orbit.zoomed()) =>
+                {
+                    Action::AddFolder
                 }
                 KeyCode::Char('r') if app.section == Section::Agents => Action::RestartAgent,
                 KeyCode::Char('.') => Action::Hidden,

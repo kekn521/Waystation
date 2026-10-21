@@ -10,6 +10,9 @@ project_roots = ["~/code"]
 # Projects always shown at the top of the list.
 pinned_projects = []
 
+# Projects the scan finds but you removed from Waystation (x in Workspaces).
+hidden_projects = []
+
 [theme]
 accent = "mauve" # "mauve" or "blue"
 compact = false

@@ -14,6 +14,10 @@ use std::path::{Path, PathBuf};
 #[derive(Clone, Debug)]
 pub enum Action {
     NewAgent,
+    /// Open the New workspace form.
+    NewWorkspace,
+    /// Open the form that adds an existing folder as a workspace.
+    AddFolder,
     OpenAgent(uuid::Uuid),
     CloseAgent(uuid::Uuid),
     InstallStatusLine,
@@ -25,6 +29,12 @@ pub enum Action {
     FormFocus(usize),
     Paste(String),
     FormCursor(isize),
+    /// Drop a workspace from Waystation's list, keeping its folder.
+    RemoveWorkspace(PathBuf),
+    /// Move a workspace's folder to the trash and drop it from the list.
+    TrashWorkspace(PathBuf),
+    /// Step through a form's preset choices, such as the New workspace roots.
+    FormChoice(isize),
     FormClear,
     FormSave,
     Nav(Section),
@@ -76,6 +86,18 @@ pub enum Effect {
         command: crate::config::ToolCommand,
         workspace: PathBuf,
     },
+    /// Make `root/name` a new Git workspace.
+    CreateWorkspace {
+        root: PathBuf,
+        name: String,
+    },
+    /// List the existing folder `dir` as a workspace for good.
+    AddWorkspace(PathBuf),
+    /// Take `dir` out of Waystation's list, first moving it to the trash with `trash`.
+    RemoveWorkspace {
+        dir: PathBuf,
+        trash: bool,
+    },
     AttachAgent(uuid::Uuid),
     CloseAgent(uuid::Uuid),
     InstallStatusLine,
@@ -109,9 +131,14 @@ pub struct App {
     /// Whether the agent box floats over hosted programs; F9 toggles it.
     pub overlay_visible: bool,
     pub form: Option<crate::forms::Form>,
-    pinned_paths: std::collections::HashSet<PathBuf>,
+    pub(crate) pinned_paths: std::collections::HashSet<PathBuf>,
     /// Canonical pinned projects in config order.
     pub(crate) pinned: Vec<PathBuf>,
+    /// Workspaces pinned in config.toml during this run. Scans still use the startup
+    /// config, so these are added to their results.
+    pub(crate) new_pins: Vec<PathBuf>,
+    /// Workspaces left out of the list: config's hidden_projects plus those removed this run.
+    pub(crate) hidden_workspaces: std::collections::HashSet<PathBuf>,
     /// Where the Overview's orbit is looking.
     pub orbit: crate::orbit_nav::OrbitView,
     pub pending_starts: std::collections::HashSet<uuid::Uuid>,
@@ -151,6 +178,11 @@ impl App {
             .map(|p| p.canonicalize().unwrap_or_else(|_| p.clone()))
             .collect::<Vec<_>>();
         let pinned_paths = pinned.iter().cloned().collect();
+        let hidden_workspaces = config
+            .hidden_projects
+            .iter()
+            .map(|p| p.canonicalize().unwrap_or_else(|_| p.clone()))
+            .collect();
         Self {
             animation_elapsed: std::time::Duration::ZERO,
             agents: vec![],
@@ -159,6 +191,8 @@ impl App {
             form: None,
             pinned_paths,
             pinned,
+            new_pins: vec![],
+            hidden_workspaces,
             orbit: Default::default(),
             pending_starts: Default::default(),
             runs: vec![],
@@ -294,6 +328,12 @@ impl App {
     }
     pub fn set_workspaces(&mut self, mut items: Vec<Workspace>) {
         let first = self.workspaces.is_empty();
+        for pin in &self.new_pins {
+            if !items.iter().any(|w| w.id == *pin) {
+                items.push(Workspace::new(pin.clone()));
+            }
+        }
+        items.retain(|w| !self.hidden_workspaces.contains(&w.id));
         items.sort_by_key(|w| {
             (
                 !self.pinned_paths.contains(&w.id),
@@ -466,6 +506,18 @@ impl App {
                 action,
             })
         }
+        items.push(SearchItem {
+            id: "New workspace".into(),
+            label: "New workspace".into(),
+            detail: "make a project directory with git init".into(),
+            action: Action::NewWorkspace,
+        });
+        items.push(SearchItem {
+            id: "Add existing folder".into(),
+            label: "Add existing folder".into(),
+            detail: "list a folder that is not a workspace yet".into(),
+            action: Action::AddFolder,
+        });
         for (label, detail, action) in self
             .agent_items()
             .into_iter()

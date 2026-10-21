@@ -40,7 +40,7 @@ expression: "snapshots.join(\"\\n\\n\")"
   Macchiato        │                                                │ │                                               │
                    ╰────────────────────────────────────────────────╯ ╰───────────────────────────────────────────────╯
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
- NORMAL  ↑↓ planets · Enter land · Tab pane · / search · ? help · q quit
+ NORMAL  ↑↓ planets · Enter land · n new workspace · x remove · ? help · q quit
 
 --- Workspaces ---
    ⣠⠤⠴⠰⠶⢤⡀  W A Y S T A T I O N     dispatch / your terminal, connected
@@ -74,13 +74,13 @@ expression: "snapshots.join(\"\\n\\n\")"
                    │                                                                                                  │
                    │                                                                                                  │
                    │                                                                                                  │
-                   │ e editor · t shell · g Git · h Herdr · f files                                                   │
+                   │ e editor · t shell · g Git · h Herdr · f files · n new                                           │
   ▰ ▰ ▰ ▰          │ Git context loads for the selected workspace                                                     │
   Catppuccin       │                                                                                                  │
   Macchiato        │                                                                                                  │
                    ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
- NORMAL  j/k move · e editor · t shell · g Git · h Herdr · f files · / commands · ? help · q quit
+ NORMAL  j/k move · Enter select · n new · a add · x remove · e editor · t shell · ? help · q quit
 
 --- Agents ---
    ⣠⠤⠴⠰⠶⢤⡀  W A Y S T A T I O N     dispatch / your terminal, connected
@@ -368,16 +368,16 @@ expression: "snapshots.join(\"\\n\\n\")"
   │1–8 sections · j/k or arrows move · Tab focus pane                                                                │╮
   │/ search commands · Enter activate · Esc close                                                                    ││
   │e editor · t shell · g Git · h Herdr · f files                                                                    │╯
-  │Connections: x stop tunnel                                                                                        │
-  │Agents: n new · Enter open · r restart · x close                                                                  │╮
-  │Orbit (Tab to it): ↑↓ choose · Enter land or open agent · Esc zoom out                                            ││
+  │Workspaces: n new · a add folder · x remove or trash                                                              │
+  │Connections: x stop tunnel                                                                                        │╮
+  │Agents: n new · Enter open · r restart · x close                                                                  ││
+  │Orbit (Tab to it): ↑↓ choose · Enter land or open agent · n new workspace or agent · a add · x remove · Esc zoom  ││
+  │out                                                                                                               ││
   │F12/Ctrl-\ back to Waystation · F9 agent status box                                                               ││
   │. hidden files · y copy path · F5 refresh                                                                         ││
   │q quit                                                                                                            ││
   │                                                                                                                  ││
-  │                                                                                                                  ││
   ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯│
-  5 Connections    │                                                                                                  │
                    │                                                                                                  │
                    │                                                                                                  │
   EXPLORE          │                                                                                                  │

@@ -406,7 +406,7 @@ pub fn draw(frame: &mut Frame, app: &App) -> Vec<HitRegion> {
     let footer = if app.orbit_focused() {
         match app.orbit.level {
             crate::orbit_nav::Level::Galaxy => {
-                " ↑↓ planets · Enter land · Tab pane · / search · ? help · q quit"
+                " ↑↓ planets · Enter land · n new workspace · x remove · ? help · q quit"
             }
             crate::orbit_nav::Level::Workspace(_) => {
                 " ↑↓ moons · Enter open · n new · Esc out · ? help · q quit"
@@ -414,6 +414,8 @@ pub fn draw(frame: &mut Frame, app: &App) -> Vec<HitRegion> {
         }
     } else if narrow {
         " j/k move · Tab pane · / search · ? help · q quit"
+    } else if app.section == Section::Workspaces {
+        " j/k move · Enter select · n new · a add · x remove · e editor · t shell · ? help · q quit"
     } else if app.section == Section::Agents {
         " n new · Enter open · r restart · x close · F12/Ctrl-\\ back · F9 status box · q quit"
     } else {
@@ -486,10 +488,10 @@ pub fn draw(frame: &mut Frame, app: &App) -> Vec<HitRegion> {
             area.x + 2,
             area.y + 3,
             area.width - 4,
-            13.min(area.height - 4),
+            14.min(area.height - 4),
         );
         frame.render_widget(Clear, rect);
-        frame.render_widget(Paragraph::new("1–8 sections · j/k or arrows move · Tab focus pane\n/ search commands · Enter activate · Esc close\ne editor · t shell · g Git · h Herdr · f files\nConnections: x stop tunnel\nAgents: n new · Enter open · r restart · x close\nOrbit (Tab to it): ↑↓ choose · Enter land or open agent · Esc zoom out\nF12/Ctrl-\\ back to Waystation · F9 agent status box\n. hidden files · y copy path · F5 refresh\nq quit").block(panel("Keyboard shortcuts · Esc close",true)).wrap(Wrap{trim:true}),rect);
+        frame.render_widget(Paragraph::new("1–8 sections · j/k or arrows move · Tab focus pane\n/ search commands · Enter activate · Esc close\ne editor · t shell · g Git · h Herdr · f files\nWorkspaces: n new · a add folder · x remove or trash\nConnections: x stop tunnel\nAgents: n new · Enter open · r restart · x close\nOrbit (Tab to it): ↑↓ choose · Enter land or open agent · n new workspace or agent · a add · x remove · Esc zoom out\nF12/Ctrl-\\ back to Waystation · F9 agent status box\n. hidden files · y copy path · F5 refresh\nq quit").block(panel("Keyboard shortcuts · Esc close",true)).wrap(Wrap{trim:true}),rect);
         hits.clear();
     }
     if app.form.is_some() {

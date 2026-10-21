@@ -20,7 +20,7 @@ expression: "snapshots.join(\"\\n\\n\")"
 │           ·                                              │
 ╰──────────────────────────────────────────────────────────╯
 ────────────────────────────────────────────────────────────
- NORMAL  ↑↓ planets · Enter land · Tab pane · / search · ? h
+ NORMAL  ↑↓ planets · Enter land · n new workspace · x remov
 
 --- Workspaces ---
  ⣠⠴⠚⣤⡀⠃⣶  W A Y S T A T I O N
@@ -36,7 +36,7 @@ expression: "snapshots.join(\"\\n\\n\")"
 │   /projects/機 器 -learning-with-a-long-name               │
 │                                                          │
 │                                                          │
-│ e editor · t shell · g Git · h Herdr · f files           │
+│ e editor · t shell · g Git · h Herdr · f files · n new   │
 │ Git context loads for the selected workspace             │
 ╰──────────────────────────────────────────────────────────╯
 ────────────────────────────────────────────────────────────
@@ -188,16 +188,16 @@ expression: "snapshots.join(\"\\n\\n\")"
   │1–8 sections · j/k or arrows move · Tab focus pane    │
 ╭ │/ search commands · Enter activate · Esc close        │─╮
 │ │e editor · t shell · g Git · h Herdr · f files        │ │
-╰─│Connections: x stop tunnel                            │─╯
-╭ │Agents: n new · Enter open · r restart · x close      │─╮
+╰─│Workspaces: n new · a add folder · x remove or trash  │─╯
+╭ │Connections: x stop tunnel                            │─╮
+│ │Agents: n new · Enter open · r restart · x close      │ │
 │ │Orbit (Tab to it): ↑↓ choose · Enter land or open     │ │
-│ │agent · Esc zoom out                                  │ │
+│ │agent · n new workspace or agent · a add · x remove · │ │
+│ │Esc zoom out                                          │ │
 │ │F12/Ctrl-\ back to Waystation · F9 agent status box   │ │
 │ │. hidden files · y copy path · F5 refresh             │ │
-│ │q quit                                                │ │
-│ │                                                      │ │
-╰─╰──────────────────────────────────────────────────────╯─╯
-────────────────────────────────────────────────────────────
+╰─│q quit                                                │─╯
+──╰──────────────────────────────────────────────────────╯──
  NORMAL  j/k move · Tab pane · / search · ? help · q quit
 
  ⣠⠴⠚⣤⡀⠃⣶  W A Y S T A T I O N

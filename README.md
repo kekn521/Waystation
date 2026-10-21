@@ -145,6 +145,11 @@ Token counts cover fresh input and output; cache reads are left out because
 they would dwarf everything else. Everything is read from local files;
 Waystation makes no network requests for this.
 
+When a recorded reset time passes, the bar automatically refills on the next
+refresh (within about five seconds), even while the agent is idle. It shows
+`100% left · estimated` until a fresh usage report replaces the estimate.
+The estimate does not account for usage in other sessions after the reset.
+
 ### SSH tunnels
 
 Add a tunnel in your configuration, then start it from Connections (`5`) or

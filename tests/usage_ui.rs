@@ -124,10 +124,11 @@ fn reset_windows_and_missing_limits_are_explained() {
     u.codex = u.codex.map(|c| ToolUsage { limits: None, ..c });
     a.usage = Some(u);
     let full = screen(&a, 100, 32);
-    assert!(full.contains("reset"), "{full}");
+    assert!(full.contains("100% left · estimated"), "{full}");
     assert!(!full.contains("1% left"), "{full}");
     assert!(full.contains("appear after Codex's next reply"), "{full}");
     let five = full.lines().find(|l| l.contains("Claude 5h")).unwrap();
+    assert!(five.contains('█') && !five.contains('░'), "{five}");
     assert!(
         !five.contains("resets"),
         "a reset window has no upcoming reset: {five}"
@@ -138,6 +139,112 @@ fn reset_windows_and_missing_limits_are_explained() {
     a.usage = Some(u);
     let full = screen(&a, 100, 32);
     assert!(full.contains("plan limits: enable them below"), "{full}");
+}
+
+#[test]
+fn idle_reset_refills_and_fresh_report_replaces_estimate() {
+    let mut a = app(Section::Agents);
+    let mut u = usage(StatusLine::Installed);
+    u.claude
+        .as_mut()
+        .unwrap()
+        .limits
+        .as_mut()
+        .unwrap()
+        .five_hour
+        .as_mut()
+        .unwrap()
+        .resets_at = NOW + 1;
+    u.codex
+        .as_mut()
+        .unwrap()
+        .limits
+        .as_mut()
+        .unwrap()
+        .weekly
+        .as_mut()
+        .unwrap()
+        .resets_at = NOW + 1;
+    a.usage = Some(u);
+    let before = screen(&a, 100, 32);
+    assert!(
+        before.contains("77% left") && before.contains("89% left"),
+        "{before}"
+    );
+    assert!(!before.contains("estimated"), "{before}");
+
+    a.usage.as_mut().unwrap().now = NOW + 1;
+    let full = screen(&a, 100, 32);
+    let rows = full.lines().collect::<Vec<_>>();
+    let claude = rows
+        .iter()
+        .position(|row| row.contains("Claude 5h"))
+        .unwrap();
+    let codex = rows
+        .iter()
+        .position(|row| row.contains("Codex  5h"))
+        .unwrap();
+    for row in [rows[claude], rows[codex + 1]] {
+        assert!(row.contains("100% left · estimated"), "{row}");
+        assert!(row.contains('█') && !row.contains('░'), "{row}");
+        assert!(!row.contains("resets"), "{row}");
+    }
+    assert!(
+        full.contains("59% left") && full.contains("29% left"),
+        "{full}"
+    );
+    let compact = screen(&a, 100, 18);
+    assert!(
+        compact.contains("Claude 5h 100% left · estimated · wk 59% left"),
+        "{compact}"
+    );
+    assert!(
+        compact.contains("Codex  5h 29% left · wk 100% left · estimated"),
+        "{compact}"
+    );
+    a.section = Section::Overview;
+    let overview = screen(&a, 240, 45);
+    assert!(
+        overview.contains("Claude 5h 100% estimated wk 59%"),
+        "{overview}"
+    );
+    assert!(
+        overview.contains("Codex 5h 29% wk 100% estimated"),
+        "{overview}"
+    );
+
+    a.section = Section::Agents;
+    let u = a.usage.as_mut().unwrap();
+    let five = u
+        .claude
+        .as_mut()
+        .unwrap()
+        .limits
+        .as_mut()
+        .unwrap()
+        .five_hour
+        .as_mut()
+        .unwrap();
+    five.used_percent = 12.;
+    five.resets_at = NOW + 3600;
+    let weekly = u
+        .codex
+        .as_mut()
+        .unwrap()
+        .limits
+        .as_mut()
+        .unwrap()
+        .weekly
+        .as_mut()
+        .unwrap();
+    weekly.used_percent = 34.;
+    weekly.resets_at = NOW + 3600;
+    let fresh = screen(&a, 100, 32);
+    assert!(
+        fresh.contains("88% left") && fresh.contains("66% left"),
+        "{fresh}"
+    );
+    assert!(!fresh.contains("estimated"), "{fresh}");
 }
 
 #[test]

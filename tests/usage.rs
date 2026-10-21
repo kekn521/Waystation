@@ -4,8 +4,8 @@ use std::{
     time::{Duration, SystemTime},
 };
 use waystation::usage::{
-    LimitWindow, Scanner, StatusLine, Tool, Windows, claude_limits, format_tokens,
-    install_statusline, statusline, statusline_status,
+    LimitWindow, Scanner, StatusLine, Tool, Windows, claude_limits, collect, format_tokens,
+    install_statusline, remaining_label, remaining_percent, statusline, statusline_status,
 };
 
 const NOW: i64 = 1_791_400_000;
@@ -97,6 +97,119 @@ fn homes() -> Homes {
 /// Windows that include everything from the last 7 days.
 fn everything() -> Windows {
     Windows::new(NOW, NOW - 7 * 24 * HOUR, None)
+}
+
+#[test]
+fn limits_refill_as_estimates_at_the_reset_boundary() {
+    for window_minutes in [300, 10080] {
+        let limit = LimitWindow {
+            used_percent: 91.,
+            window_minutes,
+            resets_at: NOW,
+        };
+        assert_eq!(limit.remaining(NOW - 1), Some(9.));
+        assert_eq!(remaining_label(Some(&limit), NOW - 1), "9% left");
+        assert_eq!(remaining_percent(Some(&limit), NOW - 1), "9%");
+        for now in [NOW, NOW + 1, NOW + 8 * 24 * HOUR] {
+            assert_eq!(limit.remaining(now), Some(100.));
+            assert_eq!(remaining_label(Some(&limit), now), "100% left · estimated");
+            assert_eq!(remaining_percent(Some(&limit), now), "100% estimated");
+        }
+    }
+    assert_eq!(remaining_label(None, NOW), "—");
+    assert_eq!(remaining_percent(None, NOW), "—");
+}
+
+#[test]
+fn idle_collection_refills_limits_until_fresh_reports_arrive() {
+    let h = homes();
+    let state = h._dir.path().join("state");
+    let rollout = h.codex.join("sessions/2026/10/07/rollout-a.jsonl");
+    let report = |used, resets_at| {
+        serde_json::json!({
+            "rate_limits": {
+                "five_hour": {"used_percentage": used, "resets_at": resets_at},
+                "seven_day": {"used_percentage": used, "resets_at": resets_at},
+            }
+        })
+    };
+    let codex_report = |used, resets_at| {
+        serde_json::json!({
+            "primary": window(used, 300, resets_at),
+            "secondary": window(used, 10080, resets_at),
+        })
+    };
+    statusline(report(90., NOW).to_string().as_bytes(), &state, NOW - 1);
+    append(
+        &rollout,
+        &codex_line(NOW - 1, (10, 0, 0), (10, 0, 0), codex_report(70., NOW)),
+    );
+    let mut scanner = Scanner::new(h.claude.clone(), h.codex.clone());
+    let before = collect(
+        &mut scanner,
+        &state,
+        true,
+        true,
+        StatusLine::Installed,
+        NOW - 1,
+    );
+    for (tool, expected) in [
+        (before.claude.as_ref().unwrap(), "10% left"),
+        (before.codex.as_ref().unwrap(), "30% left"),
+    ] {
+        let limits = tool.limits.as_ref().unwrap();
+        for window in [&limits.five_hour, &limits.weekly] {
+            assert_eq!(remaining_label(window.as_ref(), before.now), expected);
+        }
+    }
+    // Advance time only: no new agent replies or writes.
+    let idle = collect(&mut scanner, &state, true, true, StatusLine::Installed, NOW);
+    for tool in [idle.claude.as_ref().unwrap(), idle.codex.as_ref().unwrap()] {
+        let limits = tool.limits.as_ref().unwrap();
+        assert_eq!(limits.updated_at, NOW - 1, "estimate preserves report age");
+        for window in [&limits.five_hour, &limits.weekly] {
+            assert_eq!(
+                remaining_label(window.as_ref(), idle.now),
+                "100% left · estimated"
+            );
+        }
+    }
+    assert_eq!(
+        idle.codex.as_ref().unwrap().tokens,
+        before.codex.as_ref().unwrap().tokens
+    );
+    statusline(
+        report(12., NOW + HOUR).to_string().as_bytes(),
+        &state,
+        NOW + 1,
+    );
+    append(
+        &rollout,
+        &codex_line(
+            NOW + 1,
+            (10, 0, 0),
+            (0, 0, 0),
+            codex_report(34., NOW + HOUR),
+        ),
+    );
+    let fresh = collect(
+        &mut scanner,
+        &state,
+        true,
+        true,
+        StatusLine::Installed,
+        NOW + 1,
+    );
+    for (tool, expected) in [
+        (fresh.claude.as_ref().unwrap(), "88% left"),
+        (fresh.codex.as_ref().unwrap(), "66% left"),
+    ] {
+        let limits = tool.limits.as_ref().unwrap();
+        assert_eq!(limits.updated_at, NOW + 1);
+        for window in [&limits.five_hour, &limits.weekly] {
+            assert_eq!(remaining_label(window.as_ref(), fresh.now), expected);
+        }
+    }
 }
 
 #[test]
@@ -217,6 +330,43 @@ fn codex_limits_come_from_the_newest_event_matched_by_window_length() {
     assert_eq!(limits.five_hour.unwrap().used_percent, 50.);
     assert_eq!(limits.weekly.unwrap().used_percent, 3.);
     assert_eq!(limits.plan.as_deref(), Some("plus"));
+    assert_eq!(limits.updated_at, NOW - 60);
+}
+
+#[test]
+fn codex_limits_ignore_other_limit_buckets() {
+    let h = homes();
+    let rollout = h.codex.join("sessions/2026/10/07/rollout-pro.jsonl");
+    // Each response logs the plan's `codex` limits, then each extra bucket (a model's own
+    // limits, say) as another event. A Pro plan reports only a weekly window.
+    let codex = |week: f64| {
+        serde_json::json!({
+            "limit_id": "codex",
+            "primary": window(week, 10080, NOW + 5 * 24 * HOUR),
+            "secondary": null,
+            "plan_type": "pro",
+        })
+    };
+    let spark = serde_json::json!({
+        "limit_id": "codex_bengalfox",
+        "limit_name": "gpt-5.2-codex-sonic",
+        "primary": window(0., 300, NOW + HOUR),
+        "secondary": window(1., 10080, NOW + 6 * 24 * HOUR),
+        "plan_type": "pro",
+    });
+    for (t, week) in [(NOW - 120, 10.), (NOW - 60, 12.)] {
+        append(&rollout, &codex_line(t, (1, 0, 0), (1, 0, 0), codex(week)));
+        append(
+            &rollout,
+            &codex_line(t, (1, 0, 0), (1, 0, 0), spark.clone()),
+        );
+    }
+    let mut scanner = Scanner::new(h.claude.clone(), h.codex.clone());
+    scanner.scan(NOW);
+    let limits = scanner.codex_limits().expect("limits");
+    assert_eq!(limits.five_hour, None);
+    assert_eq!(limits.weekly.unwrap().used_percent, 12.);
+    assert_eq!(limits.plan.as_deref(), Some("pro"));
     assert_eq!(limits.updated_at, NOW - 60);
 }
 

@@ -18,7 +18,9 @@ they have spent recently.
 ## Constraints
 
 - Local files only; Waystation makes no network calls for usage.
-- Figures are "as of" each tool's last reply; Waystation shows that age.
+- Reported figures are "as of" each tool's last reply; Waystation shows that
+  age. After a recorded reset, remaining allowance is estimated as 100% until
+  the next report, with the estimate clearly labeled.
 - Nothing runs on launch beyond reading files. Editing the user's Claude
   settings is a confirmed, one-time action, never silent.
 - "Tokens" excludes cache reads, which dwarf everything else.
@@ -76,8 +78,10 @@ output_tokens`, timed by the line's `timestamp`.
 - 5-hour tokens: from `resets_at - window` to now while that tool's 5-hour
   limit window is still running; otherwise the last 5 hours.
 - Today: since local midnight. 7 days: the last 7×24 hours.
-- A limit window whose `resets_at` has passed shows as `reset`, not a stale
-  percentage.
+- A limit window whose `resets_at` has passed refills automatically to
+  `100% left · estimated` on the next refresh, even while the agent is idle.
+  Overview shows `100% estimated`. No upcoming reset time is invented, and
+  a fresh report replaces the estimate. Token totals keep their own windows.
 
 ## Components
 
@@ -102,7 +106,8 @@ output_tokens`, timed by the line's `timestamp`.
 - UI: panel above the Agents list, hidden until the first scan finishes
   (3 lines per tool when 8 rows remain for the list, 1 line per tool when 4
   remain, otherwise hidden; bars teal / peach from 70% / red from 90%; a
-  window that has reset shows `reset` without a reset time); a status line install row with confirmation in the Agents list;
+  window that has reset shows a full bar labeled `100% left · estimated`
+  without a reset time); a status line install row with confirmation in the Agents list;
   an `AI` line at the bottom of the Overview's Machine pulse pane when a row
   is free. Tools that are not installed are omitted.
 - `main.rs`: `__statusline` private subcommand.
@@ -121,11 +126,13 @@ output_tokens`, timed by the line's `timestamp`.
   count once), Codex deltas (repeats add nothing, decreases fall back to
   `last_token_usage`), cache reads excluded.
 - Windows: entries just inside/outside 5h, today, 7d for a fixed `now`;
-  5-hour window anchored to `resets_at`; expired limits shown as reset.
+  5-hour window anchored to `resets_at`; expired limits refill as estimates
+  at the exact reset boundary and fresh reports replace estimates.
 - Scanner: appends picked up incrementally, partial last line deferred,
   truncated file rescanned, old files ignored.
 - Codex limits: newest event wins across files; windows matched by
-  `window_minutes`.
+  `window_minutes`; events for other limit buckets (`limit_id` other than
+  `codex`) ignored, and a weekly-only (Pro) report keeps its weekly window.
 - `__statusline` binary: saves and prints with limits, prints nothing without,
   exits 0 on garbage, no stderr.
 - Status line install: create when missing, preserve other keys and order,

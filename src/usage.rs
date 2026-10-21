@@ -20,10 +20,14 @@ pub struct LimitWindow {
     pub resets_at: i64,
 }
 impl LimitWindow {
-    /// The percentage of the window still available, or `None` once it has reset since it
-    /// was reported.
+    /// The reported percentage still available, estimated as 100% once the recorded
+    /// reset time passes. The saved report itself remains unchanged.
     pub fn remaining(&self, now: i64) -> Option<f64> {
-        (self.resets_at > now).then_some((100. - self.used_percent).clamp(0., 100.))
+        Some(if self.resets_at <= now {
+            100.
+        } else {
+            (100. - self.used_percent).clamp(0., 100.)
+        })
     }
 }
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -313,6 +317,11 @@ fn codex_event(state: &mut FileState, line: &[u8]) {
     }
 }
 fn codex_limits(value: &serde_json::Value, t: i64) -> Option<Limits> {
+    // Codex logs each extra limit bucket (a model's own limits) as its own event after the
+    // plan's; older versions name no bucket.
+    if value["limit_id"].as_str().is_some_and(|id| id != "codex") {
+        return None;
+    }
     let windows = ["primary", "secondary"]
         .iter()
         .filter_map(|slot| {
@@ -524,18 +533,19 @@ pub fn format_tokens(n: u64) -> String {
     }
 }
 
-/// What is left: `77%`, `reset` once the window has rolled over, or `—` when the tool
-/// reported none.
+/// What is left: `77%`, `100% estimated` after reset, or `—` for missing limits.
 pub fn remaining_percent(window: Option<&LimitWindow>, now: i64) -> String {
     match window {
-        Some(w) => w
-            .remaining(now)
-            .map_or("reset".into(), |p| format!("{p:.0}%")),
+        Some(w) if w.resets_at <= now => "100% estimated".into(),
+        Some(w) => w.remaining(now).map_or("—".into(), |p| format!("{p:.0}%")),
         None => "—".into(),
     }
 }
-/// `77% left`, `reset` or `—`.
+/// `77% left`, `100% left · estimated` after reset, or `—`.
 pub fn remaining_label(window: Option<&LimitWindow>, now: i64) -> String {
+    if window.is_some_and(|w| w.resets_at <= now) {
+        return "100% left · estimated".into();
+    }
     match window.and_then(|w| w.remaining(now)) {
         Some(_) => format!("{} left", remaining_percent(window, now)),
         None => remaining_percent(window, now),

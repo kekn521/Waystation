@@ -72,7 +72,7 @@ fn window_line<'a>(
             Style::default().fg(current.map_or(MUTED, color)),
         ),
     ];
-    if let Some(w) = window.filter(|_| current.is_some()) {
+    if let Some(w) = window.filter(|w| w.resets_at > now) {
         spans.push(Span::styled(
             format!(" · resets {}", format_reset(w.resets_at, now)),
             Style::default().fg(MUTED),
